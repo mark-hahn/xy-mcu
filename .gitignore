@@ -1,0 +1,10 @@
+build
+debug
+dist
+nbproject
+Makefile
+nohup.out
+*.log
+*.o
+.fuse*
+
