@@ -1,6 +1,7 @@
 
 #include <xc.h>
 #include "timer.h"
+#include "main.h"
 #include "pins-b.h"
 
 // bytes are set between timer interrupts for quick use in int
@@ -22,21 +23,38 @@ void initTimer() {
   CCP1_PPS = 0x09;         // CCP1 => B4
   CCP1CONbits.MODE = 0x8;  // Compare mode, set step high
 //  CCPTMRS0.C1TSEL = 0;   // CCP1 matches timer 1  ???
-  CCP1IF = 0;              // start with int flag off
-  CCP1IE = 1;              // enable int
-  CCP1CONbits.EN = 1;      // enable CCP1
  
   // Y step pin from counter compare 2
   CCP2_LAT = 1;            // start step pin high
   CCP2_TRIS = 0;           // step pin output
   CCP2_PPS = 0x0A;         // CCP2 => C2
-  CCP2CONbits.MODE = 0x8; // Compare mode, set step high
-//  CCPTMRS1.C2TSEL = 0;     // CCP2 matches timer 1  ???
-  CCP2IF = 0;              // start with int flag off
-  CCP2IE = 1;              // enable int
-  CCP2CONbits.EN = 1;      // enable CCP2
+  CCP2CONbits.MODE = 0x8;  // Compare mode, set step high
+//  CCPTMRS1.C2TSEL = 0;   // CCP2 matches timer 1  ???
+  
+  stopTimer();             // disable ints until move or homing cmd
 }
 
-/*
- CCPR1L, CCPR1H, CCPR2L, CCPR2H
- */
+void startTimer(){
+  stopTimer();
+  TMR1L = 0;
+  TMR1H = 0;
+  CCP1IF = 0;
+  CCP2IF = 0;
+  CCP1IE = 1;
+  CCP2IE = 1;
+  CCP1CONbits.EN = 1;      // enable CCPs, start counting
+  CCP2CONbits.EN = 1;      
+}
+
+void stopTimer(){
+  CCP1CONbits.EN = 0;      // disable CCPs, stop counting
+  CCP2CONbits.EN = 0;      
+  CCP1IE = 0;
+  CCP2IE = 0;
+  CCP1IF = 0;
+  CCP2IF = 0;
+}
+
+bool_t isTimerRunning() {
+  return CCP1IE;
+}

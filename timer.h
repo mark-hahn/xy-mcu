@@ -8,5 +8,9 @@ extern char ccpXHighByte;
 extern char ccpYLowByte;
 extern char ccpYHighByte;
 
+void initTimer();
+void startTimer();
+void stopTimer();
+
 #endif	/* TIMER_H */
 

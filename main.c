@@ -33,6 +33,7 @@
 #include "timer.h"
 #include "vectors.h"
 #include "spi.h"
+#include "motor.h"
 #include "event.h"
 #include "dac.h"
 
@@ -70,6 +71,7 @@ void main(void) {
   initVectors();
   initTimer();
   initSpi();
+  initMotor();
   
   // global ints on
   PEIE  =  1; // Peripheral Interrupt Enable

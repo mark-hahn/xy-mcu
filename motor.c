@@ -3,27 +3,27 @@
 #include <xc.h>
 #include "pins-b.h"
 #include "motor.h"
+#include "dac.h"
+#include "cpu.h"
 
-////////////  tuning constants  ////////////////
+MotorSettings motorSettings;
 
-// for max stepper speed calculator see ...
-//   http://techref.massmind.org/techref/io/stepper/estimate.htm
-// assuming 1A, 2.6mH, 12V, and 200 steps per rev; min is 433 usecs full step
-#define defMinUsecsPerPulse        20 // 50 KHz
+typedef enum AxisHomingState {
+  headingHome,
+  backingUpToHome,
+  homed
+} AxisHomingState;
 
-#define defHomeUsecPerPulse      1000 // 50 mm/sec  (.05 / .001)
-#define defHomeUIdx                 2 // 0.05 mm/pulse
-#define defHomeBkupUsecPerPulse 62500 // 0.1 mm/sec (.00625 / .0625)
-#define defHomeBkupUIdx             5 // .00625 mm/pulse
-#define defMotorCurrent            20 // 20 -> 1.5 amp, 26 -> 2 amp
-
-#define debounceAndSettlingTime 50000 // debounce and time to reverse, 50 ms
-
+AxisHomingState homingStateX;
+AxisHomingState homingStateY;
+pos_t  homingDistX;
+pos_t  homingDistY;
 
 ////////////  fixed constants  ///////////////
 
 // distance per pulse by ustep idx 
 // from 0.2 mm to 0.00625 mm
+// used by homing to measure position before starting homing
 #define distPerPulse(idx) (1 << (5-idx))
 
 // table for microstep pins on DRV8825 stepper driver
@@ -51,12 +51,80 @@ char ms3PerIdx[6] = { 0, 0, 0, 0, 1, 1}; // mode 2
 
 ////////////////  public functions  /////////////
 
+void initMotor() {
+  // set default settings
+  motorSettings.homeUsecPerPulse     = defHomeUsecPerPulse;
+  motorSettings.homeUIdx             = defHomeUIdx;
+  motorSettings.homeBkupUsecPerPulse = defHomeBkupUsecPerPulse;
+  motorSettings.homeBkupUIdx         = defHomeBkupUIdx;
+  set_dac(defMotorCurrent);
+}
+
 void motorReset(char axis, bool_t resetHigh) {
   set_reset(X, resetHigh);
   set_reset(Y, resetHigh);
 }
 
 void handleMotorCmd(char volatile *word) {
-  
+  // word[0] is cmd code byte
+  switch (word[0]) {
+    case resetCmd: 
+      // this also stops timer and sets motor reset pins
+      newStatus(statusUnlocked); 
+      return;
+      
+    case homeCmd:  
+      homingStateX = headingHome;
+      homingStateY = headingHome;
+      homingDistX = 0;
+      homingDistY = 0;
+      // this also stops timer and clears motor reset pins
+      newStatus(statusHoming);
+      return;
+      
+    case moveCmd:  
+      if(status == statusUnlocked) 
+        handleError(0, errorMoveWhenUnlocked);
+      else
+      // this also stops timer and clears motor reset pins
+        newStatus(statusMoving);   
+      return;
+      
+    case setHomingSpeedX: 
+      motorSettings.homeUIdx = word[1];
+      motorSettings.homeUsecPerPulse = *((shortTime_t *) &word[2]);
+      return;
+      
+    case setHomingSpeedY: 
+      motorSettings.homeBkupUIdx = word[1];
+      motorSettings.homeBkupUsecPerPulse = *((shortTime_t *) &word[2]);
+      return;
+      
+    case setMotorCurrent: 
+      // middle two bytes are empty
+      set_dac(word[3]);
+      return;
+  }
 }
 
+void chkHoming() {
+  
+  // handle X and Y separately,   TODO   !!!
+  
+  // spiWordInByteIdx just used as flag
+//  if(!isTimerRunning() || spiWordInByteIdx > 0) {
+//    stopTimer();  
+//    spiWordInByteIdx = 0; 
+//    if(homingStateX.headingHome) {
+//      ccpXLowByte  = motorSettings.homeUsecPerPulse & 0xff;
+//      ccpXHighByte = motorSettings.homeUsecPerPulse >> 8;
+//      startTimer(); 
+//    } 
+//    else if(homingStateX.backingUpToHome) {
+//      ccpXLowByte  = motorSettings.homeUsecPerPulse & 0xff;
+//      ccpXHighByte = motorSettings.homeUsecPerPulse >> 8;
+//      startTimer(); 
+//    }
+    // leave timer stopped is both done homing
+//  }
+}

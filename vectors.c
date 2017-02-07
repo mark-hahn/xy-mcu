@@ -57,6 +57,7 @@ void handleNewSpiWord() {
     }
     return;
   }
-  // we have a command not a vector
-  handleMotorCmd(spiWordIn);
+  if(spiWordIn[0] != 0) // zero means empty SPI word, ignore word
+    // we have a command not a vector
+    handleMotorCmd(spiWordIn);
 }

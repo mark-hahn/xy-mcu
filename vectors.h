@@ -2,11 +2,10 @@
 #ifndef VECTORS_H
 #define	VECTORS_H
 
-#define VEC_BUF_SIZE     64 // 256/4, allows byte masking and modulo arithmetic
-#define VEC_BUF_HI_WATER 48 // flow control limit
+#define VEC_BUF_SIZE     100 // number of 32-bit vector commands buffered
+#define VEC_BUF_HI_WATER  80 // flow control limit
 
 void initVectors();
 void handleNewSpiWord();
 
 #endif	/* VECTORS_H */
-
