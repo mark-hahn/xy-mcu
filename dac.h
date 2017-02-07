@@ -7,7 +7,7 @@
 #define set_dac(val) DAC1CON1bits.DAC1R = (val)
 
 
-void dacInit();
+void initDac();
 
 
 #endif	/* DAC_H */

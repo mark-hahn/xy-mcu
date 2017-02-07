@@ -1,23 +1,8 @@
-/* 
- * File:   event.h
- * Author: root
- *
- * Created on February 6, 2017, 3:09 PM
- */
 
 #ifndef EVENT_H
 #define	EVENT_H
 
-#ifdef	__cplusplus
-extern "C" {
-#endif
-
-
-
-
-#ifdef	__cplusplus
-}
-#endif
+void eventLoop();  // called once from main.c and never returns
 
 #endif	/* EVENT_H */
 

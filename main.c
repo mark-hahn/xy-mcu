@@ -1,6 +1,4 @@
 
-#include <xc.h>
-
 // PIC16LF15355 Configuration Bit Settings
 
 #pragma config FEXTOSC = OFF    // External Oscillator mode selection bits (Oscillator not enabled)
@@ -32,15 +30,23 @@
  
 #include <xc.h>
 #include "main.h"
+#include "timer.h"
+#include "vectors.h"
+#include "spi.h"
+#include "event.h"
 
 // global interrupt routine
+// absolute minimum code here
+// reloading timer compare values is most urgent, so first
+// SPI is highest priority in event loop and lowest in interrupt routine
 void interrupt isr(void) {
   if(CCP1IF) { // X timer compare int
-    // next timer 1 value to matchfor X pulse
+    // next timer 1 value to match for X pulse
     // values must be set in busy loop before next int
     CCPR1L = ccpXLowByte;
     CCPR1H = ccpXHighByte;
-    // should be last to make sure nothing above retriggered flag
+    // if new compare value is alreay passed by now then delay will be 65536 clks
+    // int flag clr should be last to make sure nothing above retriggered flag
     CCP1IF = 0;
   }
   if(CCP2IF) { // Y timer compare int (same comments above apply)
@@ -48,14 +54,21 @@ void interrupt isr(void) {
     CCPR2H = ccpYHighByte;
     CCP2IF = 0;
   }
+  // SPI exchanged, get data in and set data out
+  if(SSP1IF) {
+    SSP1IF = 0;
+    spiWordIn[spiWordInByteIdx++] = SSP1BUF;
+    SSP1BUF = spiByteOut;
+  }
 }  
 
 void main(void) {
   ANSELC = 0; // no analog inputs
   
-  dacInit(); 
+  initDac(); 
+  initVectors();
   initTimer();
-  spiInit();
+  initSpi();
   
   // global ints on
   PEIE  =  1; // Peripheral Interrupt Enable
