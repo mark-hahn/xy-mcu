@@ -1,6 +1,7 @@
 
 
 #include <xc.h>
+#include "pins-b.h"
 #include "motor.h"
 
 ////////////  tuning constants  ////////////////
@@ -53,5 +54,9 @@ char ms3PerIdx[6] = { 0, 0, 0, 0, 1, 1}; // mode 2
 void motorReset(char axis, bool_t resetHigh) {
   set_reset(X, resetHigh);
   set_reset(Y, resetHigh);
+}
+
+void handleMotorCmd(char volatile *word) {
+  
 }
 

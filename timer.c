@@ -20,7 +20,7 @@ void initTimer() {
   CCP1_LAT = 1;            // start step pin high
   CCP1_TRIS = 0;           // step pin output
   CCP1_PPS = 0x09;         // CCP1 => B4
-  CCP1CONbits.MODE = 0x80; // Compare mode, set step high
+  CCP1CONbits.MODE = 0x8;  // Compare mode, set step high
 //  CCPTMRS0.C1TSEL = 0;   // CCP1 matches timer 1  ???
   CCP1IF = 0;              // start with int flag off
   CCP1IE = 1;              // enable int
@@ -30,7 +30,7 @@ void initTimer() {
   CCP2_LAT = 1;            // start step pin high
   CCP2_TRIS = 0;           // step pin output
   CCP2_PPS = 0x0A;         // CCP2 => C2
-  CCP2CONbits.MODE = 0x80; // Compare mode, set step high
+  CCP2CONbits.MODE = 0x8; // Compare mode, set step high
 //  CCPTMRS1.C2TSEL = 0;     // CCP2 matches timer 1  ???
   CCP2IF = 0;              // start with int flag off
   CCP2IE = 1;              // enable int

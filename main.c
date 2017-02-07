@@ -34,6 +34,7 @@
 #include "vectors.h"
 #include "spi.h"
 #include "event.h"
+#include "dac.h"
 
 // global interrupt routine
 // absolute minimum code here
@@ -45,8 +46,8 @@ void interrupt isr(void) {
     // values must be set in busy loop before next int
     CCPR1L = ccpXLowByte;
     CCPR1H = ccpXHighByte;
-    // if new compare value is alreay passed by now then delay will be 65536 clks
-    // int flag clr should be last to make sure nothing above retriggered flag
+    // if new compare value is already passed, then delay will be 65536 clks
+    // int flag clr should be last to make sure nothing above re-triggered flag
     CCP1IF = 0;
   }
   if(CCP2IF) { // Y timer compare int (same comments above apply)

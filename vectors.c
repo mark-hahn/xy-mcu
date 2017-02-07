@@ -2,7 +2,10 @@
 #include <xc.h>
 #include <string.h>
 #include "vectors.h"
+#include "main.h"
 #include "spi.h"
+#include "cpu.h"
+#include "motor.h"
 
 // must be 32-bits to fit in SPI word
 typedef struct Vector {
@@ -16,45 +19,44 @@ typedef struct Vector {
   unsigned int ctrlWord;
 } Vector;
 
-// separate buffers for in and out
+// separate vector buffers for X and Y
 Vector vecBufX[VEC_BUF_SIZE];
 Vector vecBufY[VEC_BUF_SIZE];
 
-Vector *vecBufHeadX, *vecBufTailX, *vecBufHeadY, *vecBufTailY;
+Vector *vecBufHeadX, *currentVectorX, *vecBufHeadY, *currentVectorY;
 
 void clrVecBufs() {
-  vecBufHeadX = vecBufTailX = vecBufX;
-  vecBufHeadY = vecBufTailY = vecBufY;
+  vecBufHeadX = currentVectorX = vecBufX;
+  vecBufHeadY = currentVectorY = vecBufY;
 }
 
 void initVectors() {
   clrVecBufs();
 }
 
-void handleNewVecBufByte() {
-  if ((spiWordIn[0] & 0x80) != 0) { // we have a new X vector
+// code is duplicated for X and Y because speed is more important than code size
+void handleNewSpiWord() {
+  // we have a new X vector
+  if ((spiWordIn[0] & 0x80) != 0) { 
     // after this copy, new bytes can start coming in
-    memcpy(vecBufHeadX, &spiWordIn, sizeof(spiWordIn));
-    if (++vecBufHeadX = vecBufTailX + VEC_BUF_SIZE)
+    memcpy(vecBufHeadX, spiWordIn, sizeof(spiWordIn));
+    if (++vecBufHeadX == currentVectorX + VEC_BUF_SIZE)
       vecBufHeadX = vecBufX;
-    if (vecBufHeadX = vecBufTailX) {
-      handleError(0, errorVecOverflow);
-      
+    if (vecBufHeadX == currentVectorX)
+      handleError(X, errorVecBufOverflow);
+    return;
+  }
+  // we have a new Y vector
+  if ((spiWordIn[0] & 0x40) != 0) { 
+    // after this copy, new bytes can start coming in
+    memcpy(vecBufHeadY, spiWordIn, sizeof(spiWordIn));
+    if (++vecBufHeadY == currentVectorY + VEC_BUF_SIZE)
+      vecBufHeadY = vecBufY;
+    if (vecBufHeadY == currentVectorY) {
+      handleError(Y, errorVecBufOverflow);
     }
-
-    
-    
+    return;
   }
-
-  spiLastVecBufBytesIn = vecBufBytePtrX;
-
-  
-  if(vecBufBytePtrX == (char *) vecBufX + sizeof(vecBufX))
-    vecBufBytePtrX -= sizeof(vecBufX);
-  // we have new 32-bit cmd or vector word
-  if((vecBufBytePtrX - (char *) vecBufX) %4 == 0) {
-    vecBufHead = (Vector *) vecBufBytePtrX;
-  }
-  
-  spiLastVecBufBytesIn = vecBufBytePtrX;
+  // we have a command not a vector
+  handleMotorCmd(spiWordIn);
 }

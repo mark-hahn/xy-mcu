@@ -6,7 +6,7 @@
 #define VEC_BUF_HI_WATER 48 // flow control limit
 
 void initVectors();
-void handleNewVecBufByte();
+void handleNewSpiWord();
 
 #endif	/* VECTORS_H */
 

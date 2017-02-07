@@ -7,7 +7,5 @@ extern volatile char spiWordInByteIdx;
 extern char spiByteOut; // set by event loop each time SPI byte exchanged
 
 void initSpi();
-void chkSpi();
 
 #endif	/* SPI_H */
-

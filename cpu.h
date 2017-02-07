@@ -37,7 +37,7 @@ typedef enum Error {
   none               = 0,
   errorFault         = 1,
   errorLimit         = 2,
-  errorVecOverflow   = 3,
+  errorVecBufOverflow   = 3,
   errorI2cWCOL       = 4,
   errorI2cSSOPV      = 5,
   errorSettingsLen   = 6,
@@ -47,6 +47,7 @@ typedef enum Error {
   errorWrongFinalPos = 10
 } Error;
 
+void handleError(char axis, Error code);
 
 
 #endif	/* CPU_H */

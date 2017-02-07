@@ -3,7 +3,7 @@
 #include "spi.h"
 #include "pins-b.h"
 
-char volatile spiWordIn[4]; // filled by int routine, removed in event loop
+char volatile spiWordIn[4]; // filled by int routine, used in event loop
 char volatile spiWordInByteIdx;
 char spiByteOut; // set by event loop each time SPI byte exchanged
 

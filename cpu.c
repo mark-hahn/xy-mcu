@@ -17,7 +17,6 @@ void newStatus(char newStatus) {
   errorAxis = errorCode = 0;
 }
 
-
 // axis is zero (X) when not specific to axis
 void handleError(char axis, Error code) {
   newStatus(statusUnlocked);

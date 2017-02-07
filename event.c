@@ -4,8 +4,7 @@
 #include "pins-b.h"
 #include "main.h"
 #include "spi.h"
-
-unsigned int spiLastVecBufBytesIn = 0xffff;
+#include "vectors.h"
 
 // step pulse is low, now waiting for timer interrupt to set it high
 bool_t inXpulse = FALSE;
@@ -19,7 +18,7 @@ void eventLoop() {
     // a 32-bit word has just arrived
     if(spiWordInByteIdx == 4) {
       spiWordInByteIdx = 0;
-      handleNewVecBufByte();
+      handleNewSpiWord();
       continue;     
     }
     // SS is idle (high) between words, sync word ptr
