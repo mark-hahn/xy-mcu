@@ -38,28 +38,29 @@
 #include "dac.h"
 
 // global interrupt routine
-// absolute minimum code here
 // reloading timer compare values is most urgent, so first
 // SPI is highest priority in event loop and lowest in interrupt routine
 void interrupt isr(void) {
   if(CCP1IF) { // X timer compare int
-    // next timer 1 value to match for X pulse
-    // values must be set in busy loop before next int
-    CCPR1L = ccpXLowByte;
-    CCPR1H = ccpXHighByte;
+    // CCP1 match and rising edge of X step pulse just happened
+    // set next CCP value to match
+    // timeX must be set in event loop before next int
+    CCPR1L = timeX.timeBytes[0];
+    CCPR1H = timeX.timeBytes[1];
     // if new compare value is already passed, then delay will be 65536 clks
     // int flag clr should be last to make sure nothing above re-triggered flag
     CCP1IF = 0;
   }
   if(CCP2IF) { // Y timer compare int (same comments above apply)
-    CCPR2L = ccpYLowByte;
-    CCPR2H = ccpYHighByte;
+    CCPR2L = timeY.timeBytes[0];
+    CCPR2H = timeY.timeBytes[1];
     CCP2IF = 0;
   }
-  // SPI exchanged, get data in and set data out
+  // SPI just exchanged, get data in and set data out
   if(SSP1IF) {
     SSP1IF = 0;
     spiWordIn[spiWordInByteIdx++] = SSP1BUF;
+    // spiByteOut must be set in event loop before next SPI exchange
     SSP1BUF = spiByteOut;
   }
 }  

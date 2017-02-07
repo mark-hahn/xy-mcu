@@ -7,8 +7,8 @@
 #include "vectors.h"
 
 // step pulse is low, now waiting for timer interrupt to set it high
-bool_t inXpulse = FALSE;
-bool_t inYpulse = FALSE;
+bool_t isPulsingX = FALSE;
+bool_t isPulsingY = FALSE;
 
 // called once from main.c and never returns
 // events are dealt with in order of most urgent first
@@ -26,11 +26,16 @@ void eventLoop() {
       spiWordInByteIdx == 0; 
       continue;
     }
-    
     // X step pin was raised by interrupt
-    if(inXpulse && CCP1_PIN) { 
-      
+    if(isPulsingX && CCP1_PIN) { 
+      if(status == statusHoming) chkHomingX();
+      else chkMovingX();
       continue;
+    }
+    if(isPulsingY && CCP2_PIN) {
+      if(status == statusHoming) chkHomingY();
+      else chkMovingY();
+      return;
     }
     
   

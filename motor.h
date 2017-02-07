@@ -27,3 +27,4 @@ void handleMotorCmd(char volatile *word);
 void chkHoming();
 
 #endif	/* MOTOR_H */
+
