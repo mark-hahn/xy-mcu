@@ -8,6 +8,8 @@
 #define VEC_BUF_HI_WATER  80 // flow control limit
 
 void initVectors();
+void resetVectorsX();
+void resetVectorsY();
 void handleNewSpiWord();
 bool_t vecBufXIsAtHighWater();
 bool_t vecBufYIsAtHighWater();

@@ -41,14 +41,14 @@ void eventLoop() {
       // X step pin was raised by compare
       if(mcu_status == statusHoming) 
         chkHomingX();
-      else 
+      else if(mcu_status == statusMoving) 
         chkMovingX();
     }
     if(isPulsingY && CCP2_PIN) {
       // Y step pin was raised by compare
       if(mcu_status == statusHoming) 
         chkHomingY();
-      else 
+      else if(mcu_status == statusMoving) 
         chkMovingY();
     }
   }

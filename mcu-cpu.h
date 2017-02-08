@@ -25,10 +25,11 @@ typedef enum Cmd {
   setHomingSpeedX = 4, // set homeUIdx & homeUsecPerPulse settings
   setHomingSpeedY = 5, // set homeBkupUIdx & homeBkupUsecPerPulse settings
   setMotorCurrent = 6, // set motorCurrent (0 to 31) immediately
-  reqHomeDist     = 7,  // send home distance to CPU instead of status next word
-  clearErrorCmd   = 8  // no state changes on error until this sent
+  reqHomeDist     = 7, // send home distance instead of status next 2 words
+  clearErrorCmd   = 8  // on error, no activity until this command
 } Cmd;   
 
+// these are the old values (what was happening) when error flag is set
 typedef enum Status {
   statusUnlocked    = 0, // idle with no motor current
   statusLocked      = 1, // idle with motor current
@@ -37,27 +38,33 @@ typedef enum Status {
 } Status;
 extern Status mcu_status;
 
-// must be 32-bits to fit in SPI word
+// 32-bits to fit in SPI word
 typedef struct Vector {
-  shortTime_t usecsPerPulse; // same size as timer 1
+  // a usecsPerPulse of 1 is a magic word for end of moving
+  // i.e. there are no more vectors used until next move command
+  shortTime_t usecsPerPulse;
   // ctrlWord has five bit fields, from msb to lsb ...
-  //   1 axis X, both X and Y set means command, not vector
-  //   1 axis Y
-  //   1 dir (0: backwards, 1: forwards)
-  //   3 ustep idx, 0 (full-step) to 5 (1/32 step)
-  //  10 pulse count
+  //   1 bit: axis X vector, both X and Y set means command, not vector
+  //   1 bit: axis Y vector
+  //   1 bit: dir (0: backwards, 1: forwards)
+  //   3 bits: ustep idx, 0 (full-step) to 5 (1/32 step)
+  //  10 bits: pulse count
   unsigned int ctrlWord;
 } Vector;
 
+// only means anything when error flag is set
+// and means nothing if error not axis-specific
 extern char errorAxis;
 
 typedef enum Error {
-  none                  = 0,
-  errorFault            = 1,
-  errorLimit            = 2,
-  errorVecBufOverflow   = 3,
-  errorMoveWhenUnlocked = 4,
-  errorSpiSync          = 5
+  none                   = 0,
+  errorFault             = 1, // driver chip fault
+  errorLimit             = 2, // hit error limit switch during move
+  errorVecBufOverflow    = 3,
+  errorVecBufUnderflow   = 4,
+  errorMoveWhenUnlocked  = 5,
+  errorMoveWithNoVectors = 6,
+  errorSpiSync           = 7
 } Error;
 
 extern Error errorCode;

@@ -2,6 +2,12 @@
 #ifndef MAIN_H
 #define	MAIN_H
 
+/*
+ * TODO  Notes ...
+ *   put directions in settings
+ *   limit switch error when taking off from home?
+ */
+
 #define _XTAL_FREQ 32000000 
 
 #define X 0  /* idx for X axis */

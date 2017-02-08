@@ -4,6 +4,7 @@
 #include "pins-b.h"
 #include "spi.h"
 #include "motor.h"
+#include "vectors.h"
 #include "event.h"
 #include "dac.h"
 #include "mcu-cpu.h"
@@ -23,6 +24,9 @@ pos_t  homingDistX;
 pos_t  homingDistY;
 bool_t isPulsingX = FALSE;
 bool_t isPulsingY = FALSE;
+
+unsigned int pulseCountX;
+unsigned int pulseCountY;
 
 
 ////////////  fixed constants  ///////////////
@@ -83,12 +87,10 @@ void handleMotorCmd(char *word) {
       homingStateY = headingHome;
       homingDistX = 0;
       homingDistY = 0;
-      setNextTimeX(defHomeUsecPerPulse);      
       set_ustep(X, defHomeUIdx);
       set_dir(X, 0);
       CCP1_LAT = 0; // lower X step pin to start first pulse
       isPulsingX = TRUE;
-      setNextTimeY(defHomeUsecPerPulse);      
       set_ustep(Y, defHomeUIdx);
       set_dir(Y, 0);
       CCP2_LAT = 0; // lower Y step pin to start first pulse
@@ -96,14 +98,39 @@ void handleMotorCmd(char *word) {
       // this also stops timer and clears motor reset pins
       newStatus(statusHoming);
       startTimer();
-      return;
+      setNextTimeX(defHomeUsecPerPulse);      
+      setNextTimeY(defHomeUsecPerPulse);      
+     return;
       
     case moveCmd:  
-      if(mcu_status == statusUnlocked) 
+      if(mcu_status == statusUnlocked) {
         handleError(0, errorMoveWhenUnlocked);
-      else
+        return;
+      }
+      if(currentVectorX == vecBufHeadX) {
+        handleError(X, errorMoveWithNoVectors);
+        return;
+      }
+      if(currentVectorY == vecBufHeadY) {
+        handleError(Y, errorMoveWithNoVectors);
+        return;
+      }
       // this also stops timer and clears motor reset pins
-        newStatus(statusMoving);   
+      newStatus(statusMoving);   
+      isPulsingX = TRUE;
+      isPulsingY = TRUE;
+      pulseCountX = 0;
+      pulseCountY = 0;
+      // currentVector is already set by vectors added before this cmd
+      set_ustep(X, (currentVectorX->ctrlWord >> 10) & 0x0007);
+      set_dir(X, (currentVectorX->ctrlWord >> 13) & 1);
+      CCP1_LAT = 0; // lower X step pin to start next pulse
+      set_ustep(Y, (currentVectorY->ctrlWord >> 10) & 0x0007);
+      set_dir(Y, (currentVectorY->ctrlWord >> 13) & 1);
+      CCP2_LAT = 0; // lower Y step pin to start next pulse
+      startTimer();
+      setNextTimeX(currentVectorX->usecsPerPulse);
+      setNextTimeY(currentVectorY->usecsPerPulse);
       return;
       
     case setHomingSpeedX: 
@@ -162,7 +189,7 @@ void chkHomingX() {
       CCP1_LAT = 0; // lower X step pin to start next pulse
     } 
     else {
-      // we are done homing in X
+      // we are done homing X
       homingStateX == homed;
       isPulsingX = FALSE;
       // if Y is done then all of homing is done
@@ -197,18 +224,18 @@ void chkHomingY() {
   else if(homingStateY == backingUpToHome) {
     // subtract distance for pulse that just finished
     homingDistY -= distPerPulse(defHomeBkupUIdx);
-    if(!LIMIT_SW_Y) {
+    if(!LIMIT_SW_Y) { 
       // have not gotten back to limit switch yet, keep heading back
       setNextTimeY(defHomeBkupUsecPerPulse);
       CCP2_LAT = 0; // lower Y step pin to start next pulse
     } 
     else {
-      // we are done homing in Y
+      // we are done homing Y
       homingStateY == homed;
       isPulsingY = FALSE;
       // if X is done then all of homing is done
       if(homingStateX == homed){
-        newStatus(statusLocked);
+        newStatus(statusLocked); 
         stopTimer();
       }
     }
@@ -216,7 +243,62 @@ void chkHomingY() {
 }
 
 void chkMovingX() {
+  // compare match and X pulse just happened
+  // compare match and Y pulse just happened
+  if(!LIMIT_SW_X)  { 
+    // unexpected closed limit switch
+    handleError(X, errorLimit);
+    return;
+  }
+  if(++pulseCountX == (currentVectorX->ctrlWord & 0x03ff)) {
+    // we are done with this vector, start new one
+    pulseCountX = 0;
+    if(++currentVectorX == vecBufX + VEC_BUF_SIZE) 
+         currentVectorX = vecBufX;
+    if(currentVectorX == vecBufHeadX) { 
+      // vector buf is empty
+      handleError(X, errorVecBufUnderflow);
+      return;
+    }
+    if(currentVectorX->usecsPerPulse == 1) {
+      // done moving X
+      newStatus(statusLocked); 
+      stopTimer();
+      return;
+    }
+    set_ustep(X, (currentVectorX->ctrlWord >> 10) & 0x0007);
+    set_dir(X, (currentVectorX->ctrlWord >> 13) & 1);
+  }
+  CCP1_LAT = 0; // lower X step pin to start next pulse
+  setNextTimeX(currentVectorX->usecsPerPulse);
 }
 
 void chkMovingY() {
+  // compare match and Y pulse just happened
+  if(!LIMIT_SW_Y)  { 
+    // unexpected closed limit switch
+    handleError(Y, errorLimit);
+    return;
+  }
+  if(++pulseCountY == (currentVectorY->ctrlWord & 0x03ff)) {
+    // we are done with this vector, start new one
+    pulseCountY = 0;
+    if(++currentVectorY == vecBufY + VEC_BUF_SIZE) 
+         currentVectorY = vecBufY;
+    if(currentVectorY == vecBufHeadY) { 
+      // vector buf is empty
+      handleError(Y, errorVecBufUnderflow);
+      return;
+    }
+    if(currentVectorY->usecsPerPulse == 1) {
+      // done moving
+      newStatus(statusLocked); 
+      stopTimer();
+      return;
+    }
+    set_ustep(Y, (currentVectorY->ctrlWord >> 10) & 0x0007);
+    set_dir(Y, (currentVectorY->ctrlWord >> 13) & 1);
+  }
+  CCP2_LAT = 0; // lower Y step pin to start next pulse
+  setNextTimeY(currentVectorY->usecsPerPulse);
 }

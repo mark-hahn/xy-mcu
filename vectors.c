@@ -13,9 +13,15 @@ Vector vecBufY[VEC_BUF_SIZE];
 
 Vector *vecBufHeadX, *currentVectorX, *vecBufHeadY, *currentVectorY;
 
-void initVectors() {
+void resetVectorsX() {
   vecBufHeadX = currentVectorX = vecBufX;
+}
+void resetVectorsY() {
   vecBufHeadY = currentVectorY = vecBufY;
+}
+void initVectors() {
+  resetVectorsX();
+  resetVectorsY();
 }
 
 // code is duplicated for X and Y because speed is more important than code size
@@ -63,6 +69,6 @@ bool_t vecBufXIsAtHighWater() {
 
 bool_t vecBufYIsAtHighWater() {
   signed char diff = (vecBufHeadY - currentVectorY);
-  if(diff<0) diff += VEC_BUF_SIZE;
+  if(diff < 0) diff += VEC_BUF_SIZE;
   return (diff > VEC_BUF_HI_WATER);
 }
