@@ -19,17 +19,18 @@
 // otherwise it is one of these commands
 typedef enum Cmd {
   // zero is not used so blank SPI words are ignored
-  resetCmd        = 1, // clear state and hold reset on motors, unlocking them
-  homeCmd         = 2, // homes with no vectors, and saves homing distance
-  moveCmd         = 3, // enough vectors need to be loaded to start
-  setHomingSpeedX = 4, // set homeUIdx & homeUsecPerPulse settings
-  setHomingSpeedY = 5, // set homeBkupUIdx & homeBkupUsecPerPulse settings
-  setMotorCurrent = 6, // set motorCurrent (0 to 31) immediately
-  reqHomeDist     = 7, // send home distance instead of status next 2 words
-  clearErrorCmd   = 8  // on error, no activity until this command
+  resetCmd             = 1, // clear state and hold reset on motors, unlocking them
+  homeCmd              = 2, // goes home using no vectors, and saves homing distance
+  moveCmd              = 3, // enough vectors need to be loaded to start
+  setHomingSpeed       = 4, // set homeUIdx & homeUsecPerPulse settings
+  setHomingBackupSpeed = 5, // set homeBkupUIdx & homeBkupUsecPerPulse settings
+  setMotorCurrent      = 6, // set motorCurrent (0 to 31) immediately
+  reqHomeDist          = 7, // return home distance, not status, next 2 words
+  clearErrorCmd        = 8  // on error, no activity until this command
 } Cmd;   
 
-// these are the old values (what was happening) when error flag is set
+// general mcu states
+// values are valid even when error flag is set, tells what was happening
 typedef enum Status {
   statusUnlocked    = 0, // idle with no motor current
   statusLocked      = 1, // idle with motor current
@@ -40,7 +41,7 @@ extern Status mcu_status;
 
 // 32-bits to fit in SPI word
 typedef struct Vector {
-  // a usecsPerPulse of 1 is a magic word for end of moving
+  // a usecsPerPulse of 1 is a magic word for end of moving sequence
   // i.e. there are no more vectors used until next move command
   shortTime_t usecsPerPulse;
   // ctrlWord has five bit fields, from msb to lsb ...
@@ -67,6 +68,7 @@ typedef enum Error {
   errorSpiSync           = 7
 } Error;
 
+// this is non-zero if, and only if, error flag status bit is set
 extern Error errorCode;
 
 enum returnWordType_t {
@@ -82,9 +84,10 @@ enum retFlags {
   retflagBufXHighWater = 0x08,
   retflagBufYHighWater = 0x04,
   retflagErrorAxis     = 0x02, // default zero if no axis specified
-  retFlagError         = 0x01  // a bit redundant but in every word
+  retFlagError         = 0x01  // when error everything halts until cmd clrs it
 };
 
+// this is the status word returned when returnWordType is retypeStatus
 typedef struct ReturnStatus {
   char flags;
   char status;

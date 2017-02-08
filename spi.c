@@ -42,28 +42,30 @@ void initSpi() {
 
 void getOutputByte() {
   if(spiWordByteIdx == 0) {
+    char flags;
     // cpuReq is only non-zero when cpu sends reqHomeDist command
     switch (nextRetWordType) {
       case 0: 
-        spiReturnStatus.flags     = retypeStatus; 
+        flags = retypeStatus; 
         spiReturnStatus.status    = mcu_status;
         spiReturnStatus.errorCode = errorCode;
         break;
       case 1: 
-        spiReturnStatus.flags = retypeHomeDistX;
+        flags = retypeHomeDistX;
         *((long *)&spiReturnStatus) |= homingDistX;
         nextRetWordType = 2;
         break;
       case 2: 
-        spiReturnStatus.flags = retypeHomeDistY;
+        flags = retypeHomeDistY;
         *((long *)&spiReturnStatus) |= homingDistY;
         nextRetWordType = 0;
         break;
     }
-    if(vecBufXIsAtHighWater()) spiReturnStatus.flags |= retflagBufXHighWater;
-    if(vecBufYIsAtHighWater()) spiReturnStatus.flags |= retflagBufYHighWater;
-    if(errorAxis)              spiReturnStatus.flags |= retflagErrorAxis;
-    if(errorCode)              spiReturnStatus.flags |= retFlagError;
+    if(vecBufXIsAtHighWater()) flags |= retflagBufXHighWater;
+    if(vecBufYIsAtHighWater()) flags |= retflagBufYHighWater;
+    if(errorAxis)              flags |= retflagErrorAxis;
+    if(errorCode)              flags |= retFlagError;
+    spiReturnStatus.flags = flags;
   }
   spiByteToCpu = ((char *)&spiReturnStatus)[spiWordByteIdx];
 }

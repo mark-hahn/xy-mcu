@@ -138,12 +138,12 @@ void handleMotorCmd(char *word) {
       setNextTimeY(currentVectorY->usecsPerPulse);
       return;
       
-    case setHomingSpeedX: 
+    case setHomingSpeed: 
       motorSettings.homeUIdx = word[1];
       motorSettings.homeUsecPerPulse = *((shortTime_t *) &word[2]);
       return;
       
-    case setHomingSpeedY: 
+    case setHomingBackupSpeed: 
       motorSettings.homeBkupUIdx = word[1];
       motorSettings.homeBkupUsecPerPulse = *((shortTime_t *) &word[2]);
       return;
