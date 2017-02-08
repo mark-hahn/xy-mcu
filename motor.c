@@ -2,9 +2,11 @@
 
 #include <xc.h>
 #include "pins-b.h"
+#include "spi.h"
 #include "motor.h"
+#include "event.h"
 #include "dac.h"
-#include "cpu.h"
+#include "mcu-cpu.h"
 #include "timer.h"
 
 MotorSettings motorSettings;
@@ -19,6 +21,9 @@ AxisHomingState homingStateX;
 AxisHomingState homingStateY;
 pos_t  homingDistX;
 pos_t  homingDistY;
+bool_t isPulsingX = FALSE;
+bool_t isPulsingY = FALSE;
+
 
 ////////////  fixed constants  ///////////////
 
@@ -63,7 +68,7 @@ void motorReset(char axis, bool_t resetHigh) {
   set_reset(Y, resetHigh);
 }
 
-void handleMotorCmd(char volatile *word) {
+void handleMotorCmd(char *word) {
   // word[0] is cmd code byte
   switch (word[0]) {
     case resetCmd: 
@@ -94,7 +99,7 @@ void handleMotorCmd(char volatile *word) {
       return;
       
     case moveCmd:  
-      if(status == statusUnlocked) 
+      if(mcu_status == statusUnlocked) 
         handleError(0, errorMoveWhenUnlocked);
       else
       // this also stops timer and clears motor reset pins
@@ -115,48 +120,55 @@ void handleMotorCmd(char volatile *word) {
       // middle two bytes are empty
       set_dac(word[3]);
       return;
+      
+    case reqHomeDist:
+      // next 2 words to CPU will be X and Y home distance from last homing
+      nextRetWordType = 1;
+      return;
+      
+    case clearErrorCmd:
+      errorAxis = 0;
+      errorCode = 0;
+      newStatus(statusUnlocked);
+      return;
   }
 }
 
 void chkHomingX() {
   // compare match and X pulse just happened
-  if(CCP1_PIN) {
-    if(homingStateX == headingHome) {
-      // add distance for pulse that just finished
-      homingDistX += distPerPulse[defHomeUIdx];
+  if(homingStateX == headingHome) {
+    // add distance for pulse that just finished
+    homingDistX += distPerPulse(defHomeUIdx);
+    CCP1_LAT = 0; // lower X step pin to start next pulse
+    if(LIMIT_SW_X)
+      // have not gotten to limit switch yet, keep heading home
+      setNextTimeX(defHomeUsecPerPulse);
+    else {
+      // set backup dir and step size
+      set_ustep(X, defHomeBkupUIdx);
+      set_dir(X, 1);
+      // wait a long time for reversing and for switch bouncing to stop
+      setNextTimeX(debounceAndSettlingTime);
+      // we reached the switch, turn around
+      homingStateX = backingUpToHome;
+    }
+  } 
+  else if(homingStateX == backingUpToHome) {
+    // subtract distance for pulse that just finished
+    homingDistX -= distPerPulse(defHomeBkupUIdx);
+    if(!LIMIT_SW_X) {
+      // have not gotten back to limit switch yet, keep heading back
+      setNextTimeX(defHomeBkupUsecPerPulse);
       CCP1_LAT = 0; // lower X step pin to start next pulse
-      isPulsingX = TRUE;
-      if(LIMIT_SW_X)
-        // have not gotten to limit switch yet, keep heading home
-        setNextTimeX(defHomeUsecPerPulse);
-      else {
-        // set backup dir and step size
-        set_ustep(X, defHomeBkupUIdx);
-        set_dir(X, 1);
-        // wait a long time for reversing and for switch bouncing to stop
-        setNextTimeX(debounceAndSettlingTime);
-        // we reached the switch, turn around
-        homingStateX = backingUpToHome;
-      }
     } 
-    else if(homingStateX == backingUpToHome) {
-      // subtract distance for pulse that just finished
-      homingDistX -= distPerPulse[defHomeBkupUIdx];
-      if(!LIMIT_SW_X) {
-        // have not gotten back to limit switch yet, keep heading back
-        setNextTimeX(defHomeBkupUsecPerPulse);
-        CCP1_LAT = 0; // lower X step pin to start next pulse
-        isPulsingX = TRUE;
-      } 
-      else {
-        // we are done homing in X
-        homingStateX == homed;
-        isPulsingX = FALSE;
-        // if Y is done then all of homing is done
-        if(homingStateY == homed){
-          newStatus(statusLocked);
-          stopTimer();
-        }
+    else {
+      // we are done homing in X
+      homingStateX == homed;
+      isPulsingX = FALSE;
+      // if Y is done then all of homing is done
+      if(homingStateY == homed){
+        newStatus(statusLocked);
+        stopTimer();
       }
     }
   }
@@ -165,43 +177,39 @@ void chkHomingX() {
 // duplicate chkHoming code for speed, indexing into X and X variables takes time
 void chkHomingY() {
   // compare match and Y pulse just happened
-  if(CCP2_PIN) {
-    if(homingStateY == headingHome) {
-      // add distance for pulse that just finished
-      homingDistY += distPerPulse[defHomeUIdx];
+  if(homingStateY == headingHome) {
+    // add distance for pulse that just finished
+    homingDistY += distPerPulse(defHomeUIdx);
+    CCP2_LAT = 0; // lower Y step pin to start next pulse
+    if(LIMIT_SW_Y)
+      // have not gotten to limit switch yet, keep heading home
+      setNextTimeY(defHomeUsecPerPulse);
+    else {
+      // set backup dir and step size
+      set_ustep(Y, defHomeBkupUIdx);
+      set_dir(Y, 1);
+      // wait a long time for reversing and for switch bouncing to stop
+      setNextTimeY(debounceAndSettlingTime);
+      // we reached the switch, turn around
+      homingStateY = backingUpToHome;
+    }
+  } 
+  else if(homingStateY == backingUpToHome) {
+    // subtract distance for pulse that just finished
+    homingDistY -= distPerPulse(defHomeBkupUIdx);
+    if(!LIMIT_SW_Y) {
+      // have not gotten back to limit switch yet, keep heading back
+      setNextTimeY(defHomeBkupUsecPerPulse);
       CCP2_LAT = 0; // lower Y step pin to start next pulse
-      isPulsingY = TRUE;
-      if(LIMIT_SW_Y)
-        // have not gotten to limit switch yet, keep heading home
-        setNextTimeY(defHomeUsecPerPulse);
-      else {
-        // set backup dir and step size
-        set_ustep(Y, defHomeBkupUIdx);
-        set_dir(Y, 1);
-        // wait a long time for reversing and for switch bouncing to stop
-        setNextTimeY(debounceAndSettlingTime);
-        // we reached the switch, turn around
-        homingStateY = backingUpToHome;
-      }
     } 
-    else if(homingStateY == backingUpToHome) {
-      // subtract distance for pulse that just finished
-      homingDistY -= distPerPulse[defHomeBkupUIdx];
-      if(!LIMIT_SW_Y) {
-        // have not gotten back to limit switch yet, keep heading back
-        setNextTimeY(defHomeBkupUsecPerPulse);
-        CCP2_LAT = 0; // lower Y step pin to start next pulse
-        isPulsingY = TRUE;
-      } 
-      else {
-        // we are done homing in Y
-        homingStateY == homed;
-        isPulsingY = FALSE;
-        // if X is done then all of homing is done
-        if(homingStateX == homed){
-          newStatus(statusLocked);
-          stopTimer();
-        }
+    else {
+      // we are done homing in Y
+      homingStateY == homed;
+      isPulsingY = FALSE;
+      // if X is done then all of homing is done
+      if(homingStateX == homed){
+        newStatus(statusLocked);
+        stopTimer();
       }
     }
   }

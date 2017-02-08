@@ -30,12 +30,15 @@
  
 #include <xc.h>
 #include "main.h"
+#include "mcu-cpu.h"
 #include "timer.h"
 #include "vectors.h"
 #include "spi.h"
 #include "motor.h"
 #include "event.h"
 #include "dac.h"
+
+volatile bool_t spiIntHappened = FALSE;
 
 // global interrupt routine
 // reloading timer compare values is most urgent, so first
@@ -59,9 +62,12 @@ void interrupt isr(void) {
   // SPI just exchanged, get data in and set data out
   if(SSP1IF) {
     SSP1IF = 0;
-    spiWordIn[spiWordInByteIdx++] = SSP1BUF;
-    // spiByteOut must be set in event loop before next SPI exchange
-    SSP1BUF = spiByteOut;
+    // spi in must be set in event loop before next SPI exchange
+    spiByteFromCpu = SSP1BUF;
+    // spi out must be set in event loop before next SPI exchange
+    SSP1BUF = spiByteToCpu;
+    // notify event loop
+    spiIntHappened = TRUE;
   }
 }  
 
@@ -73,7 +79,8 @@ void main(void) {
   initTimer();
   initSpi();
   initMotor();
-  
+  initMcuCpu();
+
   // global ints on
   PEIE  =  1; // Peripheral Interrupt Enable
   GIE   =  1; // Global Interrupt Enable

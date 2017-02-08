@@ -1,15 +1,15 @@
 
 #include <xc.h>
-#include "cpu.h"
+#include "mcu-cpu.h"
 #include "main.h"
 #include "timer.h"
 #include "motor.h"
 
-Status status;
+Status mcu_status;
 Error errorCode;
 char errorAxis;
 
-void cpuInit() {
+void initMcuCpu() {
   newStatus(statusUnlocked); 
 }
 
@@ -17,10 +17,11 @@ void cpuInit() {
 void newStatus(char newStatus) {
   // timer counting and ints off until move or homing command
   stopTimer();
+  if (errorCode) return;
   bool_t resetHigh = (newStatus != statusUnlocked);
   motorReset(X, resetHigh);
   motorReset(Y, resetHigh);
-  status = newStatus; 
+  mcu_status = newStatus; 
 }
 
 // axis is zero (X) when not specific to axis

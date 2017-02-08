@@ -21,10 +21,18 @@ typedef struct MotorSettings {
 
 extern MotorSettings motorSettings;
 
+extern pos_t  homingDistX; // how long each axis traveled to get home
+extern pos_t  homingDistY;
+extern bool_t isPulsingX;  // we are either homing or moving
+extern bool_t isPulsingY;
+
 void initMotor();
 void motorReset(char axis, bool_t resetHigh);
-void handleMotorCmd(char volatile *word);
-void chkHoming();
+void handleMotorCmd(char *word);
+void chkHomingX();
+void chkHomingY();
+void chkMovingX();
+void chkMovingY();
 
 #endif	/* MOTOR_H */
 

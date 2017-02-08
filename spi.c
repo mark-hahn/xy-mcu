@@ -1,18 +1,20 @@
 
 #include <xc.h>
 #include "spi.h"
+#include "mcu-cpu.h"
 #include "pins-b.h"
+#include "vectors.h"
+#include "motor.h"
 
-char volatile spiWordIn[4]; // filled by int routine, used in event loop
-char volatile spiWordInByteIdx;
-char spiByteOut; // set by event loop each time SPI byte exchanged
 
-// this queue maintained by chkSpi()
-// status out buf by bytes ...
-  // 1 header marker, 0xff, syncs bytes, 0xfe for flow control
-  // 1 status, axis, error code, and state
-  // 3 home distance X
-  // 3 home distance Y
+volatile bool_t spiIntHappened;  // set after each SPI interrupt
+volatile char   spiByteFromCpu;  // set by spi interrupt, used in event loop
+char            spiByteToCpu;    // set by event loop, used in spi interrupt
+unsigned long   spiWordIn;       // four of spiByteFromCpu
+ReturnStatus    spiReturnStatus; // four of spiByteToCpu
+char            spiWordByteIdx;  // byte idx in both spiWordIn and spiReturnStatus
+
+char nextRetWordType = 0; // specifies type of word to be returned next
 
 void initSpi() {
   SSP1SSPPS  = SPI_SS_PPS;       // A7 => select in
@@ -30,10 +32,38 @@ void initSpi() {
   SSP1CON1bits.CKP   = 0; // clk low is idle (should match CPU)
   SSP1STATbits.CKE   = 1; // clk non-idle -> idle bit capture (safer wcol))
   SSP1CON3bits.BOEN  = 0; // enable buffer overflow check (SSPOV))
-  spiWordInByteIdx = 0;
+  spiWordByteIdx = 0;
 
   /* Before enabling the module in SPI Slave mode, the clock
    line must match the proper Idle state (CKP) */
   while(SPI_CLK);
   SSP1CON1bits.SSPEN = 1; // enable SPI
+}
+
+void chkStatusWord() {
+  if(spiWordByteIdx == 0) {
+    // cpuReq is only non-zero when cpu sends reqHomeDist command
+    switch (nextRetWordType) {
+      case 0: 
+        spiReturnStatus.flags     = retypeStatus; 
+        spiReturnStatus.status    = mcu_status;
+        spiReturnStatus.errorCode = errorCode;
+        break;
+      case 1: 
+        spiReturnStatus.flags = retypeHomeDistX;
+        *((long *)&spiReturnStatus) |= homingDistX;
+        nextRetWordType = 2;
+        break;
+      case 2: 
+        spiReturnStatus.flags = retypeHomeDistY;
+        *((long *)&spiReturnStatus) |= homingDistY;
+        nextRetWordType = 0;
+        break;
+    }
+    if(vecBufXIsAtHighWater()) spiReturnStatus.flags |= retflagBufXHighWater;
+    if(vecBufYIsAtHighWater()) spiReturnStatus.flags |= retflagBufYHighWater;
+    if(errorAxis)              spiReturnStatus.flags |= retflagErrorAxis;
+    if(errorCode)              spiReturnStatus.flags |= retFlagError;
+  }
+  spiByteToCpu = ((char *)&spiReturnStatus)[spiWordByteIdx];
 }

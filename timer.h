@@ -2,6 +2,8 @@
 #ifndef TIMER_H
 #define	TIMER_H
 
+#include "main.h"
+
 typedef struct time_ut {
   shortTime_t timeShort;
   char        timeBytes[2]; // remember, little-endian
