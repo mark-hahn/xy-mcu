@@ -37,14 +37,14 @@ void eventLoop() {
     // if error, no homing or moving happens until clearError cmd
     if(errorCode) continue;
 
-    if(isPulsingX && CCP1_PIN) { 
+    if(isMovingX && CCP1_PIN) { 
       // X step pin was raised by compare
       if(mcu_status == statusHoming) 
         chkHomingX();
       else if(mcu_status == statusMoving) 
         chkMovingX();
     }
-    if(isPulsingY && CCP2_PIN) {
+    if(isMovingY && CCP2_PIN) {
       // Y step pin was raised by compare
       if(mcu_status == statusHoming) 
         chkHomingY();

@@ -22,9 +22,10 @@ AxisHomingState homingStateX;
 AxisHomingState homingStateY;
 pos_t  homingDistX;
 pos_t  homingDistY;
-bool_t isPulsingX = FALSE;
-bool_t isPulsingY = FALSE;
-
+bool_t isMovingX = FALSE;
+bool_t isMovingY = FALSE;
+char   deltaVecCountX;
+char   deltaVecCountY;
 unsigned int pulseCountX;
 unsigned int pulseCountY;
 
@@ -93,11 +94,11 @@ void handleMotorCmd(char *word) {
       set_ustep(X, defHomeUIdx);
       set_dir(X, 0);
       CCP1_LAT = 0; // lower X step pin to start first pulse
-      isPulsingX = TRUE;
+      isMovingX = TRUE;
       set_ustep(Y, defHomeUIdx);
       set_dir(Y, 0);
       CCP2_LAT = 0; // lower Y step pin to start first pulse
-      isPulsingY = TRUE;
+      isMovingY = TRUE;
       // this also stops timer and clears motor reset pins
       newStatus(statusHoming);
       startTimer();
@@ -120,22 +121,31 @@ void handleMotorCmd(char *word) {
       }
       // this also stops timer and clears motor reset pins
       newStatus(statusMoving);   
-      isPulsingX = TRUE;
-      isPulsingY = TRUE;
+      isMovingX = TRUE;
+      isMovingY = TRUE;
       pulseCountX = 0;
       pulseCountY = 0;
+      // first vec cmd can't be a delta one
+      deltaVecCountX = 0;
+      deltaVecCountY = 0;
       movingDoneX = FALSE;
       movingDoneY = FALSE;
       // currentVector is already set by vectors added before this cmd
       set_ustep(X, (currentVectorX->ctrlWord >> 10) & 0x0007);
       set_dir(X, (currentVectorX->ctrlWord >> 13) & 1);
-      CCP1_LAT = 0; // lower X step pin to start next pulse
+      if(currentVectorX->ctrlWord & 0x03ff)
+        // this is not just a delay command
+        CCP1_LAT = 0; // lower X step pin to start next pulse
       set_ustep(Y, (currentVectorY->ctrlWord >> 10) & 0x0007);
       set_dir(Y, (currentVectorY->ctrlWord >> 13) & 1);
-      CCP2_LAT = 0; // lower Y step pin to start next pulse
-      startTimer();
+      if(currentVectorY->ctrlWord & 0x03ff)
+        // this is not just a delay command
+        CCP2_LAT = 0; // lower Y step pin to start next pulse
+      timeX.timeShort = 2;      
+      timeY.timeShort = 2;
       setNextTimeX(currentVectorX->usecsPerPulse);
       setNextTimeY(currentVectorY->usecsPerPulse);
+      startTimer();  // this issues first pulse edge after 2 usecs
       return;
       
     case setHomingSpeed: 
@@ -196,7 +206,7 @@ void chkHomingX() {
     else {
       // we are done homing X
       homingStateX == homed;
-      isPulsingX = FALSE;
+      isMovingX = FALSE;
       // if Y is done then all of homing is done
       if(homingStateY == homed){
         newStatus(statusLocked);
@@ -235,7 +245,7 @@ void chkHomingY() {
     else {
       // we are done homing Y
       homingStateY == homed;
-      isPulsingY = FALSE;
+      isMovingY = FALSE;
       // if X is done then all of homing is done
       if(homingStateX == homed){
         newStatus(statusLocked); 
@@ -253,7 +263,9 @@ void chkMovingX() {
     handleError(X, errorLimit);
     return;
   }
-  if(++pulseCountX == (currentVectorX->ctrlWord & 0x03ff)) {
+  if ((currentVectorX->ctrlWord & 0xc000 == 0x8000 ||
+       currentVectorX->ctrlWord & 0xc000 == 0x4000) &&  //deltaVecCountX
+       (++pulseCountX >= (currentVectorX->ctrlWord & 0x03ff)) {
     // we are done with this vector, start new one
     pulseCountX = 0;
     if(++currentVectorX == vecBufX + VEC_BUF_SIZE) 
@@ -278,7 +290,9 @@ void chkMovingX() {
     set_ustep(X, (currentVectorX->ctrlWord >> 10) & 0x0007);
     set_dir(X, (currentVectorX->ctrlWord >> 13) & 1);
   }
-  CCP1_LAT = 0; // lower X step pin to start next pulse
+  if (currentVectorX->ctrlWord & 0x03ff)
+    // this is not just a delay
+    CCP1_LAT = 0; // lower X step pin to start next pulse
   setNextTimeX(currentVectorX->usecsPerPulse);
 }
 
@@ -290,7 +304,7 @@ void chkMovingY() {
     handleError(Y, errorLimit);
     return;
   }
-  if(++pulseCountY == (currentVectorY->ctrlWord & 0x03ff)) {
+  if(++pulseCountY >= (currentVectorY->ctrlWord & 0x03ff)) {
     // we are done with this vector, start new one
     pulseCountY = 0;
     if(++currentVectorY == vecBufY + VEC_BUF_SIZE) 
@@ -315,6 +329,8 @@ void chkMovingY() {
     set_ustep(Y, (currentVectorY->ctrlWord >> 10) & 0x0007);
     set_dir(Y, (currentVectorY->ctrlWord >> 13) & 1);
   }
-  CCP2_LAT = 0; // lower Y step pin to start next pulse
+  if (currentVectorY->ctrlWord & 0x03ff)
+    // this is not just a delay
+    CCP2_LAT = 0; // lower Y step pin to start next pulse
   setNextTimeY(currentVectorY->usecsPerPulse);
 }

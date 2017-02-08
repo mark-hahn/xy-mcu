@@ -39,30 +39,20 @@ void startTimer(){
   TMR1L = 0;
   TMR1H = 0;
   CCPR1H = 0;
-  CCPR1L = 0;
+  CCPR1L = 2;// first pulse happens 2 usecs after starting timer
   CCPR2H = 0;
-  CCPR2L = 0;
-  timeX.timeShort = 0;
-  timeY.timeShort = 0;
+  CCPR2L = 2;
   CCP1IF = 0;
   CCP2IF = 0;
   CCP1IE = 1;
   CCP2IE = 1;
-  CCP1CONbits.EN = 1;      // enable CCPs, start counting
+  CCP1CONbits.EN = 1; // enable CCPs
   CCP2CONbits.EN = 1;      
-  TMR1ON = 1;              // enable timer
+  TMR1ON = 1;         // start timer
 }
 
 void stopTimer(){
   TMR1ON = 0;              // stop timer
-  CCP1CONbits.EN = 0;      // disable CCPs, stop counting
-  CCP2CONbits.EN = 0;      
-  CCP1IE = 0;
-  CCP2IE = 0;
-  CCP1IF = 0;
-  CCP2IF = 0;
-  timeX.timeShort = 0;
-  timeY.timeShort = 0;
 }
 
 bool_t isTimerRunning() {

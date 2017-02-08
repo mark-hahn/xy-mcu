@@ -47,15 +47,15 @@ void interrupt isr(void) {
   if(CCP1IF) { // X timer compare int
     // CCP1 match and rising edge of X step pulse just happened
     // set next CCP value to match
-    // timeX must be set in event loop before next int
-    CCPR1L = timeX.timeBytes[0];
+    // timeX must be reset in event loop before next int
     CCPR1H = timeX.timeBytes[1];
+    CCPR1L = timeX.timeBytes[0];
     // int flag clr should be last to make sure nothing above re-triggered flag
     CCP1IF = 0;
   }
   if(CCP2IF) { // Y timer compare int (same comments above apply)
-    CCPR2L = timeY.timeBytes[0];
     CCPR2H = timeY.timeBytes[1];
+    CCPR2L = timeY.timeBytes[0];
     CCP2IF = 0;
   }
   // SPI just exchanged, get data in and set data out
@@ -63,7 +63,7 @@ void interrupt isr(void) {
     SSP1IF = 0;
     // spiByteFromCpu must be used in event loop before next SPI exchange
     spiByteFromCpu = SSP1BUF;
-    // spiByteToCpu must be set in event loop before next SPI exchange
+    // spiByteToCpu must be reset in event loop before next SPI exchange
     SSP1BUF = spiByteToCpu;
     // notify event loop
     spiIntHappened = TRUE;
