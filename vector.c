@@ -1,7 +1,7 @@
 
 #include <xc.h>
 #include <string.h>
-#include "vectors.h"
+#include "vector.h"
 #include "main.h"
 #include "spi.h"
 #include "mcu-cpu.h"
@@ -13,19 +13,13 @@ Vector vecBufY[VEC_BUF_SIZE];
 
 Vector *vecBufHeadX, *currentVectorX, *vecBufHeadY, *currentVectorY;
 
-void resetVectorsX() {
-  vecBufHeadX = currentVectorX = vecBufX;
-}
-void resetVectorsY() {
-  vecBufHeadY = currentVectorY = vecBufY;
-}
 void initVectors() {
-  resetVectorsX();
-  resetVectorsY();
+  vecBufHeadX = currentVectorX = vecBufX;
+  vecBufHeadY = currentVectorY = vecBufY;
 }
 
 // code is duplicated for X and Y because speed is more important than code size
-void handleNewSpiWord() {
+void handleSpiWordInput() {
   char topSpiByte = *((char *) &spiWordIn);
   if(errorCode) {
     if (topSpiByte == clearErrorCmd) 
@@ -34,7 +28,6 @@ void handleNewSpiWord() {
   }
   if ((topSpiByte & 0x80) != 0) { 
     // we have a new X vector
-    // after this copy, new bytes can start coming in
     memcpy(vecBufHeadX, &spiWordIn, sizeof(spiWordIn));
     if (++vecBufHeadX == currentVectorX + VEC_BUF_SIZE)
       vecBufHeadX = vecBufX;
@@ -44,7 +37,6 @@ void handleNewSpiWord() {
   }
   // we have a new Y vector
   if ((topSpiByte & 0x40) != 0) { 
-    // after this copy, new bytes can start coming in
     memcpy(vecBufHeadY, &spiWordIn, sizeof(spiWordIn));
     if (++vecBufHeadY == currentVectorY + VEC_BUF_SIZE)
       vecBufHeadY = vecBufY;
@@ -62,13 +54,13 @@ void handleNewSpiWord() {
 }
 
 bool_t vecBufXIsAtHighWater() {
-  signed char diff = (vecBufHeadX - currentVectorX);
+  int diff = (vecBufHeadX - currentVectorX);
   if (diff < 0 ) diff += VEC_BUF_SIZE;
   return (diff > VEC_BUF_HI_WATER);
 }
 
 bool_t vecBufYIsAtHighWater() {
-  signed char diff = (vecBufHeadY - currentVectorY);
+  int diff = (vecBufHeadY - currentVectorY);
   if(diff < 0) diff += VEC_BUF_SIZE;
   return (diff > VEC_BUF_HI_WATER);
 }

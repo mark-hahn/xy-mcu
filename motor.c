@@ -4,7 +4,7 @@
 #include "pins-b.h"
 #include "spi.h"
 #include "motor.h"
-#include "vectors.h"
+#include "vector.h"
 #include "event.h"
 #include "dac.h"
 #include "mcu-cpu.h"
@@ -27,6 +27,9 @@ bool_t isPulsingY = FALSE;
 
 unsigned int pulseCountX;
 unsigned int pulseCountY;
+
+bool_t movingDoneX;
+bool_t movingDoneY;
 
 
 ////////////  fixed constants  ///////////////
@@ -121,6 +124,8 @@ void handleMotorCmd(char *word) {
       isPulsingY = TRUE;
       pulseCountX = 0;
       pulseCountY = 0;
+      movingDoneX = FALSE;
+      movingDoneY = FALSE;
       // currentVector is already set by vectors added before this cmd
       set_ustep(X, (currentVectorX->ctrlWord >> 10) & 0x0007);
       set_dir(X, (currentVectorX->ctrlWord >> 13) & 1);
@@ -195,12 +200,10 @@ void chkHomingX() {
       // if Y is done then all of homing is done
       if(homingStateY == homed){
         newStatus(statusLocked);
-        stopTimer();
       }
     }
   }
 }
-
 // duplicate chkHoming code for speed, indexing into X and X variables takes time
 void chkHomingY() {
   // compare match and Y pulse just happened
@@ -243,7 +246,7 @@ void chkHomingY() {
 }
 
 void chkMovingX() {
-  // compare match and X pulse just happened
+  if(movingDoneX) return;
   // compare match and Y pulse just happened
   if(!LIMIT_SW_X)  { 
     // unexpected closed limit switch
@@ -261,10 +264,16 @@ void chkMovingX() {
       return;
     }
     if(currentVectorX->usecsPerPulse == 1) {
-      // done moving X
-      newStatus(statusLocked); 
-      stopTimer();
-      return;
+      movingDoneX = TRUE;
+      // skip past end vector marker
+      // note there may be vectors left over for next move command
+      if(++currentVectorX == vecBufX + VEC_BUF_SIZE) 
+         currentVectorX = vecBufX;      
+      if(movingDoneY) {
+        // done with all moving
+        newStatus(statusLocked); 
+        return;
+      }
     }
     set_ustep(X, (currentVectorX->ctrlWord >> 10) & 0x0007);
     set_dir(X, (currentVectorX->ctrlWord >> 13) & 1);
@@ -274,6 +283,7 @@ void chkMovingX() {
 }
 
 void chkMovingY() {
+  if(movingDoneY) return;
   // compare match and Y pulse just happened
   if(!LIMIT_SW_Y)  { 
     // unexpected closed limit switch
@@ -291,10 +301,16 @@ void chkMovingY() {
       return;
     }
     if(currentVectorY->usecsPerPulse == 1) {
-      // done moving
-      newStatus(statusLocked); 
-      stopTimer();
-      return;
+      movingDoneY = TRUE;
+      // skip past end vector marker
+      // note there may be vectors left over for next move command
+      if(++currentVectorY == vecBufY + VEC_BUF_SIZE) 
+         currentVectorY = vecBufY;      
+      if(movingDoneX) {
+        // done with all moving
+        newStatus(statusLocked); 
+        return;
+      }
     }
     set_ustep(Y, (currentVectorY->ctrlWord >> 10) & 0x0007);
     set_dir(Y, (currentVectorY->ctrlWord >> 13) & 1);

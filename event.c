@@ -5,7 +5,7 @@
 #include "pins-b.h"
 #include "main.h"
 #include "spi.h"
-#include "vectors.h"
+#include "vector.h"
 #include "motor.h"
 
 // called once from main.c and never returns
@@ -21,17 +21,17 @@ void eventLoop() {
       return;  
     }
     if(spiIntHappened) {
-      spiByteToCpu = 0; // in case chkStatusWord below is too late
       // an spi data exchange just happened
+      spiByteToCpu = 0; // in case chkStatusWord below is too late
       ((char *) &spiWordIn)[spiWordByteIdx] = spiByteFromCpu;
       if(spiWordByteIdx == 3) {
         // last byte of a complete 32-bit word (spiWordIn) arrived
-        handleNewSpiWord();
+        handleSpiWordInput();
         spiWordByteIdx == 0;
       }
       else
         spiWordByteIdx++;
-      chkStatusWord(); // sets spiByteToCpu
+      getOutputByte(); // sets spiByteToCpu
       spiIntHappened == FALSE;
     }
     // if error, no homing or moving happens until clearError cmd

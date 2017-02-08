@@ -10,6 +10,7 @@ Error errorCode;
 char errorAxis;
 
 void initMcuCpu() {
+  errorCode = 0;
   newStatus(statusUnlocked); 
 }
 
@@ -24,7 +25,7 @@ void newStatus(char newStatus) {
   mcu_status = newStatus; 
 }
 
-// axis is zero (X) when not specific to axis
+// axis is zero when not specific to axis
 void handleError(char axis, Error code) {
   newStatus(statusUnlocked);
   errorAxis = axis;

@@ -13,6 +13,6 @@ extern volatile bool_t spiIntHappened;
 extern char            nextRetWordType; // type of word to be returned next
 
 void initSpi();
-void chkStatusWord();
+void getOutputByte();
 
 #endif	/* SPI_H */

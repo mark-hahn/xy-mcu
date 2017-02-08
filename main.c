@@ -32,7 +32,7 @@
 #include "main.h"
 #include "mcu-cpu.h"
 #include "timer.h"
-#include "vectors.h"
+#include "vector.h"
 #include "spi.h"
 #include "motor.h"
 #include "event.h"
@@ -50,7 +50,6 @@ void interrupt isr(void) {
     // timeX must be set in event loop before next int
     CCPR1L = timeX.timeBytes[0];
     CCPR1H = timeX.timeBytes[1];
-    // if new compare value is already passed, then delay will be 65536 clks
     // int flag clr should be last to make sure nothing above re-triggered flag
     CCP1IF = 0;
   }
@@ -62,9 +61,9 @@ void interrupt isr(void) {
   // SPI just exchanged, get data in and set data out
   if(SSP1IF) {
     SSP1IF = 0;
-    // spi in must be set in event loop before next SPI exchange
+    // spiByteFromCpu must be used in event loop before next SPI exchange
     spiByteFromCpu = SSP1BUF;
-    // spi out must be set in event loop before next SPI exchange
+    // spiByteToCpu must be set in event loop before next SPI exchange
     SSP1BUF = spiByteToCpu;
     // notify event loop
     spiIntHappened = TRUE;

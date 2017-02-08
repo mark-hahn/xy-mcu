@@ -3,7 +3,7 @@
 #include "spi.h"
 #include "mcu-cpu.h"
 #include "pins-b.h"
-#include "vectors.h"
+#include "vector.h"
 #include "motor.h"
 
 
@@ -40,7 +40,7 @@ void initSpi() {
   SSP1CON1bits.SSPEN = 1; // enable SPI
 }
 
-void chkStatusWord() {
+void getOutputByte() {
   if(spiWordByteIdx == 0) {
     // cpuReq is only non-zero when cpu sends reqHomeDist command
     switch (nextRetWordType) {
