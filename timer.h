@@ -17,6 +17,8 @@ extern bool_t ccp2Matched;
 
 void initTimer();
 void startTimer();
+void stopTimerX();
+void stopTimerY();
 void stopTimer();
 void setNextTimeX(shortTime_t delta);
 void setNextTimeY(shortTime_t delta);

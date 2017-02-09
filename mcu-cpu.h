@@ -40,7 +40,7 @@ typedef enum Status {
 extern Status mcu_status;
 
 // immediate command 32-bit words -- top 2 bits are zero
-// commands codes are in top byte
+// command codes are in top byte
 // set homing speeds have microstep index in byte 2 and speed param in 3-4
 // setMotorCurrent has param in bottom 5 bits
 // all others have no params
@@ -54,21 +54,22 @@ typedef struct Vector {
   //   3 bits: ustep idx, 0 (full-step) to 5 (1/32 step)
   //  10 bits: pulse count
   unsigned int ctrlWord;
-  // a usecsPerPulse of 1 is a magic word for end of moving sequence
-  // i.e. there are no more vectors used until next move command
   shortTime_t usecsPerPulse;
 } Vector;
 
 // delta 32-bit words -- varying speed travel
-// follows an absolute vector with multiple commands per word
+// this word appears after an absolute vector with multiple vectors per word
 // it has same axis, dir, and micro-index as the previous vector
-// delta values are difference in usecsPerPulse
+// delta values are the difference in usecsPerPulse
 // there are 4, 3, and 2 deltas possible
 // the letter s below is delta sign, 1: minus, 0: plus
 // w: first delta, x: 2nd, y: 3rd, z: 4th
-// 4 delta format, 7 bits each: 11s0 wwww wwwx xxxx xxyy yyyy yzzz zzzz
-// 3 delta format, 9 bits each: 11s1 0www wwww wwxx xxxx xxxy yyyy yyyy
-// 2 delta format,  13-14 bits: 11s1 1www wwww wwww wwxx xxxx xxxx xxxx
+// 4 delta format,  7 bits each: 11s0 wwww wwwX XXXX XXyy yyyy yZZZ ZZZZ
+// 3 delta format,  9 bits each: 11s1 0www wwww wwXX XXXX XXXy yyyy yyyy
+// 2 delta format, 13 bits each: 11s1 10ww wwww wwww wwwX XXXX XXXX XXXX
+
+// the last word of a vector sequence is all 1's, 0xffffffff
+// when both axis have reached this marker then the move is finished
 
 // only means anything when error flag is set
 // and means nothing if error not axis-specific

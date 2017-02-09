@@ -6,8 +6,6 @@
  * TODO  Notes ...
  *   put directions in settings
  *   limit switch error when taking off from home?
- *   add delta vectors
- *     4*7, 3*9, 2*13
  */
 
 #define _XTAL_FREQ 32000000 

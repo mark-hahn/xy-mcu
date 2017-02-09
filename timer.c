@@ -51,6 +51,12 @@ void startTimer(){
   TMR1ON = 1;         // start timer
 }
 
+void stopTimerX() {
+  CCP1CONbits.EN = 0;
+}
+void stopTimerY() {
+  CCP2CONbits.EN = 0;
+}
 void stopTimer(){
   TMR1ON = 0;              // stop timer
 }

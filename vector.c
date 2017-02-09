@@ -26,8 +26,17 @@ void handleSpiWordInput() {
       handleMotorCmd((char *) &spiWordIn);
     return;
   }
+  if(topSpiByte == 0)
+    // cmd is zero means empty SPI word, ignore it
+    return;
+  
+  if(topSpiByte & 0xc0 == 0) {
+    handleMotorCmd((char *) &spiWordIn);  
+    return;
+  }
   if ((topSpiByte & 0x80) != 0) { 
-    // we have a new X vector
+    // we have a new absolute X vector
+    // add it to vecBufX
     memcpy(vecBufHeadX, &spiWordIn, sizeof(spiWordIn));
     if (++vecBufHeadX == currentVectorX + VEC_BUF_SIZE)
       vecBufHeadX = vecBufX;
@@ -35,8 +44,9 @@ void handleSpiWordInput() {
       handleError(X, errorVecBufOverflow);
     return;
   }
-  // we have a new Y vector
   if ((topSpiByte & 0x40) != 0) { 
+    // we have a new absolute Y vector
+    // add it to vecBufY
     memcpy(vecBufHeadY, &spiWordIn, sizeof(spiWordIn));
     if (++vecBufHeadY == currentVectorY + VEC_BUF_SIZE)
       vecBufHeadY = vecBufY;
@@ -45,12 +55,6 @@ void handleSpiWordInput() {
     }
     return;
   }
-  if(topSpiByte != 0) {
-    // we have a command not a vector
-    handleMotorCmd((char *) &spiWordIn);
-    return; 
-  }
-  // if cmd is zero means empty SPI word, ignore it
 }
 
 bool_t vecBufXIsAtHighWater() {

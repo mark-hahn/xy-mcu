@@ -12,6 +12,10 @@
 
 MotorSettings motorSettings;
 
+// used to keep total in deltas
+shortTime_t  usecsPerStepX;
+shortTime_t  usecsPerStepY;
+
 typedef enum AxisHomingState {
   headingHome,
   backingUpToHome,
@@ -28,7 +32,12 @@ char   deltaVecCountX;
 char   deltaVecCountY;
 unsigned int pulseCountX;
 unsigned int pulseCountY;
-
+unsigned int deltaX[4];
+signed char  deltaXSign;
+char         deltaXIdx;
+unsigned int deltaY[4];
+signed char  deltaYSign;
+char         deltaYIdx;
 bool_t movingDoneX;
 bool_t movingDoneY;
 
@@ -255,18 +264,72 @@ void chkHomingY() {
   }
 }
 
+void newDeltaX(unsigned long word) {
+  char topByte = *((char *) &word);
+  // see mcu-cpu.h for delta format description
+  // all deltas have the same sign
+  deltaXSign = ((topByte & 0x2) == 0 ? +1 : -1);
+  if ((topByte & 0x01) == 0) {
+    // we have a 4-delta word with 7 bits per delta
+    deltaX[0] = (word & 0x0000007f);
+    deltaX[1] = (word & 0x00003f80) >>  7;
+    deltaX[2] = (word & 0x001fc000) >> 14;
+    deltaX[3] = (word & 0x0fe00000) >> 21;
+    deltaXIdx = 4;  // deltas are indexed backwards and +1
+  }
+  if ((word & 0x01800000) == 0x01000000) {
+    // we have a 3-delta word with 9 bits per delta
+    deltaX[0] = (word & 0x000001ff);
+    deltaX[1] = (word & 0x0003fe00) >>  9;
+    deltaX[2] = (word & 0x07fc0000) >> 18;
+    deltaXIdx = 3;
+  }
+  if ((word & 0x01c00000) == 0x01800000) {
+    // we have a 2-delta word with 13 and 14 bits per delta
+    deltaX[0] = (word & 0x00003fff);
+    deltaX[1] = (word & 0x07ffc000) >> 14;
+    deltaXIdx = 2;
+  }
+}
+
+void newDeltaY(unsigned long word) {
+  char topByte = *((char *) &word);
+  // see mcu-cpu.h for delta format description
+  // all deltas have the same sign
+  deltaYSign = ((topByte & 0x2) == 0 ? +1 : -1);
+  if ((topByte & 0x01) == 0) {
+    // we have a 4-delta word with 7 bits per delta
+    deltaY[0] = (word & 0x0000007f);
+    deltaY[1] = (word & 0x00003f80) >>  7;
+    deltaY[2] = (word & 0x001fc000) >> 14;
+    deltaY[3] = (word & 0x0fe00000) >> 21;
+    deltaYIdx = 4;  // deltas are indexed backwards and +1
+  }
+  if ((word & 0x01800000) == 0x01000000) {
+    // we have a 3-delta word with 9 bits per delta
+    deltaY[0] = (word & 0x000001ff);
+    deltaY[1] = (word & 0x0003fe00) >>  9;
+    deltaY[2] = (word & 0x07fc0000) >> 18;
+    deltaYIdx = 3;
+  }
+  if ((word & 0x01c00000) == 0x01800000) {
+    // we have a 2-delta word with 13 and 14 bits per delta
+    deltaY[0] = (word & 0x00003fff);
+    deltaY[1] = (word & 0x07ffc000) >> 14;
+    deltaYIdx = 2;
+  }
+}
+
 void chkMovingX() {
-  if(movingDoneX) return;
   // compare match and Y pulse just happened
   if(!LIMIT_SW_X)  { 
     // unexpected closed limit switch
     handleError(X, errorLimit);
     return;
   }
-  if ((currentVectorX->ctrlWord & 0xc000 == 0x8000 ||
-       currentVectorX->ctrlWord & 0xc000 == 0x4000) &&  //deltaVecCountX
-       (++pulseCountX >= (currentVectorX->ctrlWord & 0x03ff)) {
-    // we are done with this vector, start new one
+  if (deltaXIdx ? (--deltaXIdx == 0) : 
+                  (++pulseCountX >= (currentVectorX->ctrlWord & 0x03ff))) {
+    // we are done with this vector, get a new one
     pulseCountX = 0;
     if(++currentVectorX == vecBufX + VEC_BUF_SIZE) 
          currentVectorX = vecBufX;
@@ -275,10 +338,16 @@ void chkMovingX() {
       handleError(X, errorVecBufUnderflow);
       return;
     }
-    if(currentVectorX->usecsPerPulse == 1) {
+    unsigned long word = *((unsigned long *)&currentVectorX);
+    // we now have a new word
+    if (currentVectorX->ctrlWord & 0xc000 == 0xc000)
+      newDeltaX(word);
+    
+    else if(word == 0xffffffff) {
+      stopTimerX();
       movingDoneX = TRUE;
       // skip past end vector marker
-      // note there may be vectors left over for next move command
+      // there may be vectors left over for next move command
       if(++currentVectorX == vecBufX + VEC_BUF_SIZE) 
          currentVectorX = vecBufX;      
       if(movingDoneY) {
@@ -287,25 +356,34 @@ void chkMovingX() {
         return;
       }
     }
+  }
+  if(deltaXIdx) {
+    CCP1_LAT = 0;  // deltas always pulse
+    // leave ustep and dir still set to last word
+    // apply delta
+    usecsPerStepX += deltaXSign * ((int) deltaX[deltaXIdx-1]);
+  } else {
+    if (currentVectorX->ctrlWord & 0x03ff)
+      // this is not just a delay
+      CCP1_LAT = 0;
+    // set up absolute vector
     set_ustep(X, (currentVectorX->ctrlWord >> 10) & 0x0007);
     set_dir(X, (currentVectorX->ctrlWord >> 13) & 1);
+    usecsPerStepX = currentVectorX->usecsPerPulse;
   }
-  if (currentVectorX->ctrlWord & 0x03ff)
-    // this is not just a delay
-    CCP1_LAT = 0; // lower X step pin to start next pulse
-  setNextTimeX(currentVectorX->usecsPerPulse);
+  setNextTimeX(usecsPerStepX);
 }
 
 void chkMovingY() {
-  if(movingDoneY) return;
   // compare match and Y pulse just happened
   if(!LIMIT_SW_Y)  { 
     // unexpected closed limit switch
     handleError(Y, errorLimit);
     return;
   }
-  if(++pulseCountY >= (currentVectorY->ctrlWord & 0x03ff)) {
-    // we are done with this vector, start new one
+  if (deltaYIdx ? (--deltaYIdx == 0) : 
+                  (++pulseCountY >= (currentVectorY->ctrlWord & 0x03ff))) {
+    // we are done with this vector, get a new one
     pulseCountY = 0;
     if(++currentVectorY == vecBufY + VEC_BUF_SIZE) 
          currentVectorY = vecBufY;
@@ -314,23 +392,39 @@ void chkMovingY() {
       handleError(Y, errorVecBufUnderflow);
       return;
     }
-    if(currentVectorY->usecsPerPulse == 1) {
+    unsigned long word = *((unsigned long *)&currentVectorY);
+    // we now have a new word
+    if (currentVectorY->ctrlWord & 0xc000 == 0xc000)
+      newDeltaY(word);
+    
+    else if(word == 0xffffffff) {
+      stopTimerY();
       movingDoneY = TRUE;
       // skip past end vector marker
-      // note there may be vectors left over for next move command
+      // there may be vectors left over for next move command
       if(++currentVectorY == vecBufY + VEC_BUF_SIZE) 
          currentVectorY = vecBufY;      
-      if(movingDoneX) {
+      if(movingDoneY) {
         // done with all moving
         newStatus(statusLocked); 
         return;
       }
     }
+  }
+  if(deltaYIdx) {
+    CCP2_LAT = 0;  // deltas always pulse
+    // leave ustep and dir still set to last word
+    // apply delta
+    usecsPerStepY += deltaYSign * ((int) deltaY[deltaYIdx-1]);
+  } else {
+    if (currentVectorY->ctrlWord & 0x03ff)
+      // this is not just a delay
+      CCP2_LAT = 0;
+    // set up absolute vector
     set_ustep(Y, (currentVectorY->ctrlWord >> 10) & 0x0007);
     set_dir(Y, (currentVectorY->ctrlWord >> 13) & 1);
+    usecsPerStepY = currentVectorY->usecsPerPulse;
   }
-  if (currentVectorY->ctrlWord & 0x03ff)
-    // this is not just a delay
-    CCP2_LAT = 0; // lower Y step pin to start next pulse
-  setNextTimeY(currentVectorY->usecsPerPulse);
+  setNextTimeY(usecsPerStepY);
 }
+
