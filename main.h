@@ -4,7 +4,6 @@
 
 /*
  * TODO  Notes ...
- *   put directions in settings
  *   limit switch error when taking off from home?
  */
 

@@ -14,19 +14,18 @@
 //     http://techref.massmind.org/techref/io/stepper/estimate.htm
 //   assuming 1A, 2.6mH, 12V, and 200 steps per rev; min is 433 usecs full step
   
-// vector data has no separate byte for command
-// either of top two bits of first byte means vector cmd
-// otherwise it is one of these commands
+// a command is the top byte of a command word, top 2 bits must be zero
 typedef enum Cmd {
   // zero is not used so blank SPI words are ignored
-  resetCmd             = 1, // clear state and hold reset on motors, unlocking them
-  homeCmd              = 2, // goes home using no vectors, and saves homing distance
-  moveCmd              = 3, // enough vectors need to be loaded to start
-  setHomingSpeed       = 4, // set homeUIdx & homeUsecPerPulse settings
-  setHomingBackupSpeed = 5, // set homeBkupUIdx & homeBkupUsecPerPulse settings
-  setMotorCurrent      = 6, // set motorCurrent (0 to 31) immediately
-  reqHomeDist          = 7, // return home distance, not status, next 2 words
-  clearErrorCmd        = 8  // on error, no activity until this command
+  resetCmd             =  1, // clear state and hold reset on motors, unlocking them
+  homeCmd              =  2, // goes home using no vectors, and saves homing distance
+  moveCmd              =  3, // enough vectors need to be loaded to start
+  reqHomeDist          =  4, // return home distance, not status, next 2 words
+  clearErrorCmd        =  5,  // on error, no activity until this command
+  setHomingSpeed       =  6, // set homeUIdx & homeUsecPerPulse settings
+  setHomingBackupSpeed =  7, // set homeBkupUIdx & homeBkupUsecPerPulse settings
+  setMotorCurrent      =  8, // set motorCurrent (0 to 31) immediately
+  setDirectionLevelXY  =  9  // set direction for each motor
 } Cmd;   
 
 // general mcu states

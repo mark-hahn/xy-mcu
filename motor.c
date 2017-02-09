@@ -57,16 +57,21 @@ char ms3PerIdx[6] = { 0, 0, 0, 0, 1, 1}; // mode 2
 
 ////////////////  convenience macros  /////////////
 
+#define set_reset(axis, val) if (axis) RESET_Y_LAT = (val); else RESET_X_LAT = (val)
 #define set_ms1(axis, val)   if (axis) MS1_Y_LAT   = (val); else MS1_X_LAT   = (val)
 #define set_ms2(axis, val)   if (axis) MS2_Y_LAT   = (val); else MS2_X_LAT   = (val)
 #define set_ms3(axis, val)   if (axis) MS3_Y_LAT   = (val); else MS3_X_LAT   = (val)
-#define set_reset(axis, val) if (axis) RESET_Y_LAT = (val); else RESET_X_LAT = (val)
-#define set_dir(axis, val)   if (axis) DIR_Y_LAT   = (val); else DIR_X_LAT   = (val)
-
 #define set_ustep(axis, ustepIdx)     \
   set_ms1(axis, ms1PerIdx[ustepIdx]); \
   set_ms2(axis, ms2PerIdx[ustepIdx]); \
   set_ms3(axis, ms3PerIdx[ustepIdx])
+
+void set_dir(char axis, char val) {
+  if(axis == 0)
+    DIR_X_LAT = (motorSettings.directionLevelXY >> 1) ^ val;
+  else
+    DIR_Y_LAT = (motorSettings.directionLevelXY &  1) ^ val;
+}
 
 
 ////////////////  public functions  /////////////
@@ -77,6 +82,7 @@ void initMotor() {
   motorSettings.homeUIdx             = defHomeUIdx;
   motorSettings.homeBkupUsecPerPulse = defHomeBkupUsecPerPulse;
   motorSettings.homeBkupUIdx         = defHomeBkupUIdx;
+  motorSettings.directionLevelXY     = defDirectionLevelXY;
   set_dac(defMotorCurrent);
 }
 
@@ -170,6 +176,11 @@ void handleMotorCmd(char *word) {
     case setMotorCurrent: 
       // middle two bytes are empty
       set_dac(word[3]);
+      return;
+      
+    case setDirectionLevelXY: 
+      // d1 is X and d0 is Y
+      motorSettings.directionLevelXY = word[3];
       return;
       
     case reqHomeDist:

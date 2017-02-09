@@ -9,6 +9,7 @@
 #define defHomeBkupUsecPerPulse 62500 // 0.1 mm/sec (.00625 / .0625)
 #define defHomeBkupUIdx             5 // .00625 mm/pulse
 #define defMotorCurrent            20 // 20 -> 1.5 amp, 26 -> 2 amp
+#define defDirectionLevelXY         0 // both directions
 
 #define debounceAndSettlingTime 50000 // debounce and time to reverse, 50 ms
 
@@ -17,6 +18,7 @@ typedef struct MotorSettings {
   shortTime_t homeUsecPerPulse;
   char homeBkupUIdx;
   shortTime_t homeBkupUsecPerPulse;
+  char directionLevelXY;  // d1 is X, d0 is Y
 } MotorSettings;
 
 extern MotorSettings motorSettings;
