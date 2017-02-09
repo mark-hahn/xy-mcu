@@ -18,14 +18,15 @@
 typedef enum Cmd {
   // zero is not used so blank SPI words are ignored
   resetCmd             =  1, // clear state and hold reset on motors, unlocking them
-  homeCmd              =  2, // goes home using no vectors, and saves homing distance
-  moveCmd              =  3, // enough vectors need to be loaded to start
-  reqHomeDist          =  4, // return home distance, not status, next 2 words
-  clearErrorCmd        =  5,  // on error, no activity until this command
-  setHomingSpeed       =  6, // set homeUIdx & homeUsecPerPulse settings
-  setHomingBackupSpeed =  7, // set homeBkupUIdx & homeBkupUsecPerPulse settings
-  setMotorCurrent      =  8, // set motorCurrent (0 to 31) immediately
-  setDirectionLevelXY  =  9  // set direction for each motor
+  idleCmd              =  2, // abort any commands, clear vec buffers
+  homeCmd              =  3, // goes home using no vectors, and saves homing distance
+  moveCmd              =  4, // enough vectors need to be loaded to start
+  reqHomeDist          =  5, // return home distance, not status, next 2 words
+  clearErrorCmd        =  6, // on error, no activity until this command
+  setHomingSpeed       =  7, // set homeUIdx & homeUsecPerPulse settings
+  setHomingBackupSpeed =  8, // set homeBkupUIdx & homeBkupUsecPerPulse settings
+  setMotorCurrent      =  9, // set motorCurrent (0 to 31) immediately
+  setDirectionLevelXY  = 10  // set direction for each motor
 } Cmd;   
 
 // general mcu states

@@ -19,9 +19,7 @@ void newStatus(char newStatus) {
   // timer counting and ints off until move or homing command
   stopTimer();
   if (errorCode) return;
-  bool_t resetHigh = (newStatus != statusUnlocked);
-  motorReset(X, resetHigh);
-  motorReset(Y, resetHigh);
+  set_resets(newStatus != statusUnlocked);
   mcu_status = newStatus; 
 }
 

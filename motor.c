@@ -56,16 +56,20 @@ char ms2PerIdx[6] = { 0, 0, 1, 1, 0, 0}; // mode 1
 char ms3PerIdx[6] = { 0, 0, 0, 0, 1, 1}; // mode 2
 
 
-////////////////  convenience macros  /////////////
+////////////////  convenience functions  /////////////
 
-#define set_reset(axis, val) if (axis) RESET_Y_LAT = (val); else RESET_X_LAT = (val)
-#define set_ms1(axis, val)   if (axis) MS1_Y_LAT   = (val); else MS1_X_LAT   = (val)
-#define set_ms2(axis, val)   if (axis) MS2_Y_LAT   = (val); else MS2_X_LAT   = (val)
-#define set_ms3(axis, val)   if (axis) MS3_Y_LAT   = (val); else MS3_X_LAT   = (val)
-#define set_ustep(axis, ustepIdx)     \
-  set_ms1(axis, ms1PerIdx[ustepIdx]); \
-  set_ms2(axis, ms2PerIdx[ustepIdx]); \
-  set_ms3(axis, ms3PerIdx[ustepIdx])
+void set_ustep(char axis, char ustepIdx) {
+  if(axis == 0){
+    MS1_X_LAT = ms1PerIdx[ustepIdx];
+    MS2_X_LAT = ms2PerIdx[ustepIdx];
+    MS3_X_LAT = ms3PerIdx[ustepIdx];
+  }
+  else {
+    MS1_Y_LAT = ms1PerIdx[ustepIdx];
+    MS2_Y_LAT = ms2PerIdx[ustepIdx];
+    MS3_Y_LAT = ms3PerIdx[ustepIdx];
+  }
+}
 
 void set_dir(char axis, char val) {
   if(axis == 0)
@@ -77,7 +81,13 @@ void set_dir(char axis, char val) {
 
 ////////////////  public functions  /////////////
 
+void set_resets(bool_t resetHigh) {
+  RESET_X_LAT = resetHigh;
+  RESET_Y_LAT = resetHigh; 
+}
+
 void initMotor() {
+  set_resets(0);
   // set default settings
   motorSettings.homeUsecPerPulse     = defHomeUsecPerPulse;
   motorSettings.homeUIdx             = defHomeUIdx;
@@ -87,19 +97,21 @@ void initMotor() {
   set_dac(defMotorCurrent);
 }
 
-void motorReset(char axis, bool_t resetHigh) {
-  set_reset(X, resetHigh);
-  set_reset(Y, resetHigh);
-}
-
 void handleMotorCmd(char *word) {
   // word[0] is cmd code byte
   switch (word[0]) {
     case resetCmd: 
-      // this also stops timer and sets motor reset pins
+      // this stops timer and activates motor reset pins
       newStatus(statusUnlocked); 
       return;
       
+    case idleCmd:
+      // this stops timer but avoids changing reset pins
+      if(RESET_X_LAT) newStatus(statusLocked);
+      else            newStatus(statusUnlocked);
+      initVectors();
+      return;
+              
     case homeCmd:  
       // zero counter and time state, will start again below
       stopTimer(); 

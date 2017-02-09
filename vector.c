@@ -24,6 +24,7 @@ void handleSpiWordInput() {
   if(errorCode) {
     if (topSpiByte == clearErrorCmd) 
       handleMotorCmd((char *) &spiWordIn);
+    // all other input is ignored when error
     return;
   }
   if(topSpiByte == 0)

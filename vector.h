@@ -17,8 +17,6 @@ extern Vector *vecBufHeadY;
 extern Vector *currentVectorY;
 
 void initVectors();
-void resetVectorsX();
-void resetVectorsY();
 void handleSpiWordInput();
 bool_t vecBufXIsAtHighWater();
 bool_t vecBufYIsAtHighWater();

@@ -29,7 +29,7 @@ extern bool_t isMovingX;  // we are either homing or moving
 extern bool_t isMovingY;
 
 void initMotor();
-void motorReset(char axis, bool_t resetHigh);
+void set_resets(bool_t resetHigh);
 void handleMotorCmd(char *word);
 void chkHomingX();
 void chkHomingY();
