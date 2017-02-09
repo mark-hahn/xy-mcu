@@ -28,6 +28,8 @@ pos_t  homingDistX;
 pos_t  homingDistY;
 bool_t isMovingX = FALSE;
 bool_t isMovingY = FALSE;
+bool_t firstVecX;
+bool_t firstVecY;
 char   deltaVecCountX;
 char   deltaVecCountY;
 unsigned int pulseCountX;
@@ -40,7 +42,6 @@ signed char  deltaYSign;
 char         deltaYIdx;
 bool_t movingDoneX;
 bool_t movingDoneY;
-
 
 ////////////  fixed constants  ///////////////
 
@@ -145,6 +146,8 @@ void handleMotorCmd(char *word) {
       deltaVecCountY = 0;
       movingDoneX = FALSE;
       movingDoneY = FALSE;
+      firstVecX = TRUE;
+      firstVecY = TRUE;
       // currentVector is already set by vectors added before this cmd
       set_ustep(X, (currentVectorX->ctrlWord >> 10) & 0x0007);
       set_dir(X, (currentVectorX->ctrlWord >> 13) & 1);
@@ -333,7 +336,7 @@ void newDeltaY(unsigned long word) {
 
 void chkMovingX() {
   // compare match and Y pulse just happened
-  if(!LIMIT_SW_X)  { 
+  if(!firstVecX && !LIMIT_SW_X)  { 
     // unexpected closed limit switch
     handleError(X, errorLimit);
     return;
@@ -349,8 +352,8 @@ void chkMovingX() {
       handleError(X, errorVecBufUnderflow);
       return;
     }
-    unsigned long word = *((unsigned long *)&currentVectorX);
     // we now have a new word
+    unsigned long word = *((unsigned long *)&currentVectorX);
     if (currentVectorX->ctrlWord & 0xc000 == 0xc000)
       newDeltaX(word);
     
@@ -374,9 +377,11 @@ void chkMovingX() {
     // apply delta
     usecsPerStepX += deltaXSign * ((int) deltaX[deltaXIdx-1]);
   } else {
-    if (currentVectorX->ctrlWord & 0x03ff)
+    if (currentVectorX->ctrlWord & 0x03ff) {
       // this is not just a delay
       CCP1_LAT = 0;
+      firstVecX = FALSE;
+    }
     // set up absolute vector
     set_ustep(X, (currentVectorX->ctrlWord >> 10) & 0x0007);
     set_dir(X, (currentVectorX->ctrlWord >> 13) & 1);
@@ -387,7 +392,7 @@ void chkMovingX() {
 
 void chkMovingY() {
   // compare match and Y pulse just happened
-  if(!LIMIT_SW_Y)  { 
+  if(!firstVecY && !LIMIT_SW_Y)  { 
     // unexpected closed limit switch
     handleError(Y, errorLimit);
     return;
@@ -403,8 +408,8 @@ void chkMovingY() {
       handleError(Y, errorVecBufUnderflow);
       return;
     }
-    unsigned long word = *((unsigned long *)&currentVectorY);
     // we now have a new word
+    unsigned long word = *((unsigned long *)&currentVectorY);
     if (currentVectorY->ctrlWord & 0xc000 == 0xc000)
       newDeltaY(word);
     
@@ -428,9 +433,11 @@ void chkMovingY() {
     // apply delta
     usecsPerStepY += deltaYSign * ((int) deltaY[deltaYIdx-1]);
   } else {
-    if (currentVectorY->ctrlWord & 0x03ff)
+    if (currentVectorY->ctrlWord & 0x03ff) {
+      firstVecY = FALSE;
       // this is not just a delay
       CCP2_LAT = 0;
+    }
     // set up absolute vector
     set_ustep(Y, (currentVectorY->ctrlWord >> 10) & 0x0007);
     set_dir(Y, (currentVectorY->ctrlWord >> 13) & 1);

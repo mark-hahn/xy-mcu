@@ -2,11 +2,6 @@
 #ifndef MAIN_H
 #define	MAIN_H
 
-/*
- * TODO  Notes ...
- *   limit switch error when taking off from home?
- */
-
 #define _XTAL_FREQ 32000000 
 
 #define X 0  /* idx for X axis */
@@ -26,9 +21,6 @@ typedef unsigned int shortTime_t; // 16 bits unsigned
 // position, unit: 0.00625 mm, 1/32 step distance (smallest microstep)
 // max position is +- 52 meters
 typedef signed short long pos_t; // 24 bits signed
-
-// direction, +1 or -1
-typedef signed char dir_t;  // 8 bits signed
 
 #endif	/* MAIN_H */
 
