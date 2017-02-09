@@ -61,7 +61,7 @@ typedef struct Vector {
 // this word appears after an absolute vector with multiple vectors per word
 // it has same axis, dir, and micro-index as the previous vector
 // delta values are the difference in usecsPerPulse
-// there are 4, 3, and 2 deltas possible
+// there are 4, 3, and 2 deltas possible per word
 // the letter s below is delta sign, 1: minus, 0: plus
 // w: first delta, x: 2nd, y: 3rd, z: 4th
 // 4 delta format,  7 bits each: 11s0 wwww wwwX XXXX XXyy yyyy yZZZ ZZZZ
@@ -71,7 +71,7 @@ typedef struct Vector {
 // the last word of a vector sequence is all 1's, 0xffffffff
 // when both axis have reached this marker then the move is finished
 
-// only means anything when error flag is set
+// errorAxis only means anything when error flag is set
 // and means nothing if error not axis-specific
 extern char errorAxis;
 
@@ -89,14 +89,15 @@ typedef enum Error {
 // this is non-zero if, and only if, error flag status bit is set
 extern Error errorCode;
 
+// returnWordType_t is in the top nibble of the first byte
 enum returnWordType_t {
   retypeNone      = 0x00, // whole word of zeros may happen, ignore them
   retypeStatus    = 0x10,
-  retypeHomeDistX = 0x20,
+  retypeHomeDistX = 0x20, // this type of return has param in bottom 3 bytes
   retypeHomeDistY = 0x30
 } returnWordType_t;
 
-// returnWordType_t (above) is in top nibble
+// retFlags is in the bottom nibble of the first byte
 // all of these flags are returned on every word to CPU
 enum retFlags {
   retflagBufXHighWater = 0x08,
@@ -106,6 +107,7 @@ enum retFlags {
 };
 
 // this is the status word returned when returnWordType is retypeStatus
+// this is always returned except after reqHomeDist cmd
 typedef struct ReturnStatus {
   char flags;
   char status;

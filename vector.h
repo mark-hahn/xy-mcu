@@ -6,7 +6,7 @@
 #include "mcu-cpu.h"
 
 #define VEC_BUF_SIZE     100 // number of 32-bit vector cmds buffered per axis
-#define VEC_BUF_HI_WATER  90 // flow control limit
+#define VEC_BUF_HI_WATER  95 // flow control limit
 
 extern Vector vecBufX[VEC_BUF_SIZE];
 extern Vector vecBufY[VEC_BUF_SIZE];

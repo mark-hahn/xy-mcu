@@ -4,11 +4,10 @@
 #include "main.h"
 #include "pins-b.h"
 
-// CCP times are set between timer interrupts for quick use in int
+// these are loaded into CCP compare regs in interrupt
 time_ut timeX;
 time_ut timeY;
 
-// this starts rising step edges and interrupts which never end
 void initTimer() {
   T1CLKbits.CS   = 1;      // Fosc/4, 8 MHz before prescale
   T1CONbits.CKPS = 3;      // 11 = 1:8 prescale value, 1 MHz
@@ -31,7 +30,7 @@ void initTimer() {
 //  CCPTMRS1.C2TSEL = 0;   
  // CCP2  not enabled until startTimer()
   
-  stopTimer();             // disable ints until move or homing cmd
+  stopTimer();  // disable counting and ints until first home cmd
 }
 
 void startTimer(){
@@ -39,9 +38,9 @@ void startTimer(){
   TMR1L = 0;
   TMR1H = 0;
   CCPR1H = 0;
-  CCPR1L = 2;// first pulse happens 2 usecs after starting timer
+  CCPR1L = 2; // first X pulse happens 2 usecs after starting timer
   CCPR2H = 0;
-  CCPR2L = 2;
+  CCPR2L = 2; // first Y pulse happens 2 usecs after starting timer
   CCP1IF = 0;
   CCP2IF = 0;
   CCP1IE = 1;

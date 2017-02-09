@@ -130,10 +130,8 @@ void handleMotorCmd(char *word) {
       // this also stops timer and clears motor reset pins
       newStatus(statusHoming);
       startTimer();
-      setNextTimeX(defHomeUsecPerPulse);      
-      setNextTimeY(defHomeUsecPerPulse);      
      return;
-      
+       
     case moveCmd:  
       if(mcu_status == statusUnlocked) {
         handleError(0, errorMoveWhenUnlocked);
@@ -173,8 +171,6 @@ void handleMotorCmd(char *word) {
         CCP2_LAT = 0; // lower Y step pin to start next pulse
       timeX.timeShort = 2;      
       timeY.timeShort = 2;
-      setNextTimeX(currentVectorX->usecsPerPulse);
-      setNextTimeY(currentVectorY->usecsPerPulse);
       startTimer();  // this issues first pulse edge after 2 usecs
       return;
       
@@ -194,6 +190,7 @@ void handleMotorCmd(char *word) {
       return;
       
     case setDirectionLevelXY: 
+      // middle two bytes are empty
       // d1 is X and d0 is Y
       motorSettings.directionLevelXY = word[3];
       return;
@@ -382,10 +379,10 @@ void chkMovingX() {
         return;
       }
     }
-  }
+  } 
   if(deltaXIdx) {
     CCP1_LAT = 0;  // deltas always pulse
-    // leave ustep and dir still set to last word
+    // leave ustep and dir pins still set to last word
     // apply delta
     usecsPerStepX += deltaXSign * ((int) deltaX[deltaXIdx-1]);
   } else {

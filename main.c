@@ -42,7 +42,7 @@ volatile bool_t spiIntHappened = FALSE;
 
 // global interrupt routine
 // reloading timer compare values is most urgent, so first
-// SPI is highest priority in event loop and lowest in interrupt routine
+// SPI is highest priority in event loop and lowest here
 void interrupt isr(void) {
   if(CCP1IF) { // X timer compare int
     // CCP1 match and rising edge of X step pulse just happened

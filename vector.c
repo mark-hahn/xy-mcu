@@ -1,6 +1,5 @@
 
 #include <xc.h>
-#include <string.h>
 #include "vector.h"
 #include "main.h"
 #include "spi.h"
@@ -18,7 +17,6 @@ void initVectors() {
   vecBufHeadY = currentVectorY = vecBufY;
 }
 
-// code is duplicated for X and Y because speed is more important than code size
 void handleSpiWordInput() {
   char topSpiByte = *((char *) &spiWordIn);
   if(errorCode) {
@@ -36,24 +34,23 @@ void handleSpiWordInput() {
     return;
   }
   if ((topSpiByte & 0x80) != 0) { 
-    // we have a new absolute X vector
+    // we have a new non-command X vector
     // add it to vecBufX
-    memcpy(vecBufHeadX, &spiWordIn, sizeof(spiWordIn));
-    if (++vecBufHeadX == currentVectorX + VEC_BUF_SIZE)
+    *((unsigned long *)vecBufHeadX) = spiWordIn;
+    if (++vecBufHeadX == vecBufY + VEC_BUF_SIZE)
       vecBufHeadX = vecBufX;
     if (vecBufHeadX == currentVectorX)
       handleError(X, errorVecBufOverflow);
     return;
   }
   if ((topSpiByte & 0x40) != 0) { 
-    // we have a new absolute Y vector
+    // we have a new non-command Y vector
     // add it to vecBufY
-    memcpy(vecBufHeadY, &spiWordIn, sizeof(spiWordIn));
-    if (++vecBufHeadY == currentVectorY + VEC_BUF_SIZE)
+    *((unsigned long *)vecBufHeadY) = spiWordIn;
+    if (++vecBufHeadY == vecBufY + VEC_BUF_SIZE)
       vecBufHeadY = vecBufY;
-    if (vecBufHeadY == currentVectorY) {
+    if (vecBufHeadY == currentVectorY)
       handleError(Y, errorVecBufOverflow);
-    }
     return;
   }
 }
@@ -61,11 +58,11 @@ void handleSpiWordInput() {
 bool_t vecBufXIsAtHighWater() {
   int diff = (vecBufHeadX - currentVectorX);
   if (diff < 0 ) diff += VEC_BUF_SIZE;
-  return (diff > VEC_BUF_HI_WATER);
+  return (diff >= VEC_BUF_HI_WATER);
 }
 
 bool_t vecBufYIsAtHighWater() {
   int diff = (vecBufHeadY - currentVectorY);
   if(diff < 0) diff += VEC_BUF_SIZE;
-  return (diff > VEC_BUF_HI_WATER);
+  return (diff >= VEC_BUF_HI_WATER);
 }
