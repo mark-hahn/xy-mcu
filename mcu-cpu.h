@@ -47,14 +47,15 @@ extern Status mcu_status;
 
 // absolute vector 32-bit words -- constant speed travel
 typedef struct Vector {
+  shortTime_t usecsPerPulse; // LSInt
   // absolute ctrlWord has five bit fields, from msb to lsb ...
   //   1 bit: axis X vector, both X and Y clr means command, not vector
   //   1 bit: axis Y vector, both X and Y set means delta, not absolute, vector
   //   1 bit: dir (0: backwards, 1: forwards)
   //   3 bits: ustep idx, 0 (full-step) to 5 (1/32 step)
   //  10 bits: pulse count
+  // 84101000 X fwd uidx=1 16 pulses, 4.1 ms
   unsigned int ctrlWord;
-  shortTime_t usecsPerPulse;
 } Vector;
 
 // delta 32-bit words -- varying speed travel

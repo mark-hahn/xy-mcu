@@ -18,7 +18,7 @@ void initVectors() {
 }
 
 void handleSpiWordInput() {
-  char topSpiByte = *((char *) &spiWordIn);
+  char topSpiByte = ((char *) &spiWordIn)[3];
   if(errorCode) {
     if (topSpiByte == clearErrorCmd) 
       handleMotorCmd((char *) &spiWordIn);
