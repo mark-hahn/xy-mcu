@@ -363,7 +363,7 @@ void chkMovingX() {
     }
     // we now have a new word
     unsigned long word = *((unsigned long *)&currentVectorX);
-    if (currentVectorX->ctrlWord & 0xc000 == 0xc000)
+    if (*((char *)&word) & 0xc0 == 0xc0)
       newDeltaX(word);
     
     else if(word == 0xffffffff) {
@@ -388,6 +388,7 @@ void chkMovingX() {
   } else {
     if (currentVectorX->ctrlWord & 0x03ff) {
       // this is not just a delay
+      // set step to pulse
       CCP1_LAT = 0;
       firstVecX = FALSE;
     }

@@ -13,6 +13,10 @@
 //   for max stepper speed calculator see ...
 //     http://techref.massmind.org/techref/io/stepper/estimate.htm
 //   assuming 1A, 2.6mH, 12V, and 200 steps per rev; min is 433 usecs full step
+
+// words are aligned by 4 zero bytes in a row, the first non-zero byte after any 
+// number of zeros is the first byte of a word.  
+// This sequence may be sent at any time.
   
 // a command is the top byte of a command word, top 2 bits must be zero
 typedef enum Cmd {
@@ -47,14 +51,15 @@ extern Status mcu_status;
 
 // absolute vector 32-bit words -- constant speed travel
 typedef struct Vector {
+  shortTime_t usecsPerPulse; // LSInt
   // absolute ctrlWord has five bit fields, from msb to lsb ...
   //   1 bit: axis X vector, both X and Y clr means command, not vector
   //   1 bit: axis Y vector, both X and Y set means delta, not absolute, vector
   //   1 bit: dir (0: backwards, 1: forwards)
   //   3 bits: ustep idx, 0 (full-step) to 5 (1/32 step)
   //  10 bits: pulse count
+  // 84101000 X fwd uidx=1 16 pulses, 4.1 ms
   unsigned int ctrlWord;
-  shortTime_t usecsPerPulse;
 } Vector;
 
 // delta 32-bit words -- varying speed travel
@@ -68,7 +73,8 @@ typedef struct Vector {
 // 3 delta format,  9 bits each: 11s1 0www wwww wwXX XXXX XXXy yyyy yyyy
 // 2 delta format, 13 bits each: 11s1 10ww wwww wwww wwwX XXXX XXXX XXXX
 
-// the last word of a vector sequence is all 1's, 0xffffffff
+// the last vector of sequence:  1111 1111 1111 1111 1111 1111 0000 000A
+// where A is the axis
 // when both axis have reached this marker then the move is finished
 
 // errorAxis only means anything when error flag is set

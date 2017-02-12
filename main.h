@@ -22,5 +22,7 @@ typedef unsigned int shortTime_t; // 16 bits unsigned
 // max position is +- 52 meters
 typedef signed short long pos_t; // 24 bits signed
 
+extern bool_t volatile spiInt;
+
 #endif	/* MAIN_H */
 

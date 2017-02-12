@@ -8,31 +8,44 @@
 #include "vector.h"
 #include "motor.h"
 
+char spiZeroCount = 0;
+
 // called once from main.c and never returns
-// events are dealt with in order of most urgent first
-// SPI is highest priority in event loop and lowest in interrupt routine
 void eventLoop() {
-  while(1) {  
-    if(SPI_SS && spiWordByteIdx > 0 && spiWordByteIdx < 4) {
-      // SS is idle (high) between bytes of word, fix byte idx
-      handleError(0, errorSpiSync);
-      spiWordByteIdx == 0; 
-      spiIntHappened = FALSE;  // don't use bad data
-      return;  
-    }
-    if(spiIntHappened) {
-      // an spi data exchange just happened
-      spiByteToCpu = 0; // in case chkStatusWord below is too late
-      ((char *) &spiWordIn)[spiWordByteIdx] = spiByteFromCpu;
+  while(1) {
+    if(spiInt) {
+       // an spi data exchange just happened
+      spiInt = FALSE;
+      LATC6 = 1;
+      // four zero bytes or more in a row synchronize the word boundary
+      // this can be sent any time since a word with 1st byte of zero is a nop
+      if (spiByteFromCpu == 0) {
+        spiZeroCount++;
+//        spiByteToCpu = spiZeroCount + 0xA0;
+      } 
+      else {
+        spiZeroCount = 0;
+//        spiByteToCpu = spiZeroCount + 0xB0;
+      }
+      if (spiZeroCount > 3) {
+        spiZeroCount = 4; // may get more than 256 zeros
+        spiWordByteIdx = 0;
+        LATC6 = 0;
+        spiByteToCpu = (spiByteFromCpu & 0x0f) + 0xC0;
+        continue;
+      }
+      spiByteToCpu = ~spiByteFromCpu; //spiWordByteIdx + 0xD0;
+
+      ((char *) &spiWordIn)[3-spiWordByteIdx] = spiByteFromCpu;
       if(spiWordByteIdx == 3) {
         // last byte of a complete 32-bit word (spiWordIn) arrived
         handleSpiWordInput();
-        spiWordByteIdx == 0;
+        spiWordByteIdx == 0; 
       }
       else
         spiWordByteIdx++;
-      getOutputByte(); // sets spiByteToCpu
-      spiIntHappened == FALSE;
+//      getOutputByte(); // sets spiByteToCpu
+      LATC6 = 0;
     }
     // if error, no homing or moving happens until clearError cmd
     if(errorCode) continue;

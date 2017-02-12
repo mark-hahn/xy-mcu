@@ -7,4 +7,5 @@ nohup.out
 *.log
 *.o
 .fuse*
+disassembly
 

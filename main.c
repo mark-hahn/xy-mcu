@@ -27,7 +27,7 @@
 #pragma config WRTSAF = OFF     //  (SAF not write protected)
 #pragma config LVP = OFF        // Low Voltage Programming Enable bit (High Voltage on MCLR/Vpp must be used for programming)
 #pragma config CP = OFF         // UserNVM Program memory code protection bit (UserNVM code protection disabled)
- 
+
 #include <xc.h>
 #include "main.h"
 #include "mcu-cpu.h"
@@ -38,12 +38,22 @@
 #include "event.h"
 #include "dac.h"
 
-volatile bool_t spiIntHappened = FALSE;
+bool_t volatile spiInt = FALSE;
 
 // global interrupt routine
 // reloading timer compare values is most urgent, so first
 // SPI is highest priority in event loop and lowest here
 void interrupt isr(void) {
+  if(SSP1IF) {
+    spiByteFromCpu = SSP1BUF;
+    SSP1BUF = spiByteToCpu;
+    LATC7 = 1;
+    SSP1IF = 0;
+    SSP1CON1bits.SSPOV = 0; // clear errors
+    SSP1CON1bits.WCOL  = 0;
+    spiInt = TRUE;
+    LATC7 = 0;
+  }
   if(CCP1IF) { // X timer compare int
     // CCP1 match and rising edge of X step pulse just happened
     // set next CCP value to match
@@ -58,20 +68,15 @@ void interrupt isr(void) {
     CCPR2L = timeY.timeBytes[0];
     CCP2IF = 0;
   }
-  // SPI just exchanged, get data in and set data out
-  if(SSP1IF) {
-    SSP1IF = 0;
-    // spiByteFromCpu must be used in event loop before next SPI exchange
-    spiByteFromCpu = SSP1BUF;
-    // spiByteToCpu must be reset in event loop before next SPI exchange
-    SSP1BUF = spiByteToCpu;
-    // notify event loop
-    spiIntHappened = TRUE;
-  }
 }  
 
 void main(void) {
   ANSELC = 0; // no analog inputs
+  
+  TRISC6 = 0; // X debug trace
+  LATC6 = 1;
+  TRISC7 = 0; // X debug trace
+  LATC7 = 1;
   
   initDac(); 
   initVectors();
