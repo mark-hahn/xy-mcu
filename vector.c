@@ -3,9 +3,10 @@
 #include "vector.h"
 #include "main.h"
 #include "spi.h"
+#include "pins-b.h"
 #include "mcu-cpu.h"
 #include "motor.h"
-#include "pins-b.h"
+#include "event.h"
 
 // separate vector buffers for X and Y
 Vector vecBufX[VEC_BUF_SIZE];

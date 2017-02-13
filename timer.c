@@ -9,11 +9,13 @@ time_ut timeX;
 time_ut timeY;
 
 void initTimer() {
+  // timer 1
   T1CLKbits.CS   = 1;      // Fosc/4, 8 MHz before prescale
   T1CONbits.CKPS = 3;      // 11 = 1:8 prescale value, 1 MHz
   T1GCONbits.GE = 0;       // always on, no gate
   // timer not enabled until startTimer()
    
+  // CCP 1
   // X step pin from counter compare 1
   CCP1_LAT = 1;            // start step pin high
   CCP1_TRIS = 0;           // step pin output
@@ -22,6 +24,7 @@ void initTimer() {
 //  CCPTMRS0.C1TSEL = 0;   // CCP1 matches timer 1  ???
   // CCP1 not enabled until startTimer()
   
+  // CCP 2
   // Y step pin from counter compare 2
   CCP2_LAT = 1;            // see comments above
   CCP2_TRIS = 0;           

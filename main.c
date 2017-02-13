@@ -30,7 +30,6 @@
 
 #include <xc.h>
 #include "main.h"
-#include "mcu-cpu.h"
 #include "timer.h"
 #include "vector.h"
 #include "spi.h"
@@ -82,7 +81,7 @@ void main(void) {
   initTimer();
   initSpi();
   initMotor();
-  initMcuCpu();
+  initEvent();
 
   TRISC6 = 0; // event loop debug trace
   LATC6 = 1;

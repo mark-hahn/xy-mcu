@@ -2,10 +2,8 @@
 #ifndef CPU_H
 #define	CPU_H
 
-#include "main.h"
-
 // This file contains all definitions shared by CPU and MCU
-// The files should be included in CPU and MCU apps
+// and should be included in CPU and MCU apps
 // If this file must change, make sure it is backwards compatible
 // Keep the files in the CPU and MCU apps the same
 
@@ -14,11 +12,30 @@
 //     http://techref.massmind.org/techref/io/stepper/estimate.htm
 //   assuming 1A, 2.6mH, 12V, and 200 steps per rev; min is 433 usecs full step
 
-// words are aligned by 4 zero bytes in a row, the first non-zero byte after any 
-// number of zeros is the first byte of a word.  
-// This sequence may be sent at any time.
-  
-// a command is the top byte of a command word, top 2 bits must be zero
+
+#define X 0  /* idx for X axis */
+#define Y 1  /* idx for Y axis */
+
+typedef char bool_t;
+#define TRUE 1
+#define FALSE 0
+
+// time, unit: usec
+// max time is 71 minutes
+typedef unsigned long time_t;     // 32 bits unsigned
+typedef unsigned int shortTime_t; // 16 bits unsigned
+
+// position, unit: 0.00625 mm, 1/32 step distance (smallest microstep)
+// max position is +- 52 meters
+typedef signed short long pos_t; // 24 bits signed
+
+
+// immediate command 32-bit words -- top 2 bits are zero
+// command codes enumerated here are in top nibble of first byte
+// set homing speeds have microstep index in byte 2 and speed param in 3-4
+// setMotorCurrent has param in bottom 5 bits
+// all others have no params
+
 typedef enum Cmd {
   // zero is not used so blank SPI words are ignored
   resetCmd             =  1, // clear state and hold reset on motors, unlocking them
@@ -32,23 +49,6 @@ typedef enum Cmd {
   setMotorCurrent      =  9, // set motorCurrent (0 to 31) immediately
   setDirectionLevelXY  = 10  // set direction for each motor
 } Cmd;   
-
-// general mcu states
-// values are valid even when error flag is set, tells what was happening
-// 3 bits
-typedef enum Status {
-  statusUnlocked    = 1, // idle with no motor current
-  statusLocked      = 2, // idle with motor current
-  statusHoming      = 3, // automatically homing without vectors
-  statusMoving      = 4  // executing vector moves from vecBuf
-} Status;
-extern Status mcu_status;
-
-// immediate command 32-bit words -- top 2 bits are zero
-// command codes are in top byte
-// set homing speeds have microstep index in byte 2 and speed param in 3-4
-// setMotorCurrent has param in bottom 5 bits
-// all others have no params
 
 // absolute vector 32-bit words -- constant speed travel
 typedef struct Vector {
@@ -78,10 +78,15 @@ typedef struct Vector {
 // where A is the axis
 // when both axis have reached this marker then the move is finished
 
-// errorAxis only means anything when error flag is set
-// and means nothing if error not axis-specific
-// 1 bit
-extern char errorAxis;
+// general mcu states
+// values are valid even when error flag is set, tells what was happening
+// 3 bits
+typedef enum Status {
+  statusUnlocked    = 1, // idle with no motor current
+  statusLocked      = 2, // idle with motor current
+  statusHoming      = 3, // automatically homing without vectors
+  statusMoving      = 4  // executing vector moves from vecBuf
+} Status;
 
 // 4 bits
 typedef enum Error {
@@ -95,8 +100,8 @@ typedef enum Error {
   errorSpiByteSync       = 7
 } Error;
 
-// this is non-zero if, and only if, error flag status bit is set
-extern Error errorCode;
+
+// return status -- out of date
 
 // returnWordType_t is in the top nibble of the first byte
 //enum returnWordType_t {
@@ -123,10 +128,6 @@ extern Error errorCode;
 //  char errorCode;
 //  char reserved;
 //} ReturnStatus;
-
-void initMcuCpu();
-void newStatus(char newStatus);
-void handleError(char axis, Error code);
 
 #endif	/* CPU_H */
 
