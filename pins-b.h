@@ -11,6 +11,8 @@
 #define SPI_DATA_OUT_TRIS TRISC5 // SPI Data output, MISO
 #define CCP1_TRIS         TRISB4 // CCP 1 pin output, X step
 #define CCP2_TRIS         TRISC2 // CCP 2 pin output, Y step
+#define LIMIT_SW_X_TRIS   TRISC6
+#define LIMIT_SW_Y_TRIS   TRISC7
 
 // pin input values unlatched
 #define SPI_SS            RA7    // SPI Slave Select level, no latch

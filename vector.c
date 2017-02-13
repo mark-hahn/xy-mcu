@@ -5,6 +5,7 @@
 #include "spi.h"
 #include "mcu-cpu.h"
 #include "motor.h"
+#include "pins-b.h"
 
 // separate vector buffers for X and Y
 Vector vecBufX[VEC_BUF_SIZE];
@@ -18,13 +19,14 @@ void initVectors() {
 }
 
 void handleSpiWordInput() {
-  char topSpiByte = ((char *) &spiWordIn)[3];
+  char topSpiByte = ((char *) &spiWordIn)[3]; 
+
   if(errorCode) {
     if (topSpiByte == clearErrorCmd) 
       handleMotorCmd((char *) &spiWordIn);
     // all other input is ignored when error
     return;
-  }
+  } 
   if(topSpiByte == 0)
     // cmd is zero means empty SPI word, ignore it
     return;

@@ -87,6 +87,13 @@ void set_resets(bool_t resetHigh) {
 }
 
 void initMotor() {
+  
+  // need "fault" and "on" also  TODO
+  // set all regs as input (wasn't this done already?)
+  
+  LIMIT_SW_X_TRIS = 1;  // set later in main for debug
+  LIMIT_SW_Y_TRIS = 1;
+  
   set_resets(0);
   // set default settings
   motorSettings.homeUsecPerPulse     = defHomeUsecPerPulse;

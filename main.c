@@ -46,13 +46,15 @@ bool_t volatile spiInt = FALSE;
 void interrupt isr(void) {
   if(SSP1IF) {
     spiByteFromCpu = SSP1BUF;
-    SSP1BUF = spiByteToCpu;
-    LATC7 = 1;
     SSP1IF = 0;
+//    if(SSP1CON1bits.SSPOV || SSP1CON1bits.WCOL) while(1);
     SSP1CON1bits.SSPOV = 0; // clear errors
     SSP1CON1bits.WCOL  = 0;
+//    LATC7 = 1;
+     ((char *) &spiWordIn)[3-spiWordByteIdx++] = spiByteFromCpu;
+//    LATC7 = 0;
+//    SSP1BUF = spiByteToCpu;
     spiInt = TRUE;
-    LATC7 = 0;
   }
   if(CCP1IF) { // X timer compare int
     // CCP1 match and rising edge of X step pulse just happened
@@ -71,19 +73,21 @@ void interrupt isr(void) {
 }  
 
 void main(void) {
-  ANSELC = 0; // no analog inputs
-  
-  TRISC6 = 0; // X debug trace
-  LATC6 = 1;
-  TRISC7 = 0; // X debug trace
-  LATC7 = 1;
-  
+  ANSELA = 0; // no analog inputs
+  ANSELB = 0;
+  ANSELC = 0;
+    
   initDac(); 
   initVectors();
   initTimer();
   initSpi();
   initMotor();
   initMcuCpu();
+
+  TRISC6 = 0; // event loop debug trace
+  LATC6 = 1;
+  TRISC7 = 0; // interrupt debug trace
+  LATC7 = 1;
 
   // global ints on
   PEIE  =  1; // Peripheral Interrupt Enable

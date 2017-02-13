@@ -8,44 +8,23 @@
 #include "vector.h"
 #include "motor.h"
 
-char spiZeroCount = 0;
-
 // called once from main.c and never returns
 void eventLoop() {
   while(1) {
     if(spiInt) {
-       // an spi data exchange just happened
-      spiInt = FALSE;
-      LATC6 = 1;
-      // four zero bytes or more in a row synchronize the word boundary
-      // this can be sent any time since a word with 1st byte of zero is a nop
-      if (spiByteFromCpu == 0) {
-        spiZeroCount++;
-//        spiByteToCpu = spiZeroCount + 0xA0;
-      } 
-      else {
-        spiZeroCount = 0;
-//        spiByteToCpu = spiZeroCount + 0xB0;
-      }
-      if (spiZeroCount > 3) {
-        spiZeroCount = 4; // may get more than 256 zeros
-        spiWordByteIdx = 0;
-        LATC6 = 0;
-        spiByteToCpu = (spiByteFromCpu & 0x0f) + 0xC0;
-        continue;
-      }
-      spiByteToCpu = ~spiByteFromCpu; //spiWordByteIdx + 0xD0;
-
-      ((char *) &spiWordIn)[3-spiWordByteIdx] = spiByteFromCpu;
-      if(spiWordByteIdx == 3) {
-        // last byte of a complete 32-bit word (spiWordIn) arrived
-        handleSpiWordInput();
-        spiWordByteIdx == 0; 
-      }
-      else
-        spiWordByteIdx++;
-//      getOutputByte(); // sets spiByteToCpu
       LATC6 = 0;
+      spiInt = FALSE;
+      if(spiWordByteIdx == 4 && spiWordIn != 0) {
+        // last byte of a complete 32-bit word (spiWordIn) arrived
+        LATC6 = 1; 
+        handleSpiWordInput();
+        spiWordByteIdx = 0; 
+        LATC6 = 0;
+      }
+//      getOutputByte(); // sets spiByteToCpu
+      if(SPI_SS) spiWordByteIdx = 0;
+      SSP1BUF = SPI_SS;
+      LATC6 = 1;
     }
     // if error, no homing or moving happens until clearError cmd
     if(errorCode) continue;

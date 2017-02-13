@@ -73,7 +73,7 @@ typedef struct Vector {
 // 3 delta format,  9 bits each: 11s1 0www wwww wwXX XXXX XXXy yyyy yyyy
 // 2 delta format, 13 bits each: 11s1 10ww wwww wwww wwwX XXXX XXXX XXXX
 
-// the last vector of sequence:  1111 1111 1111 1111 1111 1111 0000 000A
+// the last vector of axis move: 1111 1111 1111 1111 1111 1111 1111 111A
 // where A is the axis
 // when both axis have reached this marker then the move is finished
 
@@ -89,7 +89,7 @@ typedef enum Error {
   errorVecBufUnderflow   = 4,
   errorMoveWhenUnlocked  = 5,
   errorMoveWithNoVectors = 6,
-  errorSpiSync           = 7
+  errorSpiByteSync       = 7
 } Error;
 
 // this is non-zero if, and only if, error flag status bit is set

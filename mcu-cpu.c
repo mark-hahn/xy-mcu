@@ -28,5 +28,6 @@ void handleError(char axis, Error code) {
   newStatus(statusUnlocked);
   errorAxis = axis;
   errorCode = code;
+//  while(1);
 }
 

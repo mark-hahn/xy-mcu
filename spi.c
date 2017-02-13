@@ -32,11 +32,12 @@ void initSpi() {
   SSP1STATbits.CKE   = 1; // clk edge in (1: active ->idle) (1: safe wcol?)
   SSP1CON3bits.BOEN  = 0; // enable buffer input overflow check (SSPOV))
   spiWordByteIdx = 0;
-
-  /* Before enabling the module in SPI Slave mode, the clock
+  /* From datasheet: Before enabling the module in SPI Slave mode, the clock
    line must match the proper Idle state (CKP) */
   while(SPI_CLK);
   SSP1CON1bits.SSPEN = 1; // enable SPI
+  // start on word boundary
+  while(!SPI_SS);
   SSP1IF = 0;             // start int flag cleared
   PIE3bits.SSP1IE = 1;    // enable ints
 }
