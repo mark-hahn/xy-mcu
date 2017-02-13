@@ -8,9 +8,9 @@
 
 
 volatile char   spiByteFromCpu;  // set by spi interrupt, used in event loop
-char            spiByteToCpu;    // set by event loop, used in spi interrupt
+//char            spiByteToCpu;    // set by event loop, used in spi interrupt
 unsigned long   spiWordIn;       // four of spiByteFromCpu
-ReturnStatus    spiReturnStatus; // four of spiByteToCpu
+//ReturnStatus    spiReturnStatus; // four of spiByteToCpu
 char            spiWordByteIdx;  // byte idx in both spiWordIn and spiReturnStatus
 
 char nextRetWordType = 0; // specifies type of word to be returned next
@@ -42,32 +42,32 @@ void initSpi() {
   PIE3bits.SSP1IE = 1;    // enable ints
 }
 
-void getOutputByte() {
-  if(spiWordByteIdx == 0) {
-    char flags;
-    // cpuReq is only non-zero when cpu sends reqHomeDist command
-    switch (nextRetWordType) {
-      case 0: 
-        flags = retypeStatus; 
-        spiReturnStatus.status    = mcu_status;
-        spiReturnStatus.errorCode = errorCode;
-        break;
-      case 1: 
-        flags = retypeHomeDistX;
-        *((long *)&spiReturnStatus) |= homingDistX;
-        nextRetWordType = 2;
-        break;
-      case 2: 
-        flags = retypeHomeDistY;
-        *((long *)&spiReturnStatus) |= homingDistY;
-        nextRetWordType = 0;
-        break;
-    }
-    if(vecBufXIsAtHighWater()) flags |= retflagBufXHighWater;
-    if(vecBufYIsAtHighWater()) flags |= retflagBufYHighWater;
-    if(errorAxis)              flags |= retflagErrorAxis;
-    if(errorCode)              flags |= retFlagError;
-    spiReturnStatus.flags = flags;
-  }
-  spiByteToCpu = ((char *)&spiReturnStatus)[spiWordByteIdx];
-}
+//void getOutputByte() {
+//  if(spiWordByteIdx == 0) {
+//    char flags;
+//    // cpuReq is only non-zero when cpu sends reqHomeDist command
+//    switch (nextRetWordType) {
+//      case 0: 
+//        flags = retypeStatus; 
+//        spiReturnStatus.status    = mcu_status;
+//        spiReturnStatus.errorCode = errorCode;
+//        break;
+//      case 1: 
+//        flags = retypeHomeDistX;
+//        *((long *)&spiReturnStatus) |= homingDistX;
+//        nextRetWordType = 2;
+//        break;
+//      case 2: 
+//        flags = retypeHomeDistY;
+//        *((long *)&spiReturnStatus) |= homingDistY;
+//        nextRetWordType = 0;
+//        break;
+//    }
+//    if(vecBufXIsAtHighWater()) flags |= retflagBufXHighWater;
+//    if(vecBufYIsAtHighWater()) flags |= retflagBufYHighWater;
+//    if(errorAxis)              flags |= retflagErrorAxis;
+//    if(errorCode)              flags |= retFlagError;
+//    spiReturnStatus.flags = flags;
+//  }
+//  spiByteToCpu = ((char *)&spiReturnStatus)[spiWordByteIdx];
+//}

@@ -19,11 +19,11 @@ void eventLoop() {
         LATC6 = 1; 
         handleSpiWordInput();
         spiWordByteIdx = 0; 
+        SSP1BUF =  (errorAxis << 7) | (mcu_status << 4) | errorCode;
         LATC6 = 0;
       }
 //      getOutputByte(); // sets spiByteToCpu
       if(SPI_SS) spiWordByteIdx = 0;
-      SSP1BUF = SPI_SS;
       LATC6 = 1;
     }
     // if error, no homing or moving happens until clearError cmd

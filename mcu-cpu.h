@@ -35,11 +35,12 @@ typedef enum Cmd {
 
 // general mcu states
 // values are valid even when error flag is set, tells what was happening
+// 3 bits
 typedef enum Status {
-  statusUnlocked    = 0, // idle with no motor current
-  statusLocked      = 1, // idle with motor current
-  statusHoming      = 2, // automatically homing without vectors
-  statusMoving      = 3  // executing vector moves from vecBuf
+  statusUnlocked    = 1, // idle with no motor current
+  statusLocked      = 2, // idle with motor current
+  statusHoming      = 3, // automatically homing without vectors
+  statusMoving      = 4  // executing vector moves from vecBuf
 } Status;
 extern Status mcu_status;
 
@@ -79,8 +80,10 @@ typedef struct Vector {
 
 // errorAxis only means anything when error flag is set
 // and means nothing if error not axis-specific
+// 1 bit
 extern char errorAxis;
 
+// 4 bits
 typedef enum Error {
   none                   = 0,
   errorFault             = 1, // driver chip fault
@@ -96,30 +99,30 @@ typedef enum Error {
 extern Error errorCode;
 
 // returnWordType_t is in the top nibble of the first byte
-enum returnWordType_t {
-  retypeNone      = 0x00, // whole word of zeros may happen, ignore them
-  retypeStatus    = 0x10,
-  retypeHomeDistX = 0x20, // this type of return has param in bottom 3 bytes
-  retypeHomeDistY = 0x30
-} returnWordType_t;
+//enum returnWordType_t {
+//  retypeNone      = 0x00, // whole word of zeros may happen, ignore them
+//  retypeStatus    = 0x10,
+//  retypeHomeDistX = 0x20, // this type of return has param in bottom 3 bytes
+//  retypeHomeDistY = 0x30
+//} returnWordType_t;
 
 // retFlags is in the bottom nibble of the first byte
 // all of these flags are returned on every word to CPU
-enum retFlags {
-  retflagBufXHighWater = 0x08,
-  retflagBufYHighWater = 0x04,
-  retflagErrorAxis     = 0x02, // default zero if no axis specified
-  retFlagError         = 0x01  // when error everything halts until cmd clrs it
-};
+//enum retFlags {
+//  retflagBufXHighWater = 0x08,
+//  retflagBufYHighWater = 0x04,
+//  retflagErrorAxis     = 0x02, // default zero if no axis specified
+//  retFlagError         = 0x01  // when error everything halts until cmd clrs it
+//};
 
 // this is the status word returned when returnWordType is retypeStatus
 // this is always returned except after reqHomeDist cmd
-typedef struct ReturnStatus {
-  char flags;
-  char status;
-  char errorCode;
-  char reserved;
-} ReturnStatus;
+//typedef struct ReturnStatus {
+//  char flags;
+//  char status;
+//  char errorCode;
+//  char reserved;
+//} ReturnStatus;
 
 void initMcuCpu();
 void newStatus(char newStatus);
