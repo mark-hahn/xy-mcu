@@ -5,7 +5,7 @@
 #include "main.h"
 
 typedef struct time_ut {
-  shortTime_t timeShort;
+  xytime_t timeShort;
   char        timeBytes[2]; // remember, little-endian
 } time_ut;
 
@@ -20,8 +20,8 @@ void startTimer();
 void stopTimerX();
 void stopTimerY();
 void stopTimer();
-void setNextTimeX(shortTime_t delta);
-void setNextTimeY(shortTime_t delta);
+void setNextTimeX(xytime_t delta);
+void setNextTimeY(xytime_t delta);
 
 #endif	/* TIMER_H */
 

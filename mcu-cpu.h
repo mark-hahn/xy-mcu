@@ -1,6 +1,24 @@
 
-#ifndef CPU_H
-#define	CPU_H
+#ifndef MCU_H
+#define MCU_H
+
+#ifdef MCU_H
+typedef char                 uint8_t;
+typedef signed char           int8_t;
+typedef unsigned int        uint16_t;
+typedef int                  int16_t;
+typedef unsigned short long uint24_t;
+typedef short long           int24_t;
+typedef unsigned long       uint32_t;
+typedef long                 int32_t;
+#endif
+
+
+#ifdef CPU_H
+typedef uint32_t uint24_t; // fake, needed by mcu
+typedef  int32_t  int24_t;
+#endif
+
 
 // This file contains all definitions shared by CPU and MCU
 // and should be included in CPU and MCU apps
@@ -16,18 +34,18 @@
 #define X 0  /* idx for X axis */
 #define Y 1  /* idx for Y axis */
 
+
 typedef char bool_t;
 #define TRUE 1
 #define FALSE 0
 
 // time, unit: usec
-// max time is 71 minutes
-typedef unsigned long time_t;     // 32 bits unsigned
-typedef unsigned int shortTime_t; // 16 bits unsigned
+// max time is 65.536 ms
+typedef uint16_t xytime_t; // 16 bits unsigned
 
 // position, unit: 0.00625 mm, 1/32 step distance (smallest microstep)
 // max position is +- 52 meters
-typedef signed short long pos_t; // 24 bits signed
+typedef int24_t pos_t; // 24 bits signed
 
 
 // immediate command 32-bit words -- top 2 bits are zero
@@ -48,11 +66,11 @@ typedef enum Cmd {
   setHomingBackupSpeed =  8, // set homeBkupUIdx & homeBkupUsecPerPulse settings
   setMotorCurrent      =  9, // set motorCurrent (0 to 31) immediately
   setDirectionLevelXY  = 10  // set direction for each motor
-} Cmd;   
+} Cmd;
 
 // absolute vector 32-bit words -- constant speed travel
 typedef struct Vector {
-  shortTime_t usecsPerPulse; // LSInt
+  xytime_t usecsPerPulse; // LSInt
   // absolute ctrlWord has five bit fields, from msb to lsb ...
   //   1 bit: axis X vector, both X and Y clr means command, not vector
   //   1 bit: axis Y vector, both X and Y set means delta, not absolute, vector
@@ -78,9 +96,11 @@ typedef struct Vector {
 // where A is the axis
 // when both axis have reached this marker then the move is finished
 
+// errorAxis is top bit of status, D7
+
 // general mcu states
 // values are valid even when error flag is set, tells what was happening
-// 3 bits
+// 3 bits, D6 - D4
 typedef enum Status {
   statusUnlocked    = 1, // idle with no motor current
   statusLocked      = 2, // idle with motor current
@@ -88,7 +108,7 @@ typedef enum Status {
   statusMoving      = 4  // executing vector moves from vecBuf
 } Status;
 
-// 4 bits
+// 4 bits, D3 - D0
 typedef enum Error {
   none                   = 0,
   errorFault             = 1, // driver chip fault
@@ -97,7 +117,8 @@ typedef enum Error {
   errorVecBufUnderflow   = 4,
   errorMoveWhenUnlocked  = 5,
   errorMoveWithNoVectors = 6,
-  errorSpiByteSync       = 7
+  errorSpiByteSync       = 7,
+  errorSpiInt            = 8
 } Error;
 
 
@@ -130,4 +151,3 @@ typedef enum Error {
 //} ReturnStatus;
 
 #endif	/* CPU_H */
-

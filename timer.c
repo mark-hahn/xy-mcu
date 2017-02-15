@@ -20,8 +20,9 @@ void initTimer() {
   CCP1_LAT = 1;            // start step pin high
   CCP1_TRIS = 0;           // step pin output
   CCP1_PPS = 0x09;         // CCP1 => B4
+//  CCP1CONbits.MODE = 0xa;  // pulse DEBUG
   CCP1CONbits.MODE = 0x8;  // Compare mode, set step high
-//  CCPTMRS0.C1TSEL = 0;   // CCP1 matches timer 1  ???
+  //  CCPTMRS0.C1TSEL = 0;   // what is this? CCP1 matches timer 1  ???
   // CCP1 not enabled until startTimer()
   
   // CCP 2
@@ -29,6 +30,7 @@ void initTimer() {
   CCP2_LAT = 1;            // see comments above
   CCP2_TRIS = 0;           
   CCP2_PPS = 0x0A;         // CCP2 => C2
+//  CCP2CONbits.MODE = 0xa;                   // DEBUG
   CCP2CONbits.MODE = 0x8;  
 //  CCPTMRS1.C2TSEL = 0;   
  // CCP2  not enabled until startTimer()
@@ -47,9 +49,9 @@ void startTimer(){
   CCP1IF = 0;
   CCP2IF = 0;
   CCP1IE = 1;
-  CCP2IE = 1;
+//  CCP2IE = 1;
   CCP1CONbits.EN = 1; // enable CCPs
-  CCP2CONbits.EN = 1;      
+//  CCP2CONbits.EN = 1;      
   TMR1ON = 1;         // start timer
 }
 
@@ -67,13 +69,13 @@ bool_t isTimerRunning() {
   return TMR1ON;
 }
 
-void setNextTimeX(shortTime_t delta) {
+void setNextTimeX(xytime_t delta) {
   timeX.timeShort += delta;
   CCPR1L = timeX.timeBytes[0];
   CCPR1H = timeX.timeBytes[1];
 }
 
-void setNextTimeY(shortTime_t delta) {
+void setNextTimeY(xytime_t delta) {
   timeY.timeShort += delta;
   CCPR2L = timeY.timeBytes[0];
   CCPR2H = timeY.timeBytes[1];

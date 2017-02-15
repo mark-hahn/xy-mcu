@@ -37,23 +37,24 @@
 #include "event.h"
 #include "dac.h"
 
-bool_t volatile spiInt = FALSE;
-
+// ignore first spi Int Error after boot
+int8_t volatile spiIntError = -1; 
+ 
 // global interrupt routine
 // reloading timer compare values is most urgent, so first
 // SPI is highest priority in event loop and lowest here
 void interrupt isr(void) {
   if(SSP1IF) {
     spiByteFromCpu = SSP1BUF;
+    LATC7 = 1;
     SSP1IF = 0;
-//    if(SSP1CON1bits.SSPOV || SSP1CON1bits.WCOL) while(1);
-    SSP1CON1bits.SSPOV = 0; // clear errors
-    SSP1CON1bits.WCOL  = 0;
-//    LATC7 = 1;
-     ((char *) &spiWordIn)[3-spiWordByteIdx++] = spiByteFromCpu;
-//    LATC7 = 0;
-//    SSP1BUF = spiByteToCpu;
-    spiInt = TRUE;
+    if(SSP1CON1bits.SSPOV || SSP1CON1bits.WCOL) {
+      spiIntError = (spiIntError > -1);
+      SSP1CON1bits.SSPOV = 0;
+      SSP1CON1bits.WCOL  = 0;
+    }
+    ((char *) &spiWordIn)[3-spiWordByteIdx++] = spiByteFromCpu;
+    LATC7 = 0;
   }
   if(CCP1IF) { // X timer compare int
     // CCP1 match and rising edge of X step pulse just happened

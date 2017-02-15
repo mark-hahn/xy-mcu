@@ -32,7 +32,7 @@ void handleSpiWordInput() {
     // cmd is zero means empty SPI word, ignore it
     return;
   
-  if(topSpiByte & 0xc0 == 0) {
+  if((topSpiByte & 0xc0) == 0) {
     handleMotorCmd((char *) &spiWordIn);  
     return;
   }

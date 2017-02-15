@@ -6,7 +6,7 @@
 
 #define _XTAL_FREQ 32000000 
 
-extern bool_t volatile spiInt;
+extern int8_t volatile spiIntError;
 
 #endif	/* MAIN_H */
 
