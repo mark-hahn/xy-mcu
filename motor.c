@@ -130,14 +130,14 @@ void handleMotorCmd(char *word) {
       set_dir(X, 0);
       CCP1_LAT = 0; // lower X step pin to start first pulse
       isMovingX = TRUE;
-      set_ustep(Y, defHomeUIdx);
-      set_dir(Y, 0);
-      CCP2_LAT = 0; // lower Y step pin to start first pulse
-      isMovingY = TRUE;
+//      set_ustep(Y, defHomeUIdx);
+//      set_dir(Y, 0);
+//      CCP2_LAT = 0; // lower Y step pin to start first pulse
+//      isMovingY = TRUE;
       // this also stops timer and clears motor reset pins
       newStatus(statusHoming);
       startTimer();
-     return;
+      return;
        
     case moveCmd:  
       if(mcu_status == statusUnlocked) {

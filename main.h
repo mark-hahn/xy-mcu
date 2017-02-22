@@ -5,8 +5,7 @@
 #include "mcu-cpu.h"
 
 #define _XTAL_FREQ 32000000 
-
-extern bool_t volatile spiInt;
+extern bool_t spiInt;
 
 #endif	/* MAIN_H */
 

@@ -52,7 +52,7 @@ typedef enum Cmd {
   setHomingBackupSpeed =  8, // set homeBkupUIdx & homeBkupUsecPerPulse settings
   setMotorCurrent      =  9, // set motorCurrent (0 to 31) immediately
   setDirectionLevelXY  = 10  // set direction for each motor
-} Cmd;   
+} Cmd;
 
 // absolute vector 32-bit words -- constant speed travel
 typedef struct Vector {
@@ -102,7 +102,7 @@ typedef enum Error {
   errorMoveWhenUnlocked  = 5,
   errorMoveWithNoVectors = 6,
   errorSpiByteSync       = 7
-} Error; 
+} Error;
 
 
 // return status -- out of date
@@ -134,4 +134,3 @@ typedef enum Error {
 //} ReturnStatus;
 
 #endif
-

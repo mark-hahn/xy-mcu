@@ -6,6 +6,7 @@
 #include "main.h"
 #include "timer.h"
 #include "spi.h"
+#include "timer.h"
 #include "vector.h"
 #include "motor.h"
 
@@ -22,7 +23,8 @@ void initEvent() {
 // this also clears time and sets or clears motor reset pins
 void newStatus(char newStatus) {
   // timer counting and ints off until move or homing command
-  stopTimer();
+  stopTimerX();
+  stopTimerY();
   if (errorCode) return;
   set_resets(newStatus != statusUnlocked);
   mcu_status = newStatus; 
@@ -33,7 +35,9 @@ void handleError(char axis, Error code) {
   newStatus(statusUnlocked);
   errorAxis = axis;
   errorCode = code;
-//  while(1);
+  // wait for SPI idle to repair byte sync and abort word
+  while (!SPI_SS); 
+  spiWordByteIdx = 0;
 }
 
 uint32_t spiWord;
@@ -79,17 +83,13 @@ void eventLoop() {
 
     if(isMovingX && CCP1_PIN) { 
       // X step pin was raised by compare
-      if(mcu_status == statusHoming) 
-        chkHomingX();
-      else if(mcu_status == statusMoving) 
-        chkMovingX();
-    }
+      if(mcu_status == statusHoming)      chkHomingX();
+      else if(mcu_status == statusMoving) chkMovingX();
+    } 
     if(isMovingY && CCP2_PIN) {
       // Y step pin was raised by compare
-      if(mcu_status == statusHoming) 
-        chkHomingY();
-      else if(mcu_status == statusMoving) 
-        chkMovingY();
+      if(mcu_status == statusHoming)      chkHomingY();
+      else if(mcu_status == statusMoving) chkMovingY();
     }
   }
 }  
