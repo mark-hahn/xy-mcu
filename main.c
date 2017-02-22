@@ -44,16 +44,14 @@ bool_t volatile spiInt = FALSE;
 // SPI is highest priority in event loop and lowest here
 void interrupt isr(void) {
   if(SSP1IF) {
+    LATC7 = 1;
     spiByteFromCpu = SSP1BUF;
     SSP1IF = 0;
-//    if(SSP1CON1bits.SSPOV || SSP1CON1bits.WCOL) while(1);
     SSP1CON1bits.SSPOV = 0; // clear errors
     SSP1CON1bits.WCOL  = 0;
-//    LATC7 = 1;
-     ((char *) &spiWordIn)[3-spiWordByteIdx++] = spiByteFromCpu;
-//    LATC7 = 0;
-//    SSP1BUF = spiByteToCpu;
-    spiInt = TRUE;
+    ((char *) &spiWordIn)[3-spiWordByteIdx++] = spiByteFromCpu;
+    if(spiWordByteIdx == 4) spiInt = TRUE;
+    LATC7 = 0;
   }
   if(CCP1IF) { // X timer compare int
     // CCP1 match and rising edge of X step pulse just happened
@@ -83,9 +81,9 @@ void main(void) {
   initMotor();
   initEvent();
 
-  TRISC6 = 0; // event loop debug trace
+  TRISC6 = 0; // event loop debug trace -- hlim
   LATC6 = 1;
-  TRISC7 = 0; // interrupt debug trace
+  TRISC7 = 0; // interrupt debug trace -- vlim
   LATC7 = 1;
 
   // global ints on

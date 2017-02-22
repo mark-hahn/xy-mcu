@@ -21,8 +21,7 @@ void initTimer() {
   CCP1_TRIS = 0;           // step pin output
   CCP1_PPS = 0x09;         // CCP1 => B4
   CCP1CONbits.MODE = 0x8;  // Compare mode, set step high
-//  CCPTMRS0.C1TSEL = 0;   // CCP1 matches timer 1  ???
-  // CCP1 not enabled until startTimer()
+// CCP1 not enabled until startTimer()
   
   // CCP 2
   // Y step pin from counter compare 2
@@ -30,8 +29,7 @@ void initTimer() {
   CCP2_TRIS = 0;           
   CCP2_PPS = 0x0A;         // CCP2 => C2
   CCP2CONbits.MODE = 0x8;  
-//  CCPTMRS1.C2TSEL = 0;   
- // CCP2  not enabled until startTimer()
+// CCP2  not enabled until startTimer()
   
   stopTimer();  // disable counting and ints until first home cmd
 }

@@ -1,6 +1,6 @@
 
-#ifndef CPU_H
-#define	CPU_H
+#ifndef MCU_H
+#define	MCU_H
 
 // This file contains all definitions shared by CPU and MCU
 // and should be included in CPU and MCU apps
@@ -21,23 +21,27 @@ typedef char bool_t;
 #define FALSE 0
 
 // time, unit: usec
-// max time is 71 minutes
-typedef unsigned long time_t;     // 32 bits unsigned
+// max time is 65 ms
 typedef unsigned int shortTime_t; // 16 bits unsigned
 
 // position, unit: 0.00625 mm, 1/32 step distance (smallest microstep)
 // max position is +- 52 meters
+#ifdef MCU_H
 typedef signed short long pos_t; // 24 bits signed
-
+typedef unsigned long     uint32_t;
+#else // CPU_H
+typedef long pos_t; // 32 bits signed
+#endif
 
 // immediate command 32-bit words -- top 2 bits are zero
-// command codes enumerated here are in top nibble of first byte
+// command codes enumerated here are in bottom nibble of first byte
 // set homing speeds have microstep index in byte 2 and speed param in 3-4
 // setMotorCurrent has param in bottom 5 bits
 // all others have no params
 
 typedef enum Cmd {
   // zero is not used so blank SPI words are ignored
+  nopCmd               =  0, // does nothing except get status
   resetCmd             =  1, // clear state and hold reset on motors, unlocking them
   idleCmd              =  2, // abort any commands, clear vec buffers
   homeCmd              =  3, // goes home using no vectors, and saves homing distance
@@ -98,7 +102,7 @@ typedef enum Error {
   errorMoveWhenUnlocked  = 5,
   errorMoveWithNoVectors = 6,
   errorSpiByteSync       = 7
-} Error;
+} Error; 
 
 
 // return status -- out of date
@@ -129,5 +133,5 @@ typedef enum Error {
 //  char reserved;
 //} ReturnStatus;
 
-#endif	/* CPU_H */
+#endif
 

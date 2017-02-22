@@ -105,8 +105,8 @@ void initMotor() {
 }
 
 void handleMotorCmd(char *word) {
-  // word[0] is cmd code byte
-  switch (word[0]) {
+  // word[3] is top byte in word
+  switch (word[3]) {
     case resetCmd: 
       // this stops timer and activates motor reset pins
       newStatus(statusUnlocked); 
@@ -182,24 +182,24 @@ void handleMotorCmd(char *word) {
       return;
       
     case setHomingSpeed: 
-      motorSettings.homeUIdx = word[1];
-      motorSettings.homeUsecPerPulse = *((shortTime_t *) &word[2]);
+      motorSettings.homeUIdx = word[2];
+      motorSettings.homeUsecPerPulse = *((shortTime_t *) &word[0]);
       return;
       
     case setHomingBackupSpeed: 
-      motorSettings.homeBkupUIdx = word[1];
-      motorSettings.homeBkupUsecPerPulse = *((shortTime_t *) &word[2]);
+      motorSettings.homeBkupUIdx = word[2];
+      motorSettings.homeBkupUsecPerPulse = *((shortTime_t *) &word[0]);
       return;
       
     case setMotorCurrent: 
       // middle two bytes are empty
-      set_dac(word[3]);
+      set_dac(word[0]);
       return;
       
     case setDirectionLevelXY: 
       // middle two bytes are empty
       // d1 is X and d0 is Y
-      motorSettings.directionLevelXY = word[3];
+      motorSettings.directionLevelXY = word[0];
       return;
       
     case reqHomeDist:

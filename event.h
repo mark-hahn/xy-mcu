@@ -10,6 +10,7 @@ extern Status mcu_status;
 // 1 bit
 extern char errorAxis;
 extern Error errorCode;
+extern uint32_t spiWord;
 
 void initEvent();
 void newStatus(char newStatus);

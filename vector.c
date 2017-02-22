@@ -20,11 +20,11 @@ void initVectors() {
 }
 
 void handleSpiWordInput() {
-  char topSpiByte = ((char *) &spiWordIn)[3]; 
+  char topSpiByte = ((char *) &spiWord)[3]; 
 
   if(errorCode) {
     if (topSpiByte == clearErrorCmd) 
-      handleMotorCmd((char *) &spiWordIn);
+      handleMotorCmd((char *) &spiWord);
     // all other input is ignored when error
     return;
   } 
@@ -32,14 +32,14 @@ void handleSpiWordInput() {
     // cmd is zero means empty SPI word, ignore it
     return;
   
-  if(topSpiByte & 0xc0 == 0) {
-    handleMotorCmd((char *) &spiWordIn);  
+  if((topSpiByte & 0xc0) == 0) {
+    handleMotorCmd((char*) &spiWord);  
     return;
   }
   if ((topSpiByte & 0x80) != 0) { 
     // we have a new non-command X vector
     // add it to vecBufX
-    *((unsigned long *)vecBufHeadX) = spiWordIn;
+    *((unsigned long *)vecBufHeadX) = spiWord;
     if (++vecBufHeadX == vecBufY + VEC_BUF_SIZE)
       vecBufHeadX = vecBufX;
     if (vecBufHeadX == currentVectorX)
@@ -49,7 +49,7 @@ void handleSpiWordInput() {
   if ((topSpiByte & 0x40) != 0) { 
     // we have a new non-command Y vector
     // add it to vecBufY
-    *((unsigned long *)vecBufHeadY) = spiWordIn;
+    *((unsigned long *)vecBufHeadY) = spiWord;
     if (++vecBufHeadY == vecBufY + VEC_BUF_SIZE)
       vecBufHeadY = vecBufY;
     if (vecBufHeadY == currentVectorY)
