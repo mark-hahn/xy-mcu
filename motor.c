@@ -26,8 +26,6 @@ AxisHomingState homingStateX;
 AxisHomingState homingStateY;
 pos_t  homingDistX;
 pos_t  homingDistY;
-bool_t isMovingX = FALSE;
-bool_t isMovingY = FALSE;
 bool_t firstVecX;
 bool_t firstVecY;
 char   deltaVecCountX;
@@ -120,23 +118,20 @@ void handleMotorCmd(char *word) {
       return;
               
     case homeCmd:  
-      // zero counter and time state, will start again below
-      stopTimer(); 
+      // also stops timers and clears motor reset pins
+      newStatus(statusHoming);
       homingStateX = headingHome;
       homingStateY = headingHome;
       homingDistX = 0;
       homingDistY = 0;
       set_ustep(X, defHomeUIdx);
       set_dir(X, 0);
-      CCP1_LAT = 0; // lower X step pin to start first pulse
-      isMovingX = TRUE;
-//      set_ustep(Y, defHomeUIdx);
-//      set_dir(Y, 0);
-//      CCP2_LAT = 0; // lower Y step pin to start first pulse
-//      isMovingY = TRUE;
-      // this also stops timer and clears motor reset pins
-      newStatus(statusHoming);
-      startTimer();
+      set_ustep(Y, defHomeUIdx);
+      set_dir(Y, 0);
+      // first pulse in 200 usecs
+      // also starts timers
+      setNextTimeX(200, START_PULSE); 
+      setNextTimeY(200, START_PULSE);
       return;
        
     case moveCmd:  
@@ -154,8 +149,6 @@ void handleMotorCmd(char *word) {
       }
       // this also stops timer and clears motor reset pins
       newStatus(statusMoving);   
-      isMovingX = TRUE;
-      isMovingY = TRUE;
       pulseCountX = 0;
       pulseCountY = 0;
       // first vec cmd can't be a delta one
@@ -168,17 +161,11 @@ void handleMotorCmd(char *word) {
       // currentVector is already set by vectors added before this cmd
       set_ustep(X, (currentVectorX->ctrlWord >> 10) & 0x0007);
       set_dir(X, (currentVectorX->ctrlWord >> 13) & 1);
-      if(currentVectorX->ctrlWord & 0x03ff)
-        // this is not just a delay command
-        CCP1_LAT = 0; // lower X step pin to start next pulse
+      // first pulse in 200 usecs
+      // is this just a delay command?
       set_ustep(Y, (currentVectorY->ctrlWord >> 10) & 0x0007);
       set_dir(Y, (currentVectorY->ctrlWord >> 13) & 1);
-      if(currentVectorY->ctrlWord & 0x03ff)
-        // this is not just a delay command
-        CCP2_LAT = 0; // lower Y step pin to start next pulse
-      timeX.timeShort = 2;      
-      timeY.timeShort = 2;
-      startTimer();  // this issues first pulse edge after 2 usecs
+      setNextTimeX(200, currentVectorY->ctrlWord & 0x03ff);
       return;
       
     case setHomingSpeed: 
@@ -220,16 +207,15 @@ void chkHomingX() {
   if(homingStateX == headingHome) {
     // add distance for pulse that just finished
     homingDistX += distPerPulse(defHomeUIdx);
-    CCP1_LAT = 0; // lower X step pin to start next pulse
     if(LIMIT_SW_X)
       // have not gotten to limit switch yet, keep heading home
-      setNextTimeX(defHomeUsecPerPulse);
+      setNextTimeX(defHomeUsecPerPulse, START_PULSE);
     else {
       // set backup dir and step size
       set_ustep(X, defHomeBkupUIdx);
       set_dir(X, 1);
       // wait a long time for reversing and for switch bouncing to stop
-      setNextTimeX(debounceAndSettlingTime);
+      setNextTimeX(debounceAndSettlingTime, START_PULSE);
       // we reached the switch, turn around
       homingStateX = backingUpToHome;
     }
@@ -239,13 +225,12 @@ void chkHomingX() {
     homingDistX -= distPerPulse(defHomeBkupUIdx);
     if(!LIMIT_SW_X) {
       // have not gotten back to limit switch yet, keep heading back
-      setNextTimeX(defHomeBkupUsecPerPulse);
-      CCP1_LAT = 0; // lower X step pin to start next pulse
+      setNextTimeX(defHomeBkupUsecPerPulse, START_PULSE);
     } 
     else {
       // we are done homing X
       homingStateX == homed;
-      isMovingX = FALSE;
+      stopTimerX();
       // if Y is done then all of homing is done
       if(homingStateY == homed){
         newStatus(statusLocked);
@@ -259,16 +244,15 @@ void chkHomingY() {
   if(homingStateY == headingHome) {
     // add distance for pulse that just finished
     homingDistY += distPerPulse(defHomeUIdx);
-    CCP2_LAT = 0; // lower Y step pin to start next pulse
     if(LIMIT_SW_Y)
       // have not gotten to limit switch yet, keep heading home
-      setNextTimeY(defHomeUsecPerPulse);
+      setNextTimeY(defHomeUsecPerPulse, START_PULSE);
     else {
       // set backup dir and step size
       set_ustep(Y, defHomeBkupUIdx);
       set_dir(Y, 1);
       // wait a long time for reversing and for switch bouncing to stop
-      setNextTimeY(debounceAndSettlingTime);
+      setNextTimeY(debounceAndSettlingTime, START_PULSE);
       // we reached the switch, turn around
       homingStateY = backingUpToHome;
     }
@@ -278,17 +262,15 @@ void chkHomingY() {
     homingDistY -= distPerPulse(defHomeBkupUIdx);
     if(!LIMIT_SW_Y) { 
       // have not gotten back to limit switch yet, keep heading back
-      setNextTimeY(defHomeBkupUsecPerPulse);
-      CCP2_LAT = 0; // lower Y step pin to start next pulse
+      setNextTimeY(defHomeBkupUsecPerPulse, START_PULSE);
     } 
     else {
       // we are done homing Y
       homingStateY == homed;
-      isMovingY = FALSE;
+      stopTimerY();
       // if X is done then all of homing is done
       if(homingStateX == homed){
         newStatus(statusLocked); 
-        stopTimer();
       }
     }
   }
@@ -388,23 +370,24 @@ void chkMovingX() {
     }
   } 
   if(deltaXIdx) {
-    CCP1_LAT = 0;  // deltas always pulse
     // leave ustep and dir pins still set to last word
-    // apply delta
     usecsPerStepX += deltaXSign * ((int) deltaX[deltaXIdx-1]);
-  } else {
-    if (currentVectorX->ctrlWord & 0x03ff) {
-      // this is not just a delay
-      // set step to pulse
-      CCP1_LAT = 0;
-      firstVecX = FALSE;
+    setNextTimeX(usecsPerStepX, START_PULSE);
+  } 
+  else {
+    if ((currentVectorX->ctrlWord & 0x03ff) == 0) {
+      // this is just a delay
+      usecsPerStepX = currentVectorX->usecsPerPulse;
+      setNextTimeX(usecsPerStepX, NO_PULSE);
     }
+    else
+      firstVecX = FALSE;
     // set up absolute vector
     set_ustep(X, (currentVectorX->ctrlWord >> 10) & 0x0007);
     set_dir(X, (currentVectorX->ctrlWord >> 13) & 1);
     usecsPerStepX = currentVectorX->usecsPerPulse;
+    setNextTimeX(usecsPerStepX, START_PULSE);
   }
-  setNextTimeX(usecsPerStepX);
 }
 
 void chkMovingY() {
@@ -445,21 +428,23 @@ void chkMovingY() {
     }
   }
   if(deltaYIdx) {
-    CCP2_LAT = 0;  // deltas always pulse
-    // leave ustep and dir still set to last word
-    // apply delta
+    // leave ustep and dir pins still set to last word
     usecsPerStepY += deltaYSign * ((int) deltaY[deltaYIdx-1]);
-  } else {
-    if (currentVectorY->ctrlWord & 0x03ff) {
-      firstVecY = FALSE;
-      // this is not just a delay
-      CCP2_LAT = 0;
+    setNextTimeY(usecsPerStepY, START_PULSE);
+  } 
+  else {
+    if ((currentVectorY->ctrlWord & 0x03ff) == 0) {
+      // this is just a delay
+      usecsPerStepY = currentVectorY->usecsPerPulse;
+      setNextTimeY(usecsPerStepY, NO_PULSE);
     }
+    else
+      firstVecY = FALSE;
     // set up absolute vector
     set_ustep(Y, (currentVectorY->ctrlWord >> 10) & 0x0007);
     set_dir(Y, (currentVectorY->ctrlWord >> 13) & 1);
     usecsPerStepY = currentVectorY->usecsPerPulse;
+    setNextTimeY(usecsPerStepY, START_PULSE);
   }
-  setNextTimeY(usecsPerStepY);
 }
 

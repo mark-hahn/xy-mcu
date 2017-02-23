@@ -25,8 +25,6 @@ extern MotorSettings motorSettings;
 
 extern pos_t  homingDistX; // how long each axis traveled to get home
 extern pos_t  homingDistY;
-extern bool_t isMovingX;  // we are either homing or moving
-extern bool_t isMovingY;
 
 void initMotor();
 void set_resets(bool_t resetHigh);

@@ -38,7 +38,7 @@
 #include "dac.h"
 
 // ignore first spi Int Error after boot
-bool_t spiInt;
+bool_t spiInt = FALSE;
  
 // global interrupt routine
 // reloading timer compare values is most urgent, so first
@@ -72,20 +72,24 @@ void main(void) {
   ANSELA = 0; // no analog inputs
   ANSELB = 0;
   ANSELC = 0;
-    
+
   initDac(); 
   initVectors();
-  initTimer();
-  initSpi();
   initMotor();
   initEvent();
-
-  TRISC6 = 0; // event loop debug trace -- hlim
+  initSpi();
+  
   LATC6 = 1;
-  TRISC7 = 0; // interrupt debug trace -- vlim
+  TRISC6 = 0; // event loop debug trace -- hlim
+  LATC6 = 0;
+  LATC6 = 1;
+  
   LATC7 = 1;
+  TRISC7 = 0; // interrupt debug trace -- vlim
 
-  // global ints on
+  initTimer();
+
+   // global ints on
   PEIE  =  1; // Peripheral Interrupt Enable
   GIE   =  1; // Global Interrupt Enable
 

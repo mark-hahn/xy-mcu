@@ -4,6 +4,9 @@
 
 #include "main.h"
 
+#define START_PULSE 1
+#define NO_PULSE 0
+
 typedef struct time_ut {
   shortTime_t timeShort;
   char        timeBytes[2]; // remember, little-endian
@@ -19,9 +22,8 @@ void initTimer();
 void startTimer();
 void stopTimerX();
 void stopTimerY();
-void stopTimer();
-void setNextTimeX(shortTime_t delta);
-void setNextTimeY(shortTime_t delta);
+void setNextTimeX(shortTime_t delta, bool_t startPulse);
+void setNextTimeY(shortTime_t delta, bool_t startPulse);
 
 #endif	/* TIMER_H */
 

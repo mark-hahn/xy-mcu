@@ -48,8 +48,8 @@ void eventLoop() {
     if(spiInt) {
       // last byte of a complete 32-bit word (spiWordIn) arrived
       LATC6 = 0;
-      spiInt = FALSE;
       spiWord = spiWordIn;
+      spiInt = FALSE;
       spiWordByteIdx = 0;
       
       // this is really slow (10us) ==   TODO
@@ -63,7 +63,7 @@ void eventLoop() {
         while(!SPI_SS) {
           spiWordIn = 0;
           spiWordByteIdx = 0; 
-           LATC6 = !LATC6;
+          LATC6 = !LATC6;
         }
       }
       // this must be finished when the next 32-bit word arrives
@@ -81,12 +81,12 @@ void eventLoop() {
     // if error, no homing or moving happens until clearError cmd
     if(errorCode) continue;
 
-    if(isMovingX && CCP1_PIN) { 
+    if(CCP1_PIN) { 
       // X step pin was raised by compare
       if(mcu_status == statusHoming)      chkHomingX();
       else if(mcu_status == statusMoving) chkMovingX();
     } 
-    if(isMovingY && CCP2_PIN) {
+    if(CCP2_PIN) {
       // Y step pin was raised by compare
       if(mcu_status == statusHoming)      chkHomingY();
       else if(mcu_status == statusMoving) chkMovingY();
