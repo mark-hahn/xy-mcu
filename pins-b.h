@@ -51,5 +51,15 @@
 #define CCP1_PPS          RB4PPS  // CCP 1 pin (X step) output => B4
 #define CCP2_PPS          RC2PPS  // CCP 2 pin (Y step) output => C2
 
+#define PPS_NO_PIN 0
+#define PPS_B4  0x09
+#define PPS_C2  0x0a
+
+#define enableCcpPpsX()  CCP1_PPS = PPS_B4;
+#define enableCcpPpsY()  CCP2_PPS = PPS_C2;
+
+#define disableCcpPpsX() CCP1_PPS = PPS_NO_PIN;
+#define disableCcpPpsY() CCP2_PPS = PPS_NO_PIN;
+
 #endif	/* PINS_B_H */
 
