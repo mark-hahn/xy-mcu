@@ -83,13 +83,8 @@ void main(void) {
   initEvent();
   initSpi();
   
-  LATC6 = 1;
-  TRISC6 = 0; // event loop debug trace -- hlim
-  LATC6 = 0;
-  LATC6 = 1;
-  
-  LATC7 = 1;
-  TRISC7 = 0; // interrupt debug trace -- vlim
+//  TRISC6 = 0; // event loop debug trace -- hlim
+//  TRISC7 = 0; // interrupt debug trace -- vlim
 
   initTimer();
 

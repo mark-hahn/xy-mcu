@@ -85,12 +85,10 @@ void set_resets(bool_t resetHigh) {
 }
 
 void initMotor() {
-  
-  // need "fault" and "on" also  TODO
-  // set all regs as input (wasn't this done already?)
-  
-  LIMIT_SW_X_TRIS = 1;  // set later in main for debug
-  LIMIT_SW_Y_TRIS = 1;
+    // change these to defined constants   TODO
+  TRISA = 0b10100000; // all out except ss and on
+  TRISB = 0b00111111; // all out except ICSP pins
+  TRISC = 0b11011001; // all in except miso, vstep, and fan
   
   set_resets(0);
   // set default settings
@@ -221,7 +219,7 @@ void chkHomingX() {
       // we reached the switch, turn around
       homingStateX = backingUpToHome;
     }
-  } 
+  }  
   else if(homingStateX == backingUpToHome) {
     // subtract distance for pulse that just finished
     homingDistX -= distPerPulse(defHomeBkupUIdx);

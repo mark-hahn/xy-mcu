@@ -32,8 +32,6 @@ void newStatus(char newStatus) {
 
 // axis is zero when not specific to axis
 void handleError(char axis, Error code) {
-  for(int i=0; i<5; i++) LATC6 = !LATC6;
-  LATC6 = 1;
   newStatus(statusUnlocked);
   errorAxis = axis;
   errorCode = code;
@@ -64,7 +62,6 @@ void eventLoop() {
         while(!SPI_SS) {
           spiWordIn = 0;
           spiWordByteIdx = 0; 
-          LATC6 = !LATC6;
         }
       }
       // this must be finished when the next 32-bit word arrives
