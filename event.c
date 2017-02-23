@@ -49,7 +49,6 @@ void eventLoop() {
   while(1) {
     if(spiInt) {
       // last byte of a complete 32-bit word (spiWordIn) arrived
-      LATC6 = 0;
       spiWord = spiWordIn;
       spiInt = FALSE;
       spiWordByteIdx = 0;
@@ -70,15 +69,8 @@ void eventLoop() {
       }
       // this must be finished when the next 32-bit word arrives
       if(spiWord != 0) {
-        LATC6 = 1;
-        LATC6 = 0; 
-        LATC6 = 1; 
         handleSpiWordInput();
-        LATC6 = 0;         
-        LATC6 = 1; 
-        LATC6 = 0;
       }
-      LATC6 = 1;
     }
     // if error, no homing or moving happens until clearError cmd
     if(errorCode) continue;

@@ -53,6 +53,7 @@ void resetTimers() {
 }
 
 void setNextTimeX(shortTime_t delta, bool_t startPulse) {
+  LATC6 = 0;
   CCP1IE = 0;
   if(startPulse) CCP1_LAT = 0;
   timeX.timeShort += delta;
@@ -60,6 +61,7 @@ void setNextTimeX(shortTime_t delta, bool_t startPulse) {
   CCPR1L = timeX.timeBytes[0];
   CCP1IF = 0;
   CCP1IE = 1;
+  LATC6 = 1;
 }
 
 void setNextTimeY(shortTime_t delta, bool_t startPulse) {
