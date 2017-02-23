@@ -8,96 +8,66 @@
 time_ut timeX;
 time_ut timeY;
 
+bool_t firstPulseX = TRUE;
+ 
 void initTimer() {
-  LATC6 = !LATC6;
-  
   // timer 1 -- used only by CCPs below
   T1CLKbits.CS   = 1;      // Fosc/4, 8 MHz before prescale
   T1CONbits.CKPS = 3;      // 11 = 1:8 prescale value, 1 MHz
-  T1GCONbits.GE = 0;       // always on, no gate
+  T1GCONbits.GE  = 0;      // always on, no gate
   TMR1ON = 1;              // start timer
-   
-  // CCP 1 -- X step pin from counter compare 1
-  CCP1_LAT  = 1;  // always one and only used when CCP disabled
+  
+  // CCP 1 -- controls X step interrupt from counter compare 1
+  CCP1_LAT  = 1;  // high on idle
   CCP1_TRIS = 0;          
-  CCP1CONbits.MODE = 0x8;  // set output high on compare
+  CCP1IE    = 0;
+  CCP1CONbits.MODE = 0x8;  // set output high on compare (output not used)
   CCP1CONbits.EN = 1;
-
-  // CCP 2 -- Y step pin from counter compare 2
-  CCP2_LAT  = 1;  // always one and only used when CCP disabled
+  
+  // CCP 2 -- controls Y step interrupt from counter compare 2
+  CCP2_LAT  = 1;  // high on idle
   CCP2_TRIS = 0;           
-  CCP2CONbits.MODE = 0x8;  // set output high on compare
+  CCP2IE    = 0;
+  CCP2CONbits.MODE = 0x8;  // set output high on compare (output not used)
   CCP2CONbits.EN = 1;
-
-// wait for both outputs to go high, may take 65 ms
-  while(!CCP1CONbits.OUT || !CCP2CONbits.OUT);
- }
+}
 
 void stopTimerX() {
-  disableCcpPpsX();
+  CCP1IE   = 0;
+  CCP1_LAT = 1;
 }
 void stopTimerY() {
-  disableCcpPpsY();
+  CCP2IE   = 0;
+  CCP2_LAT = 1;
 }
- 
-void setNextTimeX(shortTime_t delta, bool_t startPulse) {
-  timeX.timeShort += delta;
-  CCP1IE = 0;
-  enableCcpPpsX();
 
-  if(startPulse) {
-    char hi, lo, newLo;
-    do {
-      hi = TMR1H;
-      lo = TMR1L;  
-    } while (hi != TMR1H);
-    char newLo = lo + 20;// short 20 us delay to lower cp out
-    if(newLo < lo) hi++;
-    CCP1CONbits.MODE = 0x09; // set step low on compare match
-    CCPR1L = newLo;
-    CCPR1H = hi; 
-    char latc6 = LATC6;
-    // wait for cp to go low
-    while(CCP1CONbits.OUT){
-      LATC6 = !LATC6;
-    };
-    LATC6 = latc6;
-    CCPR1H = timeX.timeBytes[1]; // accidental match will just keep cp low
-    CCPR1L = timeX.timeBytes[0];
-    CCP1CONbits.MODE = 0x8;  // set step high on compare match 
-  }
-  else {
-    CCPR1H = timeX.timeBytes[1];// accidental match will just keep cp high
-    CCPR1L = timeX.timeBytes[0];
-  }
+void resetTimers() {
+  stopTimerX();
+  stopTimerY();
+  TMR1H = 0;
+  TMR1L = 0;
+  timeX.timeBytes[1] = 0;
+  timeX.timeBytes[0] = 0;
+  timeY.timeBytes[1] = 0;
+  timeY.timeBytes[0] = 0;
+}
+
+void setNextTimeX(shortTime_t delta, bool_t startPulse) {
+  CCP1IE = 0;
+  if(startPulse) CCP1_LAT = 0;
+  timeX.timeShort += delta;
+  CCPR1H = timeX.timeBytes[1];
+  CCPR1L = timeX.timeBytes[0];
   CCP1IF = 0;
   CCP1IE = 1;
 }
 
 void setNextTimeY(shortTime_t delta, bool_t startPulse) {
-  timeY.timeShort += delta;
   CCP2IE = 0;
-  enableCcpPpsY();
-  if(startPulse) {
-    char hi, lo, newLo;
-    do {
-      hi = TMR1H;
-      lo = TMR1L;  
-    } while (hi != TMR1H);
-    char newLo = lo + 20;// short 20 us delay to lower cp out
-    if(newLo < lo) hi++;
-    CCP2CONbits.MODE = 0x09; // set step low on compare match
-    CCPR2L = newLo;
-    CCPR2H = hi;
-    while(CCP2CONbits.OUT); // wait for cp to go low
-    CCPR2H = timeY.timeBytes[1]; // accidental firing will just keep cp low
-    CCPR2L = timeY.timeBytes[0];
-    CCP2CONbits.MODE = 0x8;  // set step high on compare match 
-  }
-  else {
-    CCPR2H = timeY.timeBytes[1];// accidental firing will just keep cp high
-    CCPR2L = timeY.timeBytes[0];
-  }
+  if(startPulse) CCP2_LAT = 0;
+  timeY.timeShort += delta;
+  CCPR2H = timeY.timeBytes[1];
+  CCPR2L = timeY.timeBytes[0];
   CCP2IF = 0;
   CCP2IE = 1;
 }

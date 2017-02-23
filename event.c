@@ -32,6 +32,8 @@ void newStatus(char newStatus) {
 
 // axis is zero when not specific to axis
 void handleError(char axis, Error code) {
+  for(int i=0; i<5; i++) LATC6 = !LATC6;
+  LATC6 = 1;
   newStatus(statusUnlocked);
   errorAxis = axis;
   errorCode = code;
@@ -51,7 +53,7 @@ void eventLoop() {
       spiWord = spiWordIn;
       spiInt = FALSE;
       spiWordByteIdx = 0;
-      
+       
       // this is really slow (10us) ==   TODO
       // always return status in first byte
       SSP1BUF = (errorAxis << 7) | (mcu_status << 4) | errorCode;
@@ -81,12 +83,14 @@ void eventLoop() {
     // if error, no homing or moving happens until clearError cmd
     if(errorCode) continue;
 
-    if(CCP1_PIN) { 
+    if(CCP1Int) { 
+      CCP1Int = FALSE;
       // X step pin was raised by compare
       if(mcu_status == statusHoming)      chkHomingX();
       else if(mcu_status == statusMoving) chkMovingX();
     } 
-    if(CCP2_PIN) {
+    if(CCP2Int) {
+      CCP2Int = FALSE;
       // Y step pin was raised by compare
       if(mcu_status == statusHoming)      chkHomingY();
       else if(mcu_status == statusMoving) chkMovingY();

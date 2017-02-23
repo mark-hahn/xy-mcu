@@ -31,6 +31,7 @@
 #include <xc.h>
 #include "main.h"
 #include "timer.h"
+#include "pins-b.h"
 #include "vector.h"
 #include "spi.h"
 #include "motor.h"
@@ -38,8 +39,10 @@
 #include "dac.h"
 
 // ignore first spi Int Error after boot
-bool_t spiInt = FALSE;
- 
+bool_t spiInt  = FALSE;
+bool_t CCP1Int = FALSE;
+bool_t CCP2Int = FALSE;
+
 // global interrupt routine
 // reloading timer compare values is most urgent, so first
 // SPI is highest priority in event loop and lowest here
@@ -53,18 +56,19 @@ void interrupt isr(void) {
     if(spiWordByteIdx == 4) spiInt = TRUE;
   }
   if(CCP1IF) { // X timer compare int
-    // CCP1 match and rising edge of X step pulse just happened
-    // set next CCP value to match
-    // timeX must be reset in event loop before next int
-    CCPR1H = timeX.timeBytes[1];
-    CCPR1L = timeX.timeBytes[0];
-    // int flag clr should be last to make sure nothing above re-triggered flag
-    CCP1IF = 0;
+    // CCP1 match just happened
+    CCP1_LAT = 1;
+    CCPR1H   = timeX.timeBytes[1];
+    CCPR1L   = timeX.timeBytes[0];
+    CCP1Int  = TRUE;
+    CCP1IF   = 0;
   }
   if(CCP2IF) { // Y timer compare int (same comments above apply)
-    CCPR2H = timeY.timeBytes[1];
-    CCPR2L = timeY.timeBytes[0];
-    CCP2IF = 0;
+    CCP2_LAT = 1;
+    CCPR2H   = timeY.timeBytes[1];
+    CCPR2L   = timeY.timeBytes[0];
+    CCP2Int  = TRUE;
+    CCP2IF   = 0;
   }
 }  
 

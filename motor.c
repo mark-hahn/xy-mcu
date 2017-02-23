@@ -128,12 +128,11 @@ void handleMotorCmd(char *word) {
       set_dir(X, 0);
       set_ustep(Y, defHomeUIdx);
       set_dir(Y, 0);
-      // first pulse in 200 usecs
-      // also starts timers
-      setNextTimeX(200, START_PULSE); 
-      setNextTimeY(200, START_PULSE);
+      resetTimers();
+      setNextTimeX(debounceAndSettlingTime, START_PULSE); 
+      setNextTimeY(debounceAndSettlingTime, START_PULSE);
       return;
-       
+
     case moveCmd:  
       if(mcu_status == statusUnlocked) {
         handleError(0, errorMoveWhenUnlocked);
@@ -159,13 +158,16 @@ void handleMotorCmd(char *word) {
       firstVecX = TRUE;
       firstVecY = TRUE;
       // currentVector is already set by vectors added before this cmd
+      // delta vector not allowed as first vector (duh))
       set_ustep(X, (currentVectorX->ctrlWord >> 10) & 0x0007);
       set_dir(X, (currentVectorX->ctrlWord >> 13) & 1);
-      // first pulse in 200 usecs
-      // is this just a delay command?
       set_ustep(Y, (currentVectorY->ctrlWord >> 10) & 0x0007);
       set_dir(Y, (currentVectorY->ctrlWord >> 13) & 1);
-      setNextTimeX(200, currentVectorY->ctrlWord & 0x03ff);
+      resetTimers();
+      usecsPerStepX = currentVectorX->usecsPerPulse;
+      setNextTimeX(usecsPerStepX, (currentVectorX->ctrlWord & 0x03ff) == 0); 
+      usecsPerStepY = currentVectorY->usecsPerPulse;
+      setNextTimeY(usecsPerStepY, (currentVectorY->ctrlWord & 0x03ff) == 0);
       return;
       
     case setHomingSpeed: 

@@ -7,7 +7,7 @@
 #define START_PULSE 1
 #define NO_PULSE 0
 
-typedef struct time_ut {
+typedef union time_ut {
   shortTime_t timeShort;
   char        timeBytes[2]; // remember, little-endian
 } time_ut;
@@ -19,7 +19,7 @@ extern bool_t ccp1Matched;
 extern bool_t ccp2Matched;
 
 void initTimer();
-void startTimer();
+void resetTimers();
 void stopTimerX();
 void stopTimerY();
 void setNextTimeX(shortTime_t delta, bool_t startPulse);

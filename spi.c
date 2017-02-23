@@ -6,7 +6,6 @@
 #include "vector.h"
 #include "motor.h"
 
-
 volatile char   spiByteFromCpu;  // set by spi interrupt, used in event loop
 //char            spiByteToCpu;    // set by event loop, used in spi interrupt
 unsigned long   spiWordIn;       // four of spiByteFromCpu

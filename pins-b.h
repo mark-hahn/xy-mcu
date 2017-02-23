@@ -17,8 +17,6 @@
 // pin input values unlatched
 #define SPI_SS            RA7    // SPI Slave Select level, no latch
 #define SPI_CLK           RC3    
-#define CCP1_PIN          RB4    // X step pin
-#define CCP2_PIN          RC2    // Y step pin
 #define LIMIT_SW_X        RC6
 #define LIMIT_SW_Y        RC7
 
@@ -55,11 +53,6 @@
 #define PPS_B4  0x09
 #define PPS_C2  0x0a
 
-#define enableCcpPpsX()  CCP1_PPS = PPS_B4;
-#define enableCcpPpsY()  CCP2_PPS = PPS_C2;
-
-#define disableCcpPpsX() CCP1_PPS = PPS_NO_PIN;
-#define disableCcpPpsY() CCP2_PPS = PPS_NO_PIN;
-
 #endif	/* PINS_B_H */
 
+ 
