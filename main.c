@@ -44,8 +44,7 @@ bool_t CCP1Int = FALSE;
 bool_t CCP2Int = FALSE;
 
 // global interrupt routine
-// reloading timer compare values is most urgent, so first
-// SPI is highest priority in event loop and lowest here
+// if int enable (IE) is off then int flag (IF) is ignored
 void interrupt isr(void) {
   if(SSP1IE && SSP1IF) {
     spiByteFromCpu = SSP1BUF;
@@ -56,15 +55,14 @@ void interrupt isr(void) {
     if(spiWordByteIdx == 4) spiInt = TRUE;
   }
   if(CCP1IE && CCP1IF) { // X timer compare int
-    // CCP1 match just happened
-    STEP_X_LAT = 1;
+    STEP_X_LAT = 1;      // driver pulse active edge
     CCPR1H   = timeX.timeBytes[1];
     CCPR1L   = timeX.timeBytes[0];
     CCP1Int  = TRUE;
     CCP1IF   = 0;
   }
-  if(CCP2IE && CCP2IF) { // Y timer compare int (same comments above apply)
-    STEP_Y_LAT = 1;
+  if(CCP2IE && CCP2IF) { // Y timer compare int
+    STEP_Y_LAT = 1;      // driver pulse active edge
     CCPR2H   = timeY.timeBytes[1];
     CCPR2L   = timeY.timeBytes[0];
     CCP2Int  = TRUE;
@@ -74,18 +72,22 @@ void interrupt isr(void) {
 
 void main(void) {
   ANSELA = 0; // no analog inputs
-  ANSELB = 0;
-  ANSELC = 0;
+  ANSELB = 0; // these &^%$&^ regs cause a lot of trouble
+  ANSELC = 0; // they should not default to on and override everything else
+
+  set_sleep(); // set all motor pin latches low
+
+  // change these to defined constants   TODO
+  // and have each init do their own
+  TRISA = 0b10100000; // all out except ss and on
+  TRISB = 0b11000000; // all out except ICSP pins
+  TRISC = 0b11011001; // all in except miso, vstep, and fan
 
   initDac(); 
-  initVectors();
   initMotor();
+  initVectors();
   initEvent();
   initSpi();
-  
-//  TRISC6 = 0; // event loop debug trace -- hlim
-//  TRISC7 = 0; // interrupt debug trace -- vlim
-
   initTimer();
 
    // global ints on

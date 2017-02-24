@@ -9,6 +9,9 @@
 #define SPI_CLK_TRIS      TRISC3 // SPI Clock input, SCLK
 #define SPI_DATA_IN_TRIS  TRISC4 // SPI Data input,  MOSI
 #define SPI_DATA_OUT_TRIS TRISC5 // SPI Data output, MISO
+
+#define RESET_X_TRIS      TRISB3
+#define RESET_Y_TRIS      TRISA4
 #define STEP_X_TRIS       TRISB4 // CCP 1 pin output, X step
 #define STEP_Y_TRIS       TRISC2 // CCP 2 pin output, Y step
 #define FAN_TRIS          TRISC1 // fan pin output

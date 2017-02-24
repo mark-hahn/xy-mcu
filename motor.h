@@ -4,10 +4,10 @@
 
 #include "main.h"
 
-#define defHomeUsecPerPulse      1000 // 50 mm/sec  (.05 / .001)
+#define defHomeUsecPerPulse      1000 // 1000 => 50 mm/sec  (.05 / .001)
 #define defHomeUIdx                 2 // 0.05 mm/pulse
-#define defHomeBkupUsecPerPulse 62500 // 0.1 mm/sec (.00625 / .0625)
-#define defHomeBkupUIdx             5 // .00625 mm/pulse
+#define defHomeBkupUsecPerPulse  1000 // 1000 => 6.25 mm/sec (0.00625 / 0.001)
+#define defHomeBkupUIdx             5 // 5 => 0.00625 mm/pulse
 #define defMotorCurrent            20 // 20 -> 1.5 amp, 26 -> 2 amp
 #define defDirectionLevelXY      0b11 // both directions, x is flipped
 
