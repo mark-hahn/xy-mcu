@@ -9,8 +9,9 @@
 #define SPI_CLK_TRIS      TRISC3 // SPI Clock input, SCLK
 #define SPI_DATA_IN_TRIS  TRISC4 // SPI Data input,  MOSI
 #define SPI_DATA_OUT_TRIS TRISC5 // SPI Data output, MISO
-#define CCP1_TRIS         TRISB4 // CCP 1 pin output, X step
-#define CCP2_TRIS         TRISC2 // CCP 2 pin output, Y step
+#define STEP_X_TRIS       TRISB4 // CCP 1 pin output, X step
+#define STEP_Y_TRIS       TRISC2 // CCP 2 pin output, Y step
+#define FAN_TRIS          TRISC1 // fan pin output
 #define LIMIT_SW_X_TRIS   TRISC6
 #define LIMIT_SW_Y_TRIS   TRISC7
 
@@ -35,8 +36,7 @@
 #define STEP_Y_LAT        LATC2
 #define DIR_Y_LAT         LATA6
  
-#define CCP1_LAT          LATB4  // CCP 1 pin latch, X step
-#define CCP2_LAT          LATC2  // CCP 2 pin latch, Y step
+#define FAN_LAT           LATC1  // fan pin latch
 
 
 // SPI: PPS, peripheral select
@@ -45,13 +45,6 @@
 #define SPI_DATA_IN_PPS   0x14    // SSP1DATPPS <= C4, SPI Data input
 #define SPI_DATA_OUT_PPS  RC5PPS  // Data out   => C5, SPI Data output
 
-// CCP: PPS, counter compare
-#define CCP1_PPS          RB4PPS  // CCP 1 pin (X step) output => B4
-#define CCP2_PPS          RC2PPS  // CCP 2 pin (Y step) output => C2
-
-#define PPS_NO_PIN 0
-#define PPS_B4  0x09
-#define PPS_C2  0x0a
 
 #endif	/* PINS_B_H */
 

@@ -55,16 +55,16 @@ void interrupt isr(void) {
     ((char *) &spiWordIn)[3-spiWordByteIdx++] = spiByteFromCpu;
     if(spiWordByteIdx == 4) spiInt = TRUE;
   }
-  if(CCP1IF) { // X timer compare int
+  if(CCP1IE && CCP1IF) { // X timer compare int
     // CCP1 match just happened
-    CCP1_LAT = 1;
+    STEP_X_LAT = 1;
     CCPR1H   = timeX.timeBytes[1];
     CCPR1L   = timeX.timeBytes[0];
     CCP1Int  = TRUE;
     CCP1IF   = 0;
   }
-  if(CCP2IF) { // Y timer compare int (same comments above apply)
-    CCP2_LAT = 1;
+  if(CCP2IE && CCP2IF) { // Y timer compare int (same comments above apply)
+    STEP_Y_LAT = 1;
     CCPR2H   = timeY.timeBytes[1];
     CCPR2L   = timeY.timeBytes[0];
     CCP2Int  = TRUE;
@@ -76,6 +76,8 @@ void main(void) {
   ANSELA = 0; // no analog inputs
   ANSELB = 0;
   ANSELC = 0;
+  
+  FAN_TRIS = 0;  // fan pin used for debug
 
   initDac(); 
   initVectors();

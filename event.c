@@ -25,9 +25,18 @@ void newStatus(char newStatus) {
   // timer counting and ints off until move or homing command
   stopTimerX();
   stopTimerY();
-  if (errorCode) return;
-  set_resets(newStatus != statusUnlocked);
-  mcu_status = newStatus; 
+  if (errorCode) {
+    set_resets(MOTORS_RESET);
+    return;
+  }
+  if(newStatus == statusSleeping) set_sleep();
+  else {
+    STEP_X_LAT= 1; // turn off sleep by setting steps idle
+    STEP_Y_LAT= 1;
+    if(newStatus == statusUnlocked) set_resets(MOTORS_RESET);
+    else set_resets(MOTORS_NOT_RESET);
+  }
+  mcu_status = newStatus;
 }
 
 // axis is zero when not specific to axis
@@ -49,8 +58,8 @@ void eventLoop() {
       // last byte of a complete 32-bit word (spiWordIn) arrived
       spiWord = spiWordIn;
       spiInt = FALSE;
-      spiWordByteIdx = 0;
-       
+      spiWordByteIdx = 0;  
+        
       // this is really slow (10us) ==   TODO
       // always return status in first byte
       SSP1BUF = (errorAxis << 7) | (mcu_status << 4) | errorCode;
@@ -63,7 +72,7 @@ void eventLoop() {
           spiWordIn = 0;
           spiWordByteIdx = 0; 
         }
-      }
+      } 
       // this must be finished when the next 32-bit word arrives
       if(spiWord != 0) {
         handleSpiWordInput();

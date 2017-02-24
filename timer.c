@@ -18,15 +18,15 @@ void initTimer() {
   TMR1ON = 1;              // start timer
   
   // CCP 1 -- controls X step interrupt from counter compare 1
-  CCP1_LAT  = 1;  // high on idle
-  CCP1_TRIS = 0;          
+  STEP_X_LAT  = 1;  // high on idle
+  STEP_X_TRIS = 0;          
   CCP1IE    = 0;
   CCP1CONbits.MODE = 0x8;  // set output high on compare (output not used)
   CCP1CONbits.EN = 1;
   
   // CCP 2 -- controls Y step interrupt from counter compare 2
-  CCP2_LAT  = 1;  // high on idle
-  CCP2_TRIS = 0;           
+  STEP_Y_LAT  = 1;  // high on idle
+  STEP_Y_TRIS = 0;           
   CCP2IE    = 0;
   CCP2CONbits.MODE = 0x8;  // set output high on compare (output not used)
   CCP2CONbits.EN = 1;
@@ -34,11 +34,9 @@ void initTimer() {
 
 void stopTimerX() {
   CCP1IE   = 0;
-  CCP1_LAT = 1;
 }
 void stopTimerY() {
   CCP2IE   = 0;
-  CCP2_LAT = 1;
 }
 
 void resetTimers() {
@@ -54,7 +52,7 @@ void resetTimers() {
 
 void setNextTimeX(shortTime_t delta, bool_t startPulse) {
   CCP1IE = 0;
-  if(startPulse) CCP1_LAT = 0;
+  if(startPulse) STEP_X_LAT = 0;
   timeX.timeShort += delta;
   CCPR1H = timeX.timeBytes[1];
   CCPR1L = timeX.timeBytes[0];
@@ -64,7 +62,7 @@ void setNextTimeX(shortTime_t delta, bool_t startPulse) {
 
 void setNextTimeY(shortTime_t delta, bool_t startPulse) {
   CCP2IE = 0;
-  if(startPulse) CCP2_LAT = 0;
+  if(startPulse) STEP_Y_LAT = 0;
   timeY.timeShort += delta;
   CCPR2H = timeY.timeBytes[1];
   CCPR2L = timeY.timeBytes[0];

@@ -79,18 +79,35 @@ void set_dir(char axis, char val) {
 
 ////////////////  public functions  /////////////
 
+void set_sleep() {
+  // all motor inputs must be low when driver sleeping to prevent pin conflict
+  RESET_X_LAT = 0;
+  STEP_X_LAT  = 0;
+  MS1_X_LAT   = 0;
+  MS2_X_LAT   = 0;
+  MS3_X_LAT   = 0;
+  DIR_X_LAT   = 0;
+
+  RESET_Y_LAT = 0;
+  STEP_Y_LAT  = 0;
+  MS1_Y_LAT   = 0;
+  MS2_Y_LAT   = 0;
+  MS3_Y_LAT   = 0;
+  DIR_Y_LAT   = 0;
+  
+//  FAN_LAT     = 0;  // debug, matches reset
+}
+
 void set_resets(bool_t resetHigh) {
+//  FAN_LAT     = resetHigh;  // debug, matches reset
   RESET_X_LAT = resetHigh;
   RESET_Y_LAT = resetHigh; 
 }
 
 void initMotor() {
-    // change these to defined constants   TODO
-  TRISA = 0b10100000; // all out except ss and on
-  TRISB = 0b00111111; // all out except ICSP pins
-  TRISC = 0b11011001; // all in except miso, vstep, and fan
   
-  set_resets(0);
+  set_sleep();     // set all motor pins low
+  
   // set default settings
   motorSettings.homeUsecPerPulse     = defHomeUsecPerPulse;
   motorSettings.homeUIdx             = defHomeUIdx;
@@ -103,6 +120,13 @@ void initMotor() {
 void handleMotorCmd(char *word) {
   // word[3] is top byte in word
   switch (word[3]) {
+    
+    case sleepCmd:
+      // this stops timer and sets all motor reset pins low
+      // issue resetCmd to stop sleeping
+      newStatus(statusSleeping); 
+      return;
+      
     case resetCmd: 
       // this stops timer and activates motor reset pins
       newStatus(statusUnlocked); 
@@ -123,9 +147,9 @@ void handleMotorCmd(char *word) {
       homingDistX = 0;
       homingDistY = 0;
       set_ustep(X, defHomeUIdx);
-      set_dir(X, 0);
+      set_dir(X, BACKWARDS);
       set_ustep(Y, defHomeUIdx);
-      set_dir(Y, 0);
+      set_dir(Y, BACKWARDS);
       resetTimers();
       setNextTimeX(debounceAndSettlingTime, START_PULSE); 
       setNextTimeY(debounceAndSettlingTime, START_PULSE);
@@ -213,7 +237,7 @@ void chkHomingX() {
     else {
       // set backup dir and step size
       set_ustep(X, defHomeBkupUIdx);
-      set_dir(X, 1);
+      set_dir(X, FORWARD);
       // wait a long time for reversing and for switch bouncing to stop
       setNextTimeX(debounceAndSettlingTime, START_PULSE);
       // we reached the switch, turn around
@@ -250,7 +274,7 @@ void chkHomingY() {
     else {
       // set backup dir and step size
       set_ustep(Y, defHomeBkupUIdx);
-      set_dir(Y, 1);
+      set_dir(Y, FORWARD);
       // wait a long time for reversing and for switch bouncing to stop
       setNextTimeY(debounceAndSettlingTime, START_PULSE);
       // we reached the switch, turn around
