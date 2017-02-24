@@ -121,24 +121,24 @@ void handleMotorCmd(char *word) {
     case sleepCmd:
       // this stops timer and sets all motor reset pins low
       // issue resetCmd to stop sleeping
-      newStatus(statusSleeping); 
+      setState(statusSleeping); 
       return;
       
     case resetCmd: 
       // this stops timer and activates motor reset pins
-      newStatus(statusUnlocked); 
+      setState(statusUnlocked); 
       return;
       
     case idleCmd:
       // this stops timer but avoids changing reset pins
-      if(RESET_X_LAT) newStatus(statusLocked);
-      else            newStatus(statusUnlocked);
+      if(RESET_X_LAT) setState(statusLocked);
+      else            setState(statusUnlocked);
       initVectors();
       return;
               
     case homeCmd:  
       // also stops timers and clears motor reset pins
-      newStatus(statusHoming);
+      setState(statusHoming);
       homingStateX = headingHome;
       homingStateY = headingHome;
       homingDistX = 0;
@@ -166,7 +166,7 @@ void handleMotorCmd(char *word) {
         return;
       }
       // this also stops timer and clears motor reset pins
-      newStatus(statusMoving);   
+      setState(statusMoving);   
       pulseCountX = 0;
       pulseCountY = 0;
       // first vec cmd can't be a delta one
@@ -218,7 +218,7 @@ void handleMotorCmd(char *word) {
     case clearErrorCmd:
       errorAxis = 0;
       errorCode = 0;
-      newStatus(statusUnlocked);
+      setState(statusUnlocked);
       return;
   }
 }
@@ -251,10 +251,9 @@ void chkHomingX() {
     else {
       // we are done homing X
       homingStateX = homed;
-      stopTimerX();
       // if Y is done then all of homing is done
       if(homingStateY == homed){
-        newStatus(statusLocked);
+        setState(statusLocked);
       }
     }
   }
@@ -288,10 +287,9 @@ void chkHomingY() {
     else {
       // we are done homing Y
       homingStateY = homed;
-      stopTimerY();
       // if X is done then all of homing is done
       if(homingStateX == homed){
-        newStatus(statusLocked); 
+        setState(statusLocked); 
       }
     }
   }
@@ -385,7 +383,7 @@ void chkMovingX() {
          currentVectorX = vecBufX;      
       if(movingDoneY) {
         // done with all moving
-        newStatus(statusLocked); 
+        setState(statusLocked); 
         return;
       }
     }
@@ -443,7 +441,7 @@ void chkMovingY() {
          currentVectorY = vecBufY;      
       if(movingDoneY) {
         // done with all moving
-        newStatus(statusLocked); 
+        setState(statusLocked); 
         return;
       }
     }

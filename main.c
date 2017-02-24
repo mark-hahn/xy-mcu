@@ -36,12 +36,12 @@
 #include "spi.h"
 #include "motor.h"
 #include "event.h"
-#include "dac.h"
+#include "dac.h
 
-// ignore first spi Int Error after boot
 bool_t spiInt  = FALSE;
 bool_t CCP1Int = FALSE;
 bool_t CCP2Int = FALSE;
+char   intError = 0;
 
 // global interrupt routine
 // if int enable (IE) is off then int flag (IF) is ignored
@@ -49,10 +49,16 @@ void interrupt isr(void) {
   if(SSP1IE && SSP1IF) {
     spiByteFromCpu = SSP1BUF;
     SSP1IF = 0;
-    SSP1CON1bits.SSPOV = 0; // clear errors
-    SSP1CON1bits.WCOL  = 0;
     ((char *) &spiWordIn)[3-spiWordByteIdx++] = spiByteFromCpu;
     if(spiWordByteIdx == 4) spiInt = TRUE;
+    if(SSP1CON1bits.SSPOV) { // spi input overflow
+      intError = errorSpiOv;
+      SSP1CON1bits.SSPOV = 0;
+    }
+    if(SSP1CON1bits.WCOL) { // spi write collision
+      intError = errorSpiWcol;
+      SSP1CON1bits.WCOL = 0;
+    }
   }
   if(CCP1IE && CCP1IF) { // X timer compare int
     STEP_X_LAT = 1;      // driver pulse active edge
