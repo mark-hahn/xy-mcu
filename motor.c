@@ -251,7 +251,6 @@ void chkHomingX() {
     else {
       // we are done homing X
       homingStateX = homed;
-      stopTimerX();
       // if Y is done then all of homing is done
       if(homingStateY == homed){
         newStatus(statusLocked);
@@ -288,7 +287,6 @@ void chkHomingY() {
     else {
       // we are done homing Y
       homingStateY = homed;
-      stopTimerY();
       // if X is done then all of homing is done
       if(homingStateX == homed){
         newStatus(statusLocked); 
