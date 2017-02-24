@@ -10,18 +10,18 @@
 #include "vector.h"
 #include "motor.h"
 
-
-Status mcu_status;
 Error errorCode;
 char errorAxis;
+char stateRecIdx = 0;
+StatusRecU statusRec;
 
 void initEvent() {
   errorCode = 0;
-  newStatus(statusUnlocked); 
+  setState(statusUnlocked); 
 }
 
 // this also clears time and sets or clears motor reset pins
-void newStatus(char newStatus) {
+void setState(char newState) {
   // timer counting and ints off until move or homing command
   stopTimerX();
   stopTimerY();
@@ -29,19 +29,19 @@ void newStatus(char newStatus) {
     set_resets(MOTORS_RESET);
     return;
   }
-  if(newStatus == statusSleeping) set_sleep();
+  if(newState == statusSleeping) set_sleep();
   else {
     STEP_X_LAT= 1; // turn off sleep by setting steps idle
     STEP_Y_LAT= 1;
-    if(newStatus == statusUnlocked) set_resets(MOTORS_RESET);
+    if(newState == statusUnlocked) set_resets(MOTORS_RESET);
     else set_resets(MOTORS_NOT_RESET);
   }
-  mcu_status = newStatus;
+  statusRec.rec.state = newState;
 }
 
 // axis is zero when not specific to axis
 void handleError(char axis, Error code) {
-  newStatus(statusUnlocked);
+  setState(statusUnlocked);
   errorAxis = axis;
   errorCode = code;
   // wait for SPI idle to repair byte sync and abort word
@@ -54,6 +54,11 @@ uint32_t spiWord;
 // called once from main.c and never returns
 void eventLoop() {
   while(1) {
+    if(intError) 
+      handleError(0,intError);
+      intError = 0;
+      spiInt = CCP1Int = CCP2Int = FALSE;
+    }
     if(spiInt) {
       // last byte of a complete 32-bit word (spiWordIn) arrived
       spiWord = spiWordIn;

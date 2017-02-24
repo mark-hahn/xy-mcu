@@ -9,6 +9,7 @@
 extern bool_t spiInt;
 extern bool_t CCP1Int;
 extern bool_t CCP2Int;
+extern char   intError;
 
 #endif	/* MAIN_H */
 
