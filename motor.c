@@ -95,18 +95,22 @@ void set_sleep() {
   MS3_Y_LAT   = 0;
   DIR_Y_LAT   = 0;
   
-//  FAN_LAT     = 0;  // debug, matches reset
+  FAN_LAT     = 0;  // debug, matches reset
 }
 
 void set_resets(bool_t resetHigh) {
-//  FAN_LAT     = resetHigh;  // debug, matches reset
+  FAN_LAT     = resetHigh;  // debug, matches reset
   RESET_X_LAT = resetHigh;
   RESET_Y_LAT = resetHigh; 
 }
 
 void initMotor() {
-  
-  set_sleep();     // set all motor pins low
+  set_sleep();     // set all motor pin latches low
+
+  // change these to defined constants   TODO
+  TRISA = 0b10100000; // all out except ss and on
+  TRISB = 0b00111111; // all out except ICSP pins
+  TRISC = 0b11011001; // all in except miso, vstep, and fan
   
   // set default settings
   motorSettings.homeUsecPerPulse     = defHomeUsecPerPulse;

@@ -47,7 +47,7 @@ bool_t CCP2Int = FALSE;
 // reloading timer compare values is most urgent, so first
 // SPI is highest priority in event loop and lowest here
 void interrupt isr(void) {
-  if(SSP1IF) {
+  if(SSP1IE && SSP1IF) {
     spiByteFromCpu = SSP1BUF;
     SSP1IF = 0;
     SSP1CON1bits.SSPOV = 0; // clear errors
@@ -76,8 +76,6 @@ void main(void) {
   ANSELA = 0; // no analog inputs
   ANSELB = 0;
   ANSELC = 0;
-  
-  FAN_TRIS = 0;  // fan pin used for debug
 
   initDac(); 
   initVectors();
