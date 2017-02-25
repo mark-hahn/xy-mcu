@@ -66,6 +66,7 @@ void eventLoop() {
       spiInt = CCP1Int = CCP2Int = FALSE;
     }
     if(spiInt) {
+      FAN_LAT = 1;
       // last byte of a complete 32-bit word (spiWordIn) arrived
       spiWord = spiWordIn;
       spiInt = FALSE;
@@ -130,6 +131,7 @@ void eventLoop() {
       if(spiWord != 0) {
         handleSpiWordInput();
       }
+      FAN_LAT = 0;
     }
     // if error, no homing or moving happens until clearError cmd
     if(errorCode) continue;
