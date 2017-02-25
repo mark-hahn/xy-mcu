@@ -128,7 +128,6 @@ void eventLoop() {
           handleError(0,errorSpiByteSync);
           waitSsCount = 255; // only issue one error
         }
-        FAN_LAT = !FAN_LAT;
         // keep clearing spiWordIn so zeros are received on error
         spiWordIn = 0;
         spiWordByteIdx = 0; 

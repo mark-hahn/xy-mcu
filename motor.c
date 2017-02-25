@@ -94,12 +94,9 @@ void set_sleep() {
   MS2_Y_LAT   = 0;
   MS3_Y_LAT   = 0;
   DIR_Y_LAT   = 0;
-  
-  FAN_LAT     = 0;  // debug, matches reset
 }
 
 void set_resets(bool_t resetHigh) {
-  FAN_LAT     = resetHigh;  // debug, matches reset
   RESET_X_LAT = resetHigh;
   RESET_Y_LAT = resetHigh; 
 }

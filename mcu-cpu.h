@@ -68,7 +68,7 @@ typedef enum Status {
   statusNoResponse  = 1, // no response from mcu (cpu is receiving 0xff)
   statusSleeping    = 2, // idle, all motor pins low
   statusUnlocked    = 3, // idle with motor reset pins low
-  statusHoming      = 4, // automatically homing without vectors
+  statusHoming      = 4, // auto homing
   statusLocked      = 5, // idle with motor current
   statusMoving      = 6  // executing vector moves from vecBuf
 } Status;
