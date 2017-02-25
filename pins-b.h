@@ -48,6 +48,8 @@
 #define SPI_DATA_IN_PPS   0x14    // SSP1DATPPS <= C4, SPI Data input
 #define SPI_DATA_OUT_PPS  RC5PPS  // Data out   => C5, SPI Data output
 
+#define SPI_SS_IOC        IOCAPbits.IOCAP7  // interrupt on rising A7 pin
+#define SPI_SS_IOC_IF     IOCAFbits.IOCAF7  // interrupt flag
 
 #endif	/* PINS_B_H */
 

@@ -44,35 +44,34 @@ bool_t CCP2Int = FALSE;
 char   intError = 0;
 
 // global interrupt routine
-// if int enable (IE) is off then int flag (IF) is ignored
 void interrupt isr(void) {
-  if(SSP1IE && SSP1IF) {
-     spiByteFromCpu = SSP1BUF;
+  if(SSP1IF) {
+  // spi byte arrived
     SSP1IF = 0;
-    ((char *) &spiWordIn)[3-spiWordByteIdx++] = spiByteFromCpu;
-    if(spiWordByteIdx == 4) spiInt = TRUE;
-    if(SSP1CON1bits.SSPOV) { // spi input overflow
-      intError = errorSpiOvflw;
-      SSP1CON1bits.SSPOV = 0;
-    }
-    if(SSP1CON1bits.WCOL) { // spi write collision
-      intError = errorSpiWcol;
-      SSP1CON1bits.WCOL = 0;
-    }
+    ((char *) &spiWordIn)[3-spiWordByteIdx++] = SSP1BUF;
   }
-  if(CCP1IE && CCP1IF) { // X timer compare int
+  if(SPI_SS_IOC_IF) {
+  // spi word arrived (SS went high)
+    SPI_SS_IOC_IF = 0;
+    if(spiInt)                   intError = errorSpiWordOverrun;
+    else if(spiWordByteIdx != 4) intError = errorSpiByteSync;
+    else spiInt = TRUE;
+  }
+  if(CCP1IE && CCP1IF) { 
+    // X timer compare int
+    CCP1IF   = 0;
     STEP_X_LAT = 1;      // driver pulse active edge
     CCPR1H   = timeX.timeBytes[1];
     CCPR1L   = timeX.timeBytes[0];
     CCP1Int  = TRUE;
-    CCP1IF   = 0;
   }
-  if(CCP2IE && CCP2IF) { // Y timer compare int
+  if(CCP2IE && CCP2IF) { 
+    // Y timer compare int
+    CCP2IF   = 0;
     STEP_Y_LAT = 1;      // driver pulse active edge
     CCPR2H   = timeY.timeBytes[1];
     CCPR2L   = timeY.timeBytes[0];
     CCP2Int  = TRUE;
-    CCP2IF   = 0;
   }
 }  
 

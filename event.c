@@ -60,15 +60,26 @@ uint32_t spiWord;
 // called once from main.c and never returns
 void eventLoop() {
   while(1) {
+    if(SSP1CON1bits.SSPOV) { // spi input overflow
+      handleError(0, errorSpiOvflw);
+      SSP1CON1bits.SSPOV = 0;
+      spiInt = CCP1Int = CCP2Int = FALSE;
+    }
+    if(SSP1CON1bits.WCOL) { // spi write collision
+      handleError(0, errorSpiWcol);
+      SSP1CON1bits.WCOL = 0;
+      spiInt = CCP1Int = CCP2Int = FALSE;
+    }
     if(intError) {
       handleError(0, intError);
-      intError = 0;
+      intError = spiWordByteIdx = 0;
       spiInt = CCP1Int = CCP2Int = FALSE;
     }
     if(spiInt) {
-      // last byte of a complete 32-bit word (spiWordIn) arrived
+      FAN_LAT = 1;
+
+      // a 32-bit word (spiWordIn) arrived (SS went high)
       spiWord = spiWordIn;
-      spiInt = FALSE;
       spiWordByteIdx = 0;  
       
       // return state, error, or statusRec data in SPI output buf
@@ -116,24 +127,11 @@ void eventLoop() {
       else if (errorCode) SSP1BUF = (typeError | errorCode | errorAxis);
       else SSP1BUF = (typeState | mcu_state);
 
-      // this must be finished when the next 32-bit word arrives
-      if(spiWord != 0)
-        handleSpiWordInput();
-
-      // sync with words from cpu
-      char waitSsCount = 10;
-      FAN_LAT = 1;
-      while(!SPI_SS) {
-        if(waitSsCount < 255 && --waitSsCount == 0) {
-          handleError(0,errorSpiByteSync);
-          waitSsCount = 255; // only issue one error
-        }
-        // keep clearing spiWordIn so zeros are received on error
-        spiWordIn = 0;
-        spiWordByteIdx = 0; 
-      }
+      if(spiWord != 0) handleSpiWordInput();
+      
+      // spiInt must be cleared before next 32-bit word arrives (SS high)
+      spiInt = FALSE;
       FAN_LAT = 0;
-
     }
     // if error, no homing or moving happens until clearError cmd
     if(errorCode) continue;

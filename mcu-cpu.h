@@ -112,9 +112,11 @@ typedef enum Error {
   errorVecBufUnderflow   =  8,
   errorMoveWhenUnlocked  = 10,
   errorMoveWithNoVectors = 12,
-  errorSpiByteSync       = 14,
-  errorSpiOvflw          = 16,
-  errorSpiWcol           = 18
+  errorSpiByteSync       = 14,  
+  errorSpiByteOverrun    = 16,
+  errorSpiWordOverrun    = 18,
+  errorSpiOvflw          = 20,
+  errorSpiWcol           = 22
 } Error;
 
  

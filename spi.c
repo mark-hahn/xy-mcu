@@ -43,4 +43,10 @@ void initSpi() {
   SSP1CON1bits.WCOL  = 0;
   SSP1IF = 0;             // start int flag cleared
   PIE3bits.SSP1IE = 1;    // enable ints
+  
+  // interrupt on SS rising
+  SPI_SS_IOC = 1;
+  SPI_SS_IOC_IF = 0;  // IOC int flag for specific A7 pin
+  spiInt = 0;
+  IOCIE = 1;
 }
