@@ -27,8 +27,9 @@ typedef unsigned int shortTime_t; // 16 bits unsigned
 // position, unit: 0.00625 mm, 1/32 step distance (smallest microstep)
 // max position is +- 52 meters
 #ifdef MCU_H
-typedef signed short long pos_t; // 24 bits signed
+typedef signed char         int8_t;
 typedef unsigned long     uint32_t;
+typedef signed short long    pos_t; // 24 bits signed
 #else // CPU_H
 typedef long pos_t; // 32 bits signed
 #endif
@@ -70,15 +71,14 @@ typedef enum Status {
   statusMoving      = 5  // executing vector moves from vecBuf
 } Status;
 
-// recTypeError: error code is bottom 4 bits (d0-d3), mcu flag is d4
-#define recTypeError  0b11000000  
-#define recTypeState  0b11100000  // state is bottom 4 bits
-#define recTypeData   0b10000000  // data is bottom 6 bits
-#define recTypeStop   0b00000000  // stop byte with 6-bit cksum
+// top 2 bits of every return byte to cpu
+// only first byte of 32-bit word is used 
+#define typeState  0x10  // state
+#define typeData   0x20  // status rec data in bottom 6 bits
+#define typeError  0x30  // err code: d3-d0, mcu flag: d4
 
-// these are returned to the CPU when requested by statusCmd
-// encoded in series of first bytes of 32-bit words
-// top bits of each byte are byte type (see above)
+// this record is returned to the CPU when requested by statusCmd
+// must be sequential with status or error before and after
 // future api versions may extend record
 typedef struct StatusRec {
   char apiVers;        // version of this API
@@ -94,21 +94,24 @@ typedef union StatusRecU {
   char      bytes[sizeof(StatusRec)];
 } StatusRecU;
 
-// 4 bits
-// can't be 0 or 15
+#define STATUS_SPI_BYTE_COUNT           \
+  (((sizeof(StatusRec) % 3) == 0 ?      \
+   ((sizeof(StatusRec)*4)/3) : (((sizeof(StatusRec)*4)/3) + 1)))
+
+// 4 bits, bottom bit reserved for error axis
 typedef enum Error {
-  errorFault             = 1, // driver chip fault
-  errorLimit             = 2, // hit error limit switch during move
-  errorVecBufOverflow    = 3,
-  errorVecBufUnderflow   = 4,
-  errorMoveWhenUnlocked  = 5,
-  errorMoveWithNoVectors = 6,
-  errorSpiByteSync       = 7,
-  errorSpiOvlw           = 8,
-  errorSpiWcol           = 9
+  errorFault             =  2, // driver chip fault
+  errorLimit             =  4, // hit error limit switch during move
+  errorVecBufOverflow    =  6,
+  errorVecBufUnderflow   =  8,
+  errorMoveWhenUnlocked  = 10,
+  errorMoveWithNoVectors = 12,
+  errorSpiByteSync       = 14,
+  errorSpiOvlw           = 16,
+  errorSpiWcol           = 18
 } Error;
 
-
+ 
 // absolute vector 32-bit words -- constant speed travel
 typedef struct Vector {
   shortTime_t usecsPerPulse; // LSInt

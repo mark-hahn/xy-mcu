@@ -1,5 +1,7 @@
 
 #include <xc.h>
+ #include <string.h>
+
 #include "event.h"
 #include "mcu-cpu.h"
 #include "pins-b.h"
@@ -10,10 +12,13 @@
 #include "vector.h"
 #include "motor.h"
 
-Error errorCode;
-char errorAxis;
-char stateRecIdx = 0;
+char   mcu_state;
+Error  errorCode;
+char   errorAxis;
 StatusRecU statusRec;
+char statusRecIdx = 0;
+StatusRecU statusRecOut;
+int8_t statusRecOutIdx = STATUS_REC_IDLE;
 
 void initEvent() {
   errorCode = 0;
@@ -36,7 +41,7 @@ void setState(char newState) {
     if(newState == statusUnlocked) set_resets(MOTORS_RESET);
     else set_resets(MOTORS_NOT_RESET);
   }
-  statusRec.rec.state = newState;
+  mcu_state = newState;
 }
 
 // axis is zero when not specific to axis
@@ -47,6 +52,7 @@ void handleError(char axis, Error code) {
   // wait for SPI idle to repair byte sync and abort word
   while (!SPI_SS); 
   spiWordByteIdx = 0;
+  statusRecOutIdx = STATUS_REC_IDLE;
 }
 
 uint32_t spiWord;
@@ -64,10 +70,46 @@ void eventLoop() {
       spiWord = spiWordIn;
       spiInt = FALSE;
       spiWordByteIdx = 0;  
-        
-      // this is really slow (10us) ==   TODO
-      // always return status in first byte
-      SSP1BUF = (errorAxis << 7) | (mcu_status << 4) | errorCode;
+      
+      // return state, error, or statusRec data in SPI output buf
+      // status rec is always surrounded by state bytes
+      if (statusRecOutIdx != STATUS_REC_IDLE) {
+        if (statusRecOutIdx == STATUS_REC_START) {
+          SSP1BUF = (typeState | mcu_state); // state byte before rec
+          memcpy(&statusRecOut, &statusRec, sizeof(StatusRec)); //snapshot rec
+          statusRecIdx = statusRecOutIdx = 0;
+        }
+        else if(statusRecOutIdx == STATUS_SPI_BYTE_COUNT) {
+          SSP1BUF = (typeState | mcu_state); // state byte after rec
+          statusRecOutIdx == STATUS_REC_IDLE;
+        }
+        else {
+          switch(statusRecOutIdx % 4) {
+            case 0:
+              SSP1BUF = typeData | (statusRecOut[statusRecIdx] >> 2);
+              break;
+            case 1: {
+              char left2 = (statusRecOut[statusRecIdx++] & 0x03) << 4;
+              SSP1BUF = typeData | left2 | 
+                          ((statusRecOut[statusRecIdx]   & 0xf0) >> 4);
+              break;
+            }
+            case 2: {
+              char left4 = (statusRecOut[statusRecIdx++] & 0x0f) << 2;
+              SSP1BUF = typeData | left4 | 
+                          ((statusRecOut[statusRecIdx]   & 0xc0) >> 4);
+              break;
+            }
+            case 3:
+              SSP1BUF = typeData | (statusRecOut[statusRecIdx++] & 0x3f);
+              break;
+          }
+          statusRecOutIdx++;
+        }
+      }
+      else if (errorCode) SSP1BUF = (typeError | errorCode | errorAxis);
+      else SSP1BUF = (typeState | mcu_state);
+
       // we should be between words with SS high (off)
       if(!SPI_SS) {
         handleError(0,errorSpiByteSync);
@@ -89,14 +131,14 @@ void eventLoop() {
     if(CCP1Int) { 
       CCP1Int = FALSE;
       // X step pin was raised by compare
-      if(mcu_status == statusHoming)      chkHomingX();
-      else if(mcu_status == statusMoving) chkMovingX();
+      if(mcu_state == statusHoming)      chkHomingX();
+      else if(mcu_state == statusMoving) chkMovingX();
     } 
     if(CCP2Int) {
       CCP2Int = FALSE;
       // Y step pin was raised by compare
-      if(mcu_status == statusHoming)      chkHomingY();
-      else if(mcu_status == statusMoving) chkMovingY();
+      if(mcu_state == statusHoming)      chkHomingY();
+      else if(mcu_state == statusMoving) chkMovingY();
     }
   }
 }  

@@ -44,33 +44,3 @@ void initSpi() {
   SSP1IF = 0;             // start int flag cleared
   PIE3bits.SSP1IE = 1;    // enable ints
 }
-
-//void getOutputByte() {
-//  if(spiWordByteIdx == 0) {
-//    char flags;
-//    // cpuReq is only non-zero when cpu sends reqHomeDist command
-//    switch (nextRetWordType) {
-//      case 0: 
-//        flags = retypeStatus; 
-//        spiReturnStatus.status    = mcu_status;
-//        spiReturnStatus.errorCode = errorCode;
-//        break;
-//      case 1: 
-//        flags = retypeHomeDistX;
-//        *((long *)&spiReturnStatus) |= homingDistX;
-//        nextRetWordType = 2;
-//        break;
-//      case 2: 
-//        flags = retypeHomeDistY;
-//        *((long *)&spiReturnStatus) |= homingDistY;
-//        nextRetWordType = 0;
-//        break;
-//    }
-//    if(vecBufXIsAtHighWater()) flags |= retflagBufXHighWater;
-//    if(vecBufYIsAtHighWater()) flags |= retflagBufYHighWater;
-//    if(errorAxis)              flags |= retflagErrorAxis;
-//    if(errorCode)              flags |= retFlagError;
-//    spiReturnStatus.flags = flags;
-//  }
-//  spiByteToCpu = ((char *)&spiReturnStatus)[spiWordByteIdx];
-//}

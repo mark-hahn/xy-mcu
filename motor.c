@@ -117,6 +117,9 @@ void initMotor() {
 void handleMotorCmd(char *word) {
   // word[3] is top byte in word
   switch (word[3]) {
+    case statusCmd:
+      statusRecOutIdx = STATUS_REC_START;
+      return;
     
     case sleepCmd:
       // this stops timer and sets all motor reset pins low
@@ -153,7 +156,7 @@ void handleMotorCmd(char *word) {
       return;
 
     case moveCmd:  
-      if(mcu_status == statusUnlocked) {
+      if(mcu_state == statusUnlocked) {
         handleError(0, errorMoveWhenUnlocked);
         return;
       }

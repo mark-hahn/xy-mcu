@@ -9,7 +9,7 @@
 #define defHomeBkupUsecPerPulse  1000 // 1000 => 6.25 mm/sec (0.00625 / 0.001)
 #define defHomeBkupUIdx             5 // 5 => 0.00625 mm/pulse
 #define defMotorCurrent            20 // 20 -> 1.5 amp, 26 -> 2 amp
-#define defDirectionLevelXY      0b11 // both directions, x is flipped
+#define defDirectionLevelXY         0 // x dir: d1, y dir: d0
 
 #define debounceAndSettlingTime 50000 // debounce and time to reverse, 50 ms
 
