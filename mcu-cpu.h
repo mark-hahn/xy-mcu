@@ -14,6 +14,13 @@
 //     http://techref.massmind.org/techref/io/stepper/estimate.htm
 //   assuming 1A, 2.6mH, 12V, and 200 steps per rev; min is 433 usecs full step
 
+// motor notes ... distance per step
+// 0: 0.2 mm
+// 1: 0.1 mm
+// 2: 0.05 mm
+// 3: 0.025 mm
+// 4: 0.0125 mm
+// 5: 0.00625 mm
 
 #define X 0  /* idx for X axis */
 #define Y 1  /* idx for Y axis */
@@ -120,17 +127,33 @@ typedef enum Error {
 } Error;
 
  
+#ifdef CPU_H
+
 // absolute vector 32-bit words -- constant speed travel
 typedef struct Vector {
-  shortTime_t usecsPerPulse; // LSInt
-  // absolute ctrlWord has five bit fields, from msb to lsb ...
+  // ctrlWord has five bit fields, from msb to lsb ...
   //   1 bit: axis X vector, both X and Y clr means command, not vector
   //   1 bit: axis Y vector, both X and Y set means delta, not absolute, vector
   //   1 bit: dir (0: backwards, 1: forwards)
   //   3 bits: ustep idx, 0 (full-step) to 5 (1/32 step)
   //  10 bits: pulse count
   unsigned int ctrlWord;
+  shortTime_t  usecsPerPulse;
 } Vector;
+
+#else  // MCU_H
+
+typedef struct Vector {
+  shortTime_t  usecsPerPulse;
+  unsigned int ctrlWord;
+} Vector;
+
+#endif
+
+typedef union VectorU {
+  Vector   vec;
+  uint32_t word;
+} VectorU;
 
 // delta 32-bit words -- varying speed travel
 // this word appears after an absolute vector with multiple vectors per word

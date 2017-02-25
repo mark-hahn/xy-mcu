@@ -36,6 +36,7 @@ void handleSpiWordInput() {
     handleMotorCmd((char*) &spiWord);  
     return;
   }
+  // store X vector
   if ((topSpiByte & 0x80) != 0) { 
     // we have a new non-command X vector
     // add it to vecBufX
@@ -46,6 +47,7 @@ void handleSpiWordInput() {
       handleError(X, errorVecBufOverflow);
     return;
   }
+  // store Y vector
   if ((topSpiByte & 0x40) != 0) { 
     // we have a new non-command Y vector
     // add it to vecBufY
