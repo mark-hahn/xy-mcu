@@ -4,6 +4,12 @@
 
 #include "mcu-cpu.h"
 
+
+#define MFR      1   // eridien
+#define PROD     1   // XY base
+#define VERS     1   // XY base product (code or hw) version
+
+
 #define _XTAL_FREQ 32000000 
 
 extern bool_t spiInt;

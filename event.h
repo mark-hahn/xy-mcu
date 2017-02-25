@@ -11,7 +11,7 @@ extern char mcu_state;
 extern char errorAxis;
 extern Error errorCode;
 extern uint32_t spiWord;
-extern StatusRecU statusRec[sizeof(StatusRec)];
+extern StatusRecU statusRec;
 
 #define STATUS_REC_IDLE  -2
 #define STATUS_REC_START -1

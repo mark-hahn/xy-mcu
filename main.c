@@ -36,14 +36,7 @@
 #include "spi.h"
 #include "motor.h"
 #include "event.h"
-#include "dac.h
-
-statusRec.rec.apiVers   = 1;
-statusRec.rec.mfr       = 1; // eridien
-statusRec.rec.prod      = 1; // XY base
-statusRec.rec.vers      = 1; // XY base product (code or hw) version
-statusRec.rec.homeDistX = 0;
-statusRec.rec.homeDistY = 0;
+#include "dac.h"
 
 bool_t spiInt  = FALSE;
 bool_t CCP1Int = FALSE;
@@ -54,7 +47,7 @@ char   intError = 0;
 // if int enable (IE) is off then int flag (IF) is ignored
 void interrupt isr(void) {
   if(SSP1IE && SSP1IF) {
-    spiByteFromCpu = SSP1BUF;
+     spiByteFromCpu = SSP1BUF;
     SSP1IF = 0;
     ((char *) &spiWordIn)[3-spiWordByteIdx++] = spiByteFromCpu;
     if(spiWordByteIdx == 4) spiInt = TRUE;
@@ -84,6 +77,13 @@ void interrupt isr(void) {
 }  
 
 void main(void) {
+  statusRec.rec.apiVers   = API_VERSION;
+  statusRec.rec.mfr       = MFR;  
+  statusRec.rec.prod      = PROD; 
+  statusRec.rec.vers      = VERS; 
+  statusRec.rec.homeDistX = 0;
+  statusRec.rec.homeDistY = 0;
+
   ANSELA = 0; // no analog inputs
   ANSELB = 0; // these &^%$&^ regs cause a lot of trouble
   ANSELC = 0; // they should not default to on and override everything else

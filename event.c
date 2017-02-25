@@ -60,8 +60,8 @@ uint32_t spiWord;
 // called once from main.c and never returns
 void eventLoop() {
   while(1) {
-    if(intError) 
-      handleError(0,intError);
+    if(intError) {
+      handleError(0, intError);
       intError = 0;
       spiInt = CCP1Int = CCP2Int = FALSE;
     }
@@ -75,35 +75,39 @@ void eventLoop() {
       // status rec is always surrounded by state bytes
       if (statusRecOutIdx != STATUS_REC_IDLE) {
         if (statusRecOutIdx == STATUS_REC_START) {
-          SSP1BUF = (typeState | mcu_state); // state byte before rec
+          // state byte before rec
+          if(errorCode) SSP1BUF = (typeState | spiStateByteErrFlag | mcu_state);
+          else          SSP1BUF = (typeState | mcu_state);
           statusRec.rec.homeDistX = homingDistX;
           statusRec.rec.homeDistY = homingDistY;
           memcpy(&statusRecOut, &statusRec, sizeof(StatusRec)); //snapshot rec
           statusRecIdx = statusRecOutIdx = 0;
         }
         else if(statusRecOutIdx == STATUS_SPI_BYTE_COUNT) {
-          SSP1BUF = (typeState | mcu_state); // state byte after rec
+          // state byte after rec
+          if(errorCode) SSP1BUF = (typeState | spiStateByteErrFlag | mcu_state);
+          else          SSP1BUF = (typeState | mcu_state);
           statusRecOutIdx == STATUS_REC_IDLE;
         }
         else {
           switch(statusRecOutIdx % 4) {
             case 0:
-              SSP1BUF = typeData | (statusRecOut[statusRecIdx] >> 2);
+              SSP1BUF = (typeData | (statusRecOut.bytes[statusRecIdx] >> 2));
               break;
             case 1: {
-              char left2 = (statusRecOut[statusRecIdx++] & 0x03) << 4;
+              char left2 = (statusRecOut.bytes[statusRecIdx++] & 0x03) << 4;
               SSP1BUF = typeData | left2 | 
-                          ((statusRecOut[statusRecIdx]   & 0xf0) >> 4);
+                          ((statusRecOut.bytes[statusRecIdx]   & 0xf0) >> 4);
               break;
             }
             case 2: {
-              char left4 = (statusRecOut[statusRecIdx++] & 0x0f) << 2;
+              char left4 = (statusRecOut.bytes[statusRecIdx++] & 0x0f) << 2;
               SSP1BUF = typeData | left4 | 
-                          ((statusRecOut[statusRecIdx]   & 0xc0) >> 4);
+                          ((statusRecOut.bytes[statusRecIdx]   & 0xc0) >> 4);
               break;
             }
             case 3:
-              SSP1BUF = typeData | (statusRecOut[statusRecIdx++] & 0x3f);
+              SSP1BUF = typeData | (statusRecOut.bytes[statusRecIdx++] & 0x3f);
               break;
           }
           statusRecOutIdx++;
