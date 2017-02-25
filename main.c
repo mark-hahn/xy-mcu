@@ -88,8 +88,6 @@ void main(void) {
   ANSELB = 0; // these &^%$&^ regs cause a lot of trouble
   ANSELC = 0; // they should not default to on and override everything else
 
-  set_sleep(); // set all motor pin latches low
-
   // change these to defined constants   TODO
   // and have each init do their own
   TRISA = 0b10100000; // all out except ss and on
@@ -102,6 +100,8 @@ void main(void) {
   initEvent();
   initSpi();
   initTimer();
+  
+  setState(statusSleeping);
 
    // global ints on
   PEIE  =  1; // Peripheral Interrupt Enable

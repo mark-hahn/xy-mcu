@@ -213,16 +213,15 @@ void handleMotorCmd(char *word) {
       motorSettings.directionLevelXY = word[0];
       return;
       
-    case reqHomeDist:
-      // next 2 words to CPU will be X and Y home distance from last homing
-      nextRetWordType = 1;
-      return;
-      
     case clearErrorCmd:
       errorAxis = 0;
       errorCode = 0;
       setState(statusUnlocked);
       return;
+      
+    default:
+      errorAxis = 0;
+      break;
   }
 }
 

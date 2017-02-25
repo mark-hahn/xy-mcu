@@ -66,7 +66,6 @@ void eventLoop() {
       spiInt = CCP1Int = CCP2Int = FALSE;
     }
     if(spiInt) {
-      FAN_LAT = 1;
       // last byte of a complete 32-bit word (spiWordIn) arrived
       spiWord = spiWordIn;
       spiInt = FALSE;
@@ -117,21 +116,25 @@ void eventLoop() {
       else if (errorCode) SSP1BUF = (typeError | errorCode | errorAxis);
       else SSP1BUF = (typeState | mcu_state);
 
-      // we should be between words with SS high (off)
-      if(!SPI_SS) {
-        handleError(0,errorSpiByteSync);
-        // stall to get back in sync
-        // keep resetting int data so zeros are received
-        while(!SPI_SS) {
-          spiWordIn = 0;
-          spiWordByteIdx = 0; 
-        }
-      } 
       // this must be finished when the next 32-bit word arrives
-      if(spiWord != 0) {
+      if(spiWord != 0)
         handleSpiWordInput();
+
+      // sync with words from cpu
+      char waitSsCount = 10;
+      FAN_LAT = 1;
+      while(!SPI_SS) {
+        if(waitSsCount < 255 && --waitSsCount == 0) {
+          handleError(0,errorSpiByteSync);
+          waitSsCount = 255; // only issue one error
+        }
+        FAN_LAT = !FAN_LAT;
+        // keep clearing spiWordIn so zeros are received on error
+        spiWordIn = 0;
+        spiWordByteIdx = 0; 
       }
       FAN_LAT = 0;
+
     }
     // if error, no homing or moving happens until clearError cmd
     if(errorCode) continue;
