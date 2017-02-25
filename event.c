@@ -76,6 +76,8 @@ void eventLoop() {
       if (statusRecOutIdx != STATUS_REC_IDLE) {
         if (statusRecOutIdx == STATUS_REC_START) {
           SSP1BUF = (typeState | mcu_state); // state byte before rec
+          statusRec.rec.homeDistX = homingDistX;
+          statusRec.rec.homeDistY = homingDistY;
           memcpy(&statusRecOut, &statusRec, sizeof(StatusRec)); //snapshot rec
           statusRecIdx = statusRecOutIdx = 0;
         }

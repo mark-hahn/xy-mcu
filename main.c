@@ -38,6 +38,13 @@
 #include "event.h"
 #include "dac.h
 
+statusRec.rec.apiVers   = 1;
+statusRec.rec.mfr       = 1; // eridien
+statusRec.rec.prod      = 1; // XY base
+statusRec.rec.vers      = 1; // XY base product (code or hw) version
+statusRec.rec.homeDistX = 0;
+statusRec.rec.homeDistY = 0;
+
 bool_t spiInt  = FALSE;
 bool_t CCP1Int = FALSE;
 bool_t CCP2Int = FALSE;
@@ -52,7 +59,7 @@ void interrupt isr(void) {
     ((char *) &spiWordIn)[3-spiWordByteIdx++] = spiByteFromCpu;
     if(spiWordByteIdx == 4) spiInt = TRUE;
     if(SSP1CON1bits.SSPOV) { // spi input overflow
-      intError = errorSpiOv;
+      intError = errorSpiOvflw;
       SSP1CON1bits.SSPOV = 0;
     }
     if(SSP1CON1bits.WCOL) { // spi write collision

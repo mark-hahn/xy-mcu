@@ -71,8 +71,8 @@ typedef enum Status {
   statusMoving      = 5  // executing vector moves from vecBuf
 } Status;
 
-// top 2 bits of every return byte to cpu
-// only first byte of 32-bit word is used 
+// only first return byte of 32-bit word is used 
+// byte type in top 2 bits of returned byte
 #define typeState  0x10  // state
 #define typeData   0x20  // status rec data in bottom 6 bits
 #define typeError  0x30  // err code: d3-d0, mcu flag: d4
@@ -84,7 +84,7 @@ typedef struct StatusRec {
   char apiVers;        // version of this API
   char mfr;            // manufacturer code (1 == eridien)
   char prod;           // product id (1 = XY base)
-  char vers;           // product version
+  char vers;           // XY (code or hw) version
   uint32_t homeDistX;  // homing distance of last home operation
   uint32_t homeDistY;
 } StatusRec;
@@ -98,7 +98,7 @@ typedef union StatusRecU {
   (((sizeof(StatusRec) % 3) == 0 ?      \
    ((sizeof(StatusRec)*4)/3) : (((sizeof(StatusRec)*4)/3) + 1)))
 
-// 4 bits, bottom bit reserved for error axis
+// 4 bits, lsb reserved for error axis
 typedef enum Error {
   errorFault             =  2, // driver chip fault
   errorLimit             =  4, // hit error limit switch during move
@@ -107,7 +107,7 @@ typedef enum Error {
   errorMoveWhenUnlocked  = 10,
   errorMoveWithNoVectors = 12,
   errorSpiByteSync       = 14,
-  errorSpiOvlw           = 16,
+  errorSpiOvflw          = 16,
   errorSpiWcol           = 18
 } Error;
 
