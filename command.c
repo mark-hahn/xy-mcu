@@ -13,7 +13,7 @@
 void immediateCmd();
 
 void handleSpiWord() {
-  char topSpiByte = spiBytes[3];
+  Cmd topSpiByte = spiBytes[3];
   if(errorCode) {
     if (topSpiByte == clearErrorCmd) immediateCmd();
   } 
@@ -27,7 +27,7 @@ void handleSpiWord() {
 void immediateCmd() {
   // word is big-endian, mcu isn't
   switch (spiBytes[3]) {
-
+    
     case moveCmd: 
       startMoving();
       return;

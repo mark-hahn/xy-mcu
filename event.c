@@ -73,15 +73,20 @@ void eventLoop() {
       intError = spiBytesInIdx = 0;
       spiInt = CCP1Int = CCP2Int = FALSE;
     }
+    
+    // check for SPI word event
     if(spiInt) {
-      FAN_LAT = 1;
+       FAN_LAT = 1;
+
       // a little-endian 32-bit word (spiBytesIn) arrived (SS went high)
       // copy to buffer interrupt version
       spiWord = *((uint32_t *) &spiBytesIn);
+      
       // use spiInts for structs with 2 uint16_t
       spiInts[0] = *((uint16_t *) &spiBytesIn[2]);
       spiInts[1] = *((uint16_t *) &spiBytesIn[0]);
-      // little-endian array version of copied word
+      
+      // little-endian array version of spiWord
       spiBytes = ((char *) &spiWord);
       
       spiBytesInIdx = 0;   
@@ -105,6 +110,7 @@ void eventLoop() {
           statusRecOutIdx == STATUS_REC_IDLE;
         }
         else {
+          // pack every 3 8-bit statusRec bytes into 4 6-bit spi bytes 
           switch(statusRecOutIdx % 4) {
             case 0:
               SSP1BUF = (typeData | (statusRecOut.bytes[statusRecIdx] >> 2));
@@ -131,24 +137,27 @@ void eventLoop() {
       else if (errorCode) SSP1BUF = (typeError | errorCode | errorAxis);
       else SSP1BUF = (typeState | mcu_state);
 
+      // process input word
       if(spiWord != 0) handleSpiWord();
       
       // spiInt must be cleared before next 32-bit word arrives (SS high)
       spiInt = FALSE;
       FAN_LAT = 0;
     }
+    
     // if error, no homing or moving happens until clearError cmd
     if(errorCode) continue;
 
+    // check for motor pulse end events
     if(CCP1Int) { 
       CCP1Int = FALSE;
-      // X step pin was raised by compare
+      // X step pin was raised by int routine
       if(mcu_state == statusHoming)      chkHomingX();
       else if(mcu_state == statusMoving) chkMovingX();
     } 
     if(CCP2Int) {
       CCP2Int = FALSE;
-      // Y step pin was raised by compare
+      // Y step pin was raised by int routine
       if(mcu_state == statusHoming)      chkHomingY();
       else if(mcu_state == statusMoving) chkMovingY();
     }

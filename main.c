@@ -49,26 +49,27 @@ void interrupt isr(void) {
   // spi byte arrived
     SSP1IF = 0;
     spiBytesIn[3-spiBytesInIdx++] = SSP1BUF;
+   // does not flag eventloop, IOC does below after all four bytes arrived
   }
   if(SPI_SS_IOC_IF) {
   // spi word arrived (SS went high)
     SPI_SS_IOC_IF = 0;
     if(spiInt)                  intError = errorspiBytesOverrun;
     else if(spiBytesInIdx != 4) intError = errorSpiByteSync;
-    else spiInt = TRUE;
+    else spiInt = TRUE; // flag eventloop
   }
   if(CCP1IE && CCP1IF) { 
     // X timer compare int
     CCP1IF   = 0;
-    STEP_X_LAT = 1;      // driver pulse active edge
-    CCPR1H   = timeX.timeBytes[1];
+    STEP_X_LAT = 1; // driver pulse active edge
+    CCPR1H   = timeX.timeBytes[1];  // set next compare time
     CCPR1L   = timeX.timeBytes[0];
-    CCP1Int  = TRUE;
+    CCP1Int  = TRUE; // flag eventloop
   }
   if(CCP2IE && CCP2IF) { 
     // Y timer compare int
     CCP2IF   = 0;
-    STEP_Y_LAT = 1;      // driver pulse active edge
+    STEP_Y_LAT = 1;
     CCPR2H   = timeY.timeBytes[1];
     CCPR2L   = timeY.timeBytes[0];
     CCP2Int  = TRUE;
