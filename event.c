@@ -1,15 +1,15 @@
 
 #include <xc.h>
- #include <string.h>
+#include <string.h>
 
 #include "event.h"
+#include "command.h"
 #include "mcu-cpu.h"
 #include "pins-b.h"
 #include "main.h"
 #include "timer.h"
 #include "spi.h"
 #include "timer.h"
-#include "vector.h"
 #include "motor.h"
 
 char   mcu_state;
@@ -51,11 +51,9 @@ void handleError(char axis, Error code) {
   errorCode = code;
   // wait for SPI idle to repair byte sync and abort word
   while (!SPI_SS); 
-  spiWordByteIdx = 0;
+  spiBytesInIdx = 0;
   statusRecOutIdx = STATUS_REC_IDLE;
 }
-
-uint32_t spiWord;
 
 // called once from main.c and never returns
 void eventLoop() {
@@ -72,15 +70,21 @@ void eventLoop() {
     }
     if(intError) {
       handleError(0, intError);
-      intError = spiWordByteIdx = 0;
+      intError = spiBytesInIdx = 0;
       spiInt = CCP1Int = CCP2Int = FALSE;
     }
     if(spiInt) {
       FAN_LAT = 1;
-
-      // a 32-bit word (spiWordIn) arrived (SS went high)
-      spiWord = spiWordIn;
-      spiWordByteIdx = 0;  
+      // a little-endian 32-bit word (spiBytesIn) arrived (SS went high)
+      // copy to buffer interrupt version
+      spiWord = *((uint32_t *) &spiBytesIn);
+      // use spiInts for structs with 2 uint16_t
+      spiInts[0] = *((uint16_t *) &spiBytesIn[2]);
+      spiInts[1] = *((uint16_t *) &spiBytesIn[0]);
+      // little-endian array version of copied word
+      spiBytes = ((char *) &spiWord);
+      
+      spiBytesInIdx = 0;   
       
       // return state, error, or statusRec data in SPI output buf
       // status rec is always surrounded by state bytes
@@ -127,7 +131,7 @@ void eventLoop() {
       else if (errorCode) SSP1BUF = (typeError | errorCode | errorAxis);
       else SSP1BUF = (typeState | mcu_state);
 
-      if(spiWord != 0) handleSpiWordInput();
+      if(spiWord != 0) handleSpiWord();
       
       // spiInt must be cleared before next 32-bit word arrives (SS high)
       spiInt = FALSE;

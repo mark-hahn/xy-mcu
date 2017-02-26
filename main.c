@@ -38,23 +38,23 @@
 #include "event.h"
 #include "dac.h"
 
-bool_t spiInt  = FALSE;
-bool_t CCP1Int = FALSE;
-bool_t CCP2Int = FALSE;
-char   intError = 0;
+volatile bool_t spiInt  = FALSE;
+volatile bool_t CCP1Int = FALSE;
+volatile bool_t CCP2Int = FALSE;
+volatile char   intError = 0;
 
 // global interrupt routine
 void interrupt isr(void) {
   if(SSP1IF) {
   // spi byte arrived
     SSP1IF = 0;
-    ((char *) &spiWordIn)[3-spiWordByteIdx++] = SSP1BUF;
+    spiBytesIn[3-spiBytesInIdx++] = SSP1BUF;
   }
   if(SPI_SS_IOC_IF) {
   // spi word arrived (SS went high)
     SPI_SS_IOC_IF = 0;
-    if(spiInt)                   intError = errorSpiWordOverrun;
-    else if(spiWordByteIdx != 4) intError = errorSpiByteSync;
+    if(spiInt)                  intError = errorspiBytesOverrun;
+    else if(spiBytesInIdx != 4) intError = errorSpiByteSync;
     else spiInt = TRUE;
   }
   if(CCP1IE && CCP1IF) { 
@@ -93,7 +93,6 @@ void main(void) {
   TRISB = 0b11000000; // all out except ICSP pins
   TRISC = 0b11011001; // all in except miso, vstep, and fan
 
-  initDac(); 
   initMotor();
   initVectors();
   initEvent();

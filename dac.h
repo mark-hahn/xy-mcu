@@ -3,12 +3,10 @@
 #define	DAC_H
 
 
-// V = (val * 3.3 / 32 - 0.65)/2; amps = 2 * V
-#define set_dac(val) DAC1CON1bits.DAC1R = (val)
-
-
 void initDac();
 
+// V = (val * 3.3 / 32 - 0.65)/2; amps = 2 * V
+void motorCurrent(char val);
 
 #endif	/* DAC_H */
 

@@ -6,11 +6,12 @@
 #include "vector.h"
 #include "motor.h"
 
-volatile char   spiByteFromCpu;  // set by spi interrupt, used in event loop
-//char            spiByteToCpu;    // set by event loop, used in spi interrupt
-unsigned long   spiWordIn;       // four of spiByteFromCpu
-//ReturnStatus    spiReturnStatus; // four of spiByteToCpu
-char            spiWordByteIdx;  // byte idx in both spiWordIn and spiReturnStatus
+uint32_t spiWord;
+uint16_t spiInts[2];
+char    *spiBytes;
+
+volatile char spiBytesIn[4];  // a word (four chars) from SPI, big-endian
+volatile char spiBytesInIdx;  // index for spiBytesIn
 
 char nextRetWordType = 0; // specifies type of word to be returned next
 
@@ -30,7 +31,7 @@ void initSpi() {
   SSP1CON1bits.CKP   = 0; // 0: xmit clk low is idle
   SSP1STATbits.CKE   = 1; // clk edge in (1: active ->idle) (1: safe wcol?)
   SSP1CON3bits.BOEN  = 1; // enable buffer input overflow check (SSPOV))
-  spiWordByteIdx = 0;
+  spiBytesInIdx = 0;
   /* From datasheet: Before enabling the module in SPI Slave mode, the clock
    line must match the proper Idle state (CKP) */
   while(SPI_CLK);

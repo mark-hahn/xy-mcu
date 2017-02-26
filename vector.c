@@ -1,11 +1,7 @@
 
 #include <xc.h>
 #include "vector.h"
-#include "main.h"
 #include "spi.h"
-#include "pins-b.h"
-#include "mcu-cpu.h"
-#include "motor.h"
 #include "event.h"
 
 // separate vector buffers for X and Y
@@ -18,46 +14,18 @@ void initVectors() {
   vecBufHeadX = currentVectorX = vecBufX;
   vecBufHeadY = currentVectorY = vecBufY;
 }
+void putVectorX() {
+  vecBufHeadX->ctrlWord      = spiInts[0];
+  vecBufHeadX->usecsPerPulse = spiInts[1];
+  if (++vecBufHeadX == vecBufX + VEC_BUF_SIZE) vecBufHeadX = vecBufX;
+  if (vecBufHeadX == currentVectorX) handleError(X, errorVecBufOverflow);
+}
 
-void handleSpiWordInput() {
-  char topSpiByte = ((char *) &spiWord)[3]; 
-
-  if(errorCode) {
-    if (topSpiByte == clearErrorCmd) 
-      handleMotorCmd((char *) &spiWord);
-    // all other input is ignored when error
-    return;
-  } 
-  if(topSpiByte == 0)
-    // cmd is zero means empty SPI word, ignore it
-    return;
-  
-  if((topSpiByte & 0xc0) == 0) {
-    handleMotorCmd((char*) &spiWord);  
-    return;
-  }
-  // store X vector
-  if ((topSpiByte & 0x80) != 0) { 
-    // we have a new non-command X vector
-    // add it to vecBufX
-    *((unsigned long *)vecBufHeadX) = spiWord;
-    if (++vecBufHeadX == vecBufY + VEC_BUF_SIZE)
-      vecBufHeadX = vecBufX;
-    if (vecBufHeadX == currentVectorX)
-      handleError(X, errorVecBufOverflow);
-    return;
-  }
-  // store Y vector
-  if ((topSpiByte & 0x40) != 0) { 
-    // we have a new non-command Y vector
-    // add it to vecBufY
-    *((unsigned long *)vecBufHeadY) = spiWord;
-    if (++vecBufHeadY == vecBufY + VEC_BUF_SIZE)
-      vecBufHeadY = vecBufY;
-    if (vecBufHeadY == currentVectorY)
-      handleError(Y, errorVecBufOverflow);
-    return;
-  }
+void putVectorY() {
+    vecBufHeadY->ctrlWord      = spiInts[0];
+    vecBufHeadY->usecsPerPulse = spiInts[1];
+    if (++vecBufHeadY == vecBufY + VEC_BUF_SIZE) vecBufHeadY = vecBufY;
+    if (vecBufHeadY == currentVectorY) handleError(Y, errorVecBufOverflow);
 }
 
 bool_t vecBufXIsAtHighWater() {

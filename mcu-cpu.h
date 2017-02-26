@@ -14,13 +14,27 @@
 //     http://techref.massmind.org/techref/io/stepper/estimate.htm
 //   assuming 1A, 2.6mH, 12V, and 200 steps per rev; min is 433 usecs full step
 
-// motor notes ... distance per step
+// motor notes ...
+
+// distance per step
 // 0: 0.2 mm
 // 1: 0.1 mm
 // 2: 0.05 mm
 // 3: 0.025 mm
 // 4: 0.0125 mm
 // 5: 0.00625 mm
+
+// dac:  vref = (val * 3.3 / 32 - 0.65)/2; amps = 2 * V
+// The following are motor current VREFs measured by dac settings
+//  4 -> 0       s.b. -0.119
+//  5 -> 0.009   s.b. -0.067
+//  6 -> 0.041   s.b. -0.035
+//  7 -> 0.083   s.b.  0.036
+//  8 -> 0.128   s.b.  0.088
+//  9 -> 0.175   s.b.  0.139
+// 10 -> 0.222   s.b.  0.191
+// 20 -> 0.710   s.b.  0.706
+// 31 -> 1.275   s.b.  1.273
 
 #define X 0  /* idx for X axis */
 #define Y 1  /* idx for Y axis */
@@ -37,6 +51,7 @@ typedef unsigned int shortTime_t; // 16 bits unsigned
 // max position is +- 52 meters
 #ifdef MCU_H
 typedef signed char         int8_t;
+typedef unsigned int      uint16_t;
 typedef unsigned long     uint32_t;
 typedef signed short long    pos_t; // 24 bits signed
 #else // CPU_H
@@ -78,7 +93,7 @@ typedef enum Status {
   statusHoming      = 4, // auto homing
   statusLocked      = 5, // idle with motor current
   statusMoving      = 6  // executing vector moves from vecBuf
-} Status;
+} Status; 
 
 // only first return byte of 32-bit word is used 
 // byte type in top 2 bits of returned byte
@@ -121,14 +136,12 @@ typedef enum Error {
   errorMoveWithNoVectors = 12,
   errorSpiByteSync       = 14,  
   errorSpiByteOverrun    = 16,
-  errorSpiWordOverrun    = 18,
+  errorspiBytesOverrun   = 18,
   errorSpiOvflw          = 20,
   errorSpiWcol           = 22
 } Error;
 
  
-#ifdef CPU_H
-
 // absolute vector 32-bit words -- constant speed travel
 typedef struct Vector {
   // ctrlWord has five bit fields, from msb to lsb ...
@@ -137,18 +150,9 @@ typedef struct Vector {
   //   1 bit: dir (0: backwards, 1: forwards)
   //   3 bits: ustep idx, 0 (full-step) to 5 (1/32 step)
   //  10 bits: pulse count
-  unsigned int ctrlWord;
+  unsigned int ctrlWord; // top byte is top byte in word version of 
   shortTime_t  usecsPerPulse;
 } Vector;
-
-#else  // MCU_H
-
-typedef struct Vector {
-  shortTime_t  usecsPerPulse;
-  unsigned int ctrlWord;
-} Vector;
-
-#endif
 
 typedef union VectorU {
   Vector   vec;

@@ -26,15 +26,23 @@ typedef struct MotorSettings {
 
 extern MotorSettings motorSettings;
 
-extern pos_t  homingDistX; // how long each axis traveled to get home
-extern pos_t  homingDistY;
+extern pos_t homingDistX; // how long each axis traveled to get home
+extern pos_t homingDistY;
 
 void initMotor();
 void set_sleep();
 void set_resets(bool_t resetHigh);
-void handleMotorCmd(char *word);
+
+void homingSpeed();
+void homingBackupSpeed();
+void directionLevelXY(char val);
+void motorCurrent(char val);
+
+void startHoming();
 void chkHomingX();
 void chkHomingY();
+
+void startMoving();
 void chkMovingX();
 void chkMovingY();
 

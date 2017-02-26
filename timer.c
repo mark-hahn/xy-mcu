@@ -5,8 +5,8 @@
 #include "pins-b.h"
 
 // these are loaded into CCP compare regs in interrupt
-time_ut timeX;
-time_ut timeY;
+volatile time_ut timeX;
+volatile time_ut timeY;
 
 bool_t firstPulseX = TRUE;
  

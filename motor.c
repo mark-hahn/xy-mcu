@@ -76,9 +76,6 @@ void set_dir(char axis, char val) {
     DIR_Y_LAT = (motorSettings.directionLevelXY &  1) ^ val;
 }
 
-
-////////////////  public functions  /////////////
-
 void set_sleep() {
   // all motor inputs must be low when driver sleeping to prevent pin conflict
   RESET_X_LAT = 0;
@@ -102,124 +99,61 @@ void set_resets(bool_t resetHigh) {
 }
 
 void initMotor() {
+  // init dac
+  DAC1CON1bits.DAC1R  = 0;  
+  DAC1CON0bits.OE1    = 1;
+  DAC1CON0bits.OE2    = 0;
+  DAC1CON0bits.PSS    = 0;
+  DAC1CON0bits.NSS    = 0;
+  DAC1CON0bits.EN     = 1;
+
   // set default settings
-  motorSettings.homeUsecPerPulse     = defHomeUsecPerPulse;
   motorSettings.homeUIdx             = defHomeUIdx;
-  motorSettings.homeBkupUsecPerPulse = defHomeBkupUsecPerPulse;
+  motorSettings.homeUsecPerPulse     = defHomeUsecPerPulse;
   motorSettings.homeBkupUIdx         = defHomeBkupUIdx;
+  motorSettings.homeBkupUsecPerPulse = defHomeBkupUsecPerPulse;
   motorSettings.directionLevelXY     = defDirectionLevelXY;
-  set_dac(defMotorCurrent);
+  
+  motorCurrent(defMotorCurrent);
 }
 
-void handleMotorCmd(char *word) {
-  // word[3] is top byte in word
-  switch (word[3]) {
-    case statusCmd:
-      statusRecOutIdx = STATUS_REC_START;
-      return;
-    
-    case sleepCmd:
-      // this stops timer and sets all motor reset pins low
-      // issue resetCmd to stop sleeping
-      setState(statusSleeping); 
-      return;
-      
-    case resetCmd: 
-      // this stops timer and activates motor reset pins
-      setState(statusUnlocked); 
-      return;
-      
-    case idleCmd:
-      // this stops timer but avoids changing reset pins
-      if(RESET_X_LAT) setState(statusLocked);
-      else            setState(statusUnlocked);
-      initVectors();
-      return;
-              
-    case homeCmd:  
-      // also stops timers and clears motor reset pins
-      setState(statusHoming);
-      homingStateX = headingHome;
-      homingStateY = headingHome;
-      homingDistX = 0;
-      homingDistY = 0;
-      set_ustep(X, defHomeUIdx);
-      set_dir(X, BACKWARDS);
-      set_ustep(Y, defHomeUIdx);
-      set_dir(Y, BACKWARDS);
-      resetTimers();
-      setNextTimeX(debounceAndSettlingTime, START_PULSE); 
-      setNextTimeY(debounceAndSettlingTime, START_PULSE);
-      return;
+void homingSpeed() {
+  motorSettings.homeUIdx         = spiBytes[2];
+  motorSettings.homeUsecPerPulse = spiInts[1];
+}
 
-    case moveCmd:  
-      if(mcu_state == statusUnlocked) {
-        handleError(0, errorMoveWhenUnlocked);
-        return;
-      }
-      if(currentVectorX == vecBufHeadX) {
-        handleError(X, errorMoveWithNoVectors);
-        return;
-      }
-      if(currentVectorY == vecBufHeadY) {
-        handleError(Y, errorMoveWithNoVectors);
-        return;
-      }
-      // this also stops timer and clears motor reset pins
-      setState(statusMoving);   
-      pulseCountX = 0;
-      pulseCountY = 0;
-      // first vec cmd can't be a delta one
-      deltaVecCountX = 0;
-      deltaVecCountY = 0;
-      movingDoneX = FALSE;
-      movingDoneY = FALSE;
-      firstVecX = TRUE;
-      firstVecY = TRUE;
-      // currentVector is already set by vectors added before this cmd
-      // delta vector not allowed as first vector (duh))
-      set_ustep(X, (currentVectorX->ctrlWord >> 10) & 0x0007);
-      set_dir(X, (currentVectorX->ctrlWord >> 13) & 1);
-      set_ustep(Y, (currentVectorY->ctrlWord >> 10) & 0x0007);
-      set_dir(Y, (currentVectorY->ctrlWord >> 13) & 1);
-      resetTimers();
-      usecsPerStepX = currentVectorX->usecsPerPulse;
-      setNextTimeX(usecsPerStepX, (currentVectorX->ctrlWord & 0x03ff) == 0); 
-      usecsPerStepY = currentVectorY->usecsPerPulse;
-      setNextTimeY(usecsPerStepY, (currentVectorY->ctrlWord & 0x03ff) == 0);
-      return;
-      
-    case setHomingSpeed: 
-      motorSettings.homeUIdx = word[2];
-      motorSettings.homeUsecPerPulse = *((shortTime_t *) &word[0]);
-      return;
-      
-    case setHomingBackupSpeed: 
-      motorSettings.homeBkupUIdx = word[2];
-      motorSettings.homeBkupUsecPerPulse = *((shortTime_t *) &word[0]);
-      return;
-      
-    case setMotorCurrent: 
-      // middle two bytes are empty
-      set_dac(word[0]);
-      return;
-      
-    case setDirectionLevelXY: 
-      // middle two bytes are empty
-      // d1 is X and d0 is Y
-      motorSettings.directionLevelXY = word[0];
-      return;
-      
-    case clearErrorCmd:
-      errorAxis = 0;
-      errorCode = 0;
-      setState(statusUnlocked);
-      return;
-      
-    default:
-      errorAxis = 0;
-      break;
-  }
+void homingBackupSpeed() {
+  motorSettings.homeBkupUIdx         = spiBytes[2];
+  motorSettings.homeBkupUsecPerPulse = spiInts[1];
+}
+
+void directionLevelXY(char val) {
+  // d1 is X and d0 is Y
+  motorSettings.directionLevelXY = val;
+}
+
+void motorCurrent(char val) {
+  DAC1CON1bits.DAC1R = (val);
+}
+
+
+///////////////////////////////// homing ///////////////////////
+
+
+void startHoming() {
+  // also stops timers and clears motor reset pins
+  setState(statusHoming);
+  homingStateX = headingHome;
+  homingStateY = headingHome;
+  homingDistX = 0;
+  homingDistY = 0;
+  set_ustep(X, defHomeUIdx);
+  set_dir(X, BACKWARDS);
+  set_ustep(Y, defHomeUIdx);
+  set_dir(Y, BACKWARDS);
+  resetTimers();
+  setNextTimeX(debounceAndSettlingTime, START_PULSE); 
+  setNextTimeY(debounceAndSettlingTime, START_PULSE);
 }
 
 void chkHomingX() {
@@ -292,6 +226,45 @@ void chkHomingY() {
       }
     }
   }
+}
+
+///////////////////////////////// moving ///////////////////////
+
+void startMoving() {
+  if(mcu_state == statusUnlocked) {
+    handleError(0, errorMoveWhenUnlocked);
+    return;
+  }
+  if(currentVectorX == vecBufHeadX) {
+    handleError(X, errorMoveWithNoVectors);
+    return;
+  }
+  if(currentVectorY == vecBufHeadY) {
+    handleError(Y, errorMoveWithNoVectors);
+    return;
+  }
+  // this also stops timer and clears motor reset pins
+  setState(statusMoving);   
+  pulseCountX = 0;
+  pulseCountY = 0;
+  // first vec cmd can't be a delta one
+  deltaVecCountX = 0;
+  deltaVecCountY = 0;
+  movingDoneX = FALSE;
+  movingDoneY = FALSE;
+  firstVecX = TRUE;
+  firstVecY = TRUE;
+  // currentVector is already set by vectors added before this cmd
+  // delta vector not allowed as first vector (duh))
+  set_ustep(X, (currentVectorX->ctrlWord >> 10) & 0x0007);
+  set_dir(X, (currentVectorX->ctrlWord >> 13) & 1);
+  set_ustep(Y, (currentVectorY->ctrlWord >> 10) & 0x0007);
+  set_dir(Y, (currentVectorY->ctrlWord >> 13) & 1);
+  resetTimers();
+  usecsPerStepX = currentVectorX->usecsPerPulse;
+  setNextTimeX(usecsPerStepX, (currentVectorX->ctrlWord & 0x03ff) == 0); 
+  usecsPerStepY = currentVectorY->usecsPerPulse;
+  setNextTimeY(usecsPerStepY, (currentVectorY->ctrlWord & 0x03ff) == 0);
 }
 
 void newDeltaX(unsigned long word) {

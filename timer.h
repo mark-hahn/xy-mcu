@@ -13,10 +13,8 @@ typedef union time_ut {
 } time_ut;
 
 // CCP times are set between timer interrupts for quick use in int
-extern time_ut timeX;
-extern time_ut timeY;
-extern bool_t ccp1Matched;
-extern bool_t ccp2Matched;
+extern volatile time_ut timeX;
+extern volatile time_ut timeY;
 
 void initTimer();
 void resetTimers();
