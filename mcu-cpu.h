@@ -84,8 +84,8 @@ typedef enum Cmd {
 } Cmd;
 
 // general mcu states
-// values are valid even when error flag is set, tells what was happening
-// 5 bits
+// values are valid even when error is set, tells what was happening
+// 3 bits
 typedef enum Status {
   statusNoResponse  = 1, // no response from mcu (cpu is receiving 0xff)
   statusSleeping    = 2, // idle, all motor pins low
@@ -95,11 +95,23 @@ typedef enum Status {
   statusMoving      = 6  // executing vector moves from vecBuf
 } Status; 
 
-// only first return byte of 32-bit word is used 
+// only first returned (mcu to cpu) byte of 32-bit word is used
+// rest are zero      (mcu has no buffering in that direction)
+
+// d7-d6: typeState
+// d5:    error flag
+// when error:
+//    d4-d1: error code
+//       d0: axis flag
+// when no error:
+//    d4-d3: vector buf high-water flags for X and Y
+//    d2-d0: status code (mcu_state)
+
 // byte type in top 2 bits of returned byte
-#define typeState  0x40  // state, if errorcode then d5 = 1
+#define typeState  0x00  // state byte returned by default
+#define typeState2 0x40  // reserved for possible extended state
 #define typeData   0x80  // status rec data in bottom 6 bits
-#define typeError  0xc0  // err code: d5-d1, mcu flag: d0
+#define typeError  0xc0  // err code: d5-d1, axis flag: d0
 
 // state byte also includes flag indicating error
 #define spiStateByteErrFlag 0x20
@@ -141,7 +153,6 @@ typedef enum Error {
   errorSpiWcol           = 22
 } Error;
 
- 
 // absolute vector 32-bit words -- constant speed travel
 typedef struct Vector {
   // ctrlWord has five bit fields, from msb to lsb ...
@@ -169,9 +180,5 @@ typedef union VectorU {
 // 4 delta format,  7 bits each: 11s0 wwww wwwX XXXX XXyy yyyy yZZZ ZZZZ
 // 3 delta format,  9 bits each: 11s1 0www wwww wwXX XXXX XXXy yyyy yyyy
 // 2 delta format, 13 bits each: 11s1 10ww wwww wwww wwwX XXXX XXXX XXXX
-
-// the last vector of axis move: 1111 1111 1111 1111 1111 1111 1111 111A
-// where A is the axis
-// when both axis have reached this marker then the move is finished
 
 #endif

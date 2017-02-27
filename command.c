@@ -16,6 +16,7 @@ void handleSpiWord() {
   Cmd topSpiByte = spiBytes[3];
   if(errorCode) {
     if (topSpiByte == clearErrorCmd) immediateCmd();
+    // else all other vectors/commands not allowed
   } 
   else switch(topSpiByte & 0xc0) {
     case 0x80: putVectorX();   break;
@@ -41,25 +42,27 @@ void immediateCmd() {
       return;
     
     case sleepCmd:
+      initVectors();
       // this stops timer and sets all motor reset pins low
       // issue resetCmd to stop sleeping
       setState(statusSleeping); 
       return;
       
     case resetCmd: 
+      initVectors();
       // this stops timer and activates motor reset pins
       setState(statusUnlocked); 
       return;
       
     case idleCmd:
+      initVectors();
       // this stops timer but avoids changing reset pins
       if(RESET_X_LAT) setState(statusLocked);
       else            setState(statusUnlocked);
-      initVectors();
       return;
               
     case clearErrorCmd:
-      errorAxis = 0;
+      initVectors();  // empty vec bufs
       errorCode = 0;
       setState(statusUnlocked);
       return;

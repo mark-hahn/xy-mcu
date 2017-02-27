@@ -40,10 +40,11 @@ void stopTimerY() {
 }
 
 void resetTimers() {
-  stopTimerX();
-  stopTimerY();
-  TMR1H = 0;
-  TMR1L = 0;
+  CCP1IE = 0;
+  CCP2IE = 0;
+  TMR1H  = 0;
+  TMR1L  = 0;
+  // timeBytes are used as running 16-bit timer positions desired
   timeX.timeBytes[1] = 0;
   timeX.timeBytes[0] = 0;
   timeY.timeBytes[1] = 0;

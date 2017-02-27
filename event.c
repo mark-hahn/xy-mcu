@@ -6,6 +6,7 @@
 #include "command.h"
 #include "mcu-cpu.h"
 #include "pins-b.h"
+#include "vector.h"
 #include "main.h"
 #include "timer.h"
 #include "spi.h"
@@ -55,6 +56,19 @@ void handleError(char axis, Error code) {
   statusRecOutIdx = STATUS_REC_IDLE;
 }
 
+// d5: error flag (if error, then no high-waters sent)
+// d4-d3: vector buf high-water flags for X and Y
+// d2-d0: status code (mcu_state)
+void sendStateByte() {
+  if(errorCode) 
+    SSP1BUF = (typeState | spiStateByteErrFlag | mcu_state);
+  else 
+    SSP1BUF = (typeState                    | 
+              (vecBufXIsAtHighWater() << 4) |
+              (vecBufYIsAtHighWater() << 3) |
+               mcu_state);
+}
+
 // called once from main.c and never returns
 void eventLoop() {
   while(1) {
@@ -77,18 +91,17 @@ void eventLoop() {
     // check for SPI word event
     if(spiInt) {
        FAN_LAT = 1;
-
       // a little-endian 32-bit word (spiBytesIn) arrived (SS went high)
-      // copy to buffer interrupt version
-      spiWord = *((uint32_t *) &spiBytesIn);
+       
+      // copy word to buffered interrupt version (global))
+      spiWord    = *((uint32_t *) &spiBytesIn);
       
-      // use spiInts for structs with 2 uint16_t
+      // use spiInts for structs with 2 uint16_t (global))
       spiInts[0] = *((uint16_t *) &spiBytesIn[2]);
       spiInts[1] = *((uint16_t *) &spiBytesIn[0]);
       
-      // little-endian array version of spiWord
-      spiBytes = ((char *) &spiWord);
-      
+      // little-endian array version of spiWord (global))
+      spiBytes   = ((char *) &spiWord);
       spiBytesInIdx = 0;   
       
       // return state, error, or statusRec data in SPI output buf
@@ -96,8 +109,7 @@ void eventLoop() {
       if (statusRecOutIdx != STATUS_REC_IDLE) {
         if (statusRecOutIdx == STATUS_REC_START) {
           // state byte before rec
-          if(errorCode) SSP1BUF = (typeState | spiStateByteErrFlag | mcu_state);
-          else          SSP1BUF = (typeState | mcu_state);
+          sendStateByte();
           statusRec.rec.homeDistX = homingDistX;
           statusRec.rec.homeDistY = homingDistY;
           memcpy(&statusRecOut, &statusRec, sizeof(StatusRec)); //snapshot rec
@@ -105,8 +117,7 @@ void eventLoop() {
         }
         else if(statusRecOutIdx == STATUS_SPI_BYTE_COUNT) {
           // state byte after rec
-          if(errorCode) SSP1BUF = (typeState | spiStateByteErrFlag | mcu_state);
-          else          SSP1BUF = (typeState | mcu_state);
+          sendStateByte();
           statusRecOutIdx == STATUS_REC_IDLE;
         }
         else {
@@ -134,8 +145,10 @@ void eventLoop() {
           statusRecOutIdx++;
         }
       }
-      else if (errorCode) SSP1BUF = (typeError | errorCode | errorAxis);
-      else SSP1BUF = (typeState | mcu_state);
+      else if (errorCode) 
+        SSP1BUF = (typeError | errorCode | errorAxis);
+      else 
+        sendStateByte();
 
       // process input word
       if(spiWord != 0) handleSpiWord();

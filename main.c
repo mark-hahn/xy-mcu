@@ -60,7 +60,7 @@ void interrupt isr(void) {
   }
   if(CCP1IE && CCP1IF) { 
     // X timer compare int
-    CCP1IF   = 0;
+    CCP1IF     = 0;
     STEP_X_LAT = 1; // driver pulse active edge
     CCPR1H   = timeX.timeBytes[1];  // set next compare time
     CCPR1L   = timeX.timeBytes[0];
@@ -68,7 +68,7 @@ void interrupt isr(void) {
   }
   if(CCP2IE && CCP2IF) { 
     // Y timer compare int
-    CCP2IF   = 0;
+    CCP2IF     = 0;
     STEP_Y_LAT = 1;
     CCPR2H   = timeY.timeBytes[1];
     CCPR2L   = timeY.timeBytes[0];

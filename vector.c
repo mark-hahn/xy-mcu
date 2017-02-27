@@ -28,6 +28,32 @@ void putVectorY() {
     if (vecBufHeadY == currentVectorY) handleError(Y, errorVecBufOverflow);
 }
 
+Vector *getVectorX() {
+  if(++currentVectorX == vecBufX + VEC_BUF_SIZE) 
+       currentVectorX = vecBufX;
+  if(currentVectorX == vecBufHeadX)
+    // vector buf is empty
+    handleError(X, errorVecBufUnderflow);
+  return currentVectorX;
+}
+
+Vector *getVectorY() {
+  if(++currentVectorY == vecBufY + VEC_BUF_SIZE) 
+       currentVectorY = vecBufY;
+  if(currentVectorY == vecBufHeadY)
+    // vector buf is empty
+    handleError(Y, errorVecBufUnderflow);
+  return currentVectorY;
+}
+
+bool_t haveVectorsX() {
+  return (currentVectorX == vecBufHeadX);
+}
+
+bool_t haveVectorsY() {
+  return (currentVectorY == vecBufHeadY);
+}
+
 bool_t vecBufXIsAtHighWater() {
   int diff = (vecBufHeadX - currentVectorX);
   if (diff < 0 ) diff += VEC_BUF_SIZE;
