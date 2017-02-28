@@ -3,6 +3,8 @@
 #include "vector.h"
 #include "spi.h"
 #include "event.h"
+#include "pins-b.h"
+
 
 // separate vector buffers for X and Y
 Vector vecBufX[VEC_BUF_SIZE];
@@ -47,11 +49,11 @@ Vector *getVectorY() {
 }
 
 bool_t haveVectorsX() {
-  return (currentVectorX == vecBufHeadX);
+  return (currentVectorX != vecBufHeadX);
 }
 
 bool_t haveVectorsY() {
-  return (currentVectorY == vecBufHeadY);
+  return (currentVectorY != vecBufHeadY);
 }
 
 bool_t vecBufXIsAtHighWater() {

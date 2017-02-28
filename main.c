@@ -49,14 +49,20 @@ void interrupt isr(void) {
   // spi byte arrived
     SSP1IF = 0;
     spiBytesIn[3-spiBytesInIdx++] = SSP1BUF;
-   // does not flag eventloop, IOC does below after all four bytes arrived
+   // does not flag eventloop, IOC does below after all four bytes arrived    
   }
   if(SPI_SS_IOC_IF) {
   // spi word arrived (SS went high)
     SPI_SS_IOC_IF = 0;
-    if(spiInt)                  intError = errorspiBytesOverrun;
-    else if(spiBytesInIdx != 4) intError = errorSpiByteSync;
-    else spiInt = TRUE; // flag eventloop
+    if(spiInt)                  
+      intError = errorspiBytesOverrun;
+    else if(SPI_SS && spiBytesInIdx != 4)   {
+      intError = errorSpiByteSync;
+    }
+    else {
+      spiBytesInIdx = 0;   
+      spiInt = TRUE; // flag eventloop
+    }
   }
   if(CCP1IE && CCP1IF) { 
     // X timer compare int

@@ -351,9 +351,7 @@ void chkMovingX() {
     vecX = getVectorX();
     if(errorCode) return;
     
-    // we now have a new vector
-    if ((vecX->ctrlWord & 0xc0) == 0xc0)
-      newDeltaX();
+    if ((vecX->ctrlWord & 0xc0) == 0xc0) newDeltaX();
     
     else if(vecX->usecsPerPulse == 1) {
       // end of vector stream
@@ -372,18 +370,18 @@ void chkMovingX() {
     setNextTimeX(usecsPerPulseX, START_PULSE);
   } 
   else {
+    usecsPerPulseX = vecX->usecsPerPulse;
+    set_dir(X, (vecX->ctrlWord >> 13) & 1);
+    set_ustep(X, (vecX->ctrlWord >> 10) & 0x0007);
     if ((vecX->ctrlWord & 0x03ff) == 0) {
       // pulseCount == 0, this is just a delay
-      usecsPerPulseX = vecX->usecsPerPulse;
       setNextTimeX(usecsPerPulseX, NO_PULSE);
     }
-    else 
+    else {
       firstVecX = FALSE;
-    // set up absolute vector
-    set_dir(  X, (vecX->ctrlWord >> 13) & 1);
-    set_ustep(X, (vecX->ctrlWord >> 10) & 0x0007);
-    usecsPerPulseX = vecX->usecsPerPulse;
-    setNextTimeX(usecsPerPulseX, START_PULSE);
+      // set up absolute vector
+      setNextTimeX(usecsPerPulseX, START_PULSE);
+    }
   }
 }
 
@@ -403,39 +401,36 @@ void chkMovingY() {
     vecY = getVectorY();
     if(errorCode) return;
     
-    // we now have a new vector
-    if ((vecY->ctrlWord & 0xc0) == 0xc0)
-      newDeltaY();
+    if ((vecY->ctrlWord & 0xc0) == 0xc0) newDeltaY();
     
     else if(vecY->usecsPerPulse == 1) {
       // end of vector stream
       stopTimerY();
       movingDoneY = TRUE;
-      if(movingDoneY) {
+      if(movingDoneX) {
         // done with all moving
         setState(statusLocked); 
         return;
       }
     }
-  } 
+  }
   if(deltaYIdx) {
     // leave ustep and dir pins still set to last word
     usecsPerPulseY += deltaYSign * ((int) deltaY[deltaYIdx-1]);
     setNextTimeY(usecsPerPulseY, START_PULSE);
   } 
   else {
+    usecsPerPulseY = vecY->usecsPerPulse;
+    set_dir(Y, (vecY->ctrlWord >> 13) & 1);
+    set_ustep(Y, (vecY->ctrlWord >> 10) & 0x0007);
     if ((vecY->ctrlWord & 0x03ff) == 0) {
       // pulseCount == 0, this is just a delay
-      usecsPerPulseY = vecY->usecsPerPulse;
       setNextTimeY(usecsPerPulseY, NO_PULSE);
-    }
-    else 
+    } else {
       firstVecY = FALSE;
-    // set up absolute vector
-    set_dir(  Y, (vecY->ctrlWord >> 13) & 1);
-    set_ustep(Y, (vecY->ctrlWord >> 10) & 0x0007);
-    usecsPerPulseY = vecY->usecsPerPulse;
-    setNextTimeY(usecsPerPulseY, START_PULSE);
+      // set up absolute vector
+      setNextTimeY(usecsPerPulseY, START_PULSE);
+    }
   }
 }
 
