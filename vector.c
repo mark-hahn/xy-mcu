@@ -31,21 +31,23 @@ void putVectorY() {
 }
 
 Vector *getVectorX() {
-  if(++currentVectorX == vecBufX + VEC_BUF_SIZE) 
-       currentVectorX = vecBufX;
+  Vector *vec = currentVectorX;
   if(currentVectorX == vecBufHeadX)
     // vector buf is empty
     handleError(X, errorVecBufUnderflow);
-  return currentVectorX;
+  if(++currentVectorX == vecBufX + VEC_BUF_SIZE) 
+       currentVectorX = vecBufX;
+  return vec;
 }
 
 Vector *getVectorY() {
-  if(++currentVectorY == vecBufY + VEC_BUF_SIZE) 
-       currentVectorY = vecBufY;
+  Vector *vec = currentVectorY;
   if(currentVectorY == vecBufHeadY)
     // vector buf is empty
     handleError(Y, errorVecBufUnderflow);
-  return currentVectorY;
+  if(++currentVectorY == vecBufY + VEC_BUF_SIZE) 
+       currentVectorY = vecBufY;
+  return vec;
 }
 
 bool_t haveVectorsX() {

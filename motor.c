@@ -1,5 +1,4 @@
 
-
 #include <xc.h>
 #include "pins-b.h"
 #include "spi.h"
@@ -351,7 +350,8 @@ void chkMovingX() {
     vecX = getVectorX();
     if(errorCode) return;
     
-    if ((vecX->ctrlWord & 0xc0) == 0xc0) newDeltaX();
+    if ((vecX->ctrlWord & 0xc000) == 0xc000) 
+      newDeltaX();
     
     else if(vecX->usecsPerPulse == 1) {
       // end of vector stream
@@ -359,7 +359,7 @@ void chkMovingX() {
       movingDoneX = TRUE;
       if(movingDoneY) {
         // done with all moving
-        setState(statusLocked); 
+        setState(statusMoved); 
         return;
       }
     }
@@ -401,7 +401,7 @@ void chkMovingY() {
     vecY = getVectorY();
     if(errorCode) return;
     
-    if ((vecY->ctrlWord & 0xc0) == 0xc0) newDeltaY();
+    if ((vecY->ctrlWord & 0xc000) == 0xc000) newDeltaY();
     
     else if(vecY->usecsPerPulse == 1) {
       // end of vector stream
@@ -409,7 +409,7 @@ void chkMovingY() {
       movingDoneY = TRUE;
       if(movingDoneX) {
         // done with all moving
-        setState(statusLocked); 
+        setState(statusMoved); 
         return;
       }
     }

@@ -100,8 +100,8 @@ void main(void) {
   TRISB = 0b11000000; // all out except ICSP pins
   TRISC = 0b11011001; // all in except miso, vstep, and fan
 
-  initMotor();
   initVectors();
+  initMotor();
   initEvent();
   initSpi();
   initTimer();

@@ -138,7 +138,8 @@ typedef enum Status {
   statusUnlocked    = 3, // idle with motor reset pins low
   statusHoming      = 4, // auto homing
   statusLocked      = 5, // idle with motor current
-  statusMoving      = 6  // executing vector moves from vecBuf
+  statusMoving      = 6, // executing vector moves from vecBuf
+  statusMoved       = 7  // same as statusLocked but after move finishes
 } Status;
 
 // state byte...

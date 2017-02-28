@@ -42,35 +42,35 @@ void immediateCmd() {
       return;
     
     case sleepCmd:
-      initVectors();
-      // this stops timer and sets all motor reset pins low
+      // this stops everything and sets all motor reset pins low
       // issue resetCmd to stop sleeping
       setState(statusSleeping); 
+      initVectors();
       return;
       
     case resetCmd: 
-      initVectors();
       // this stops timer and activates motor reset pins
       setState(statusUnlocked); 
+      initVectors();
       return;
       
     case idleCmd:
-      initVectors();
-      // this stops timer but avoids changing reset pins
+      // this stops everything but doesn't change reset pins
       if(RESET_X_LAT) setState(statusLocked);
       else            setState(statusUnlocked);
+      initVectors();
       return;
               
     case clearErrorCmd:
-      initVectors();  // empty vec bufs
       errorCode = 0;
       setState(statusUnlocked);
+      initVectors();
       return;
       
     case setHomingSpeed:
       homingSpeed();
       return;
-      
+    
     case setHomingBackupSpeed:
       homingBackupSpeed();
       return;

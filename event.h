@@ -17,7 +17,7 @@ extern Error errorCode; // 5 bits
 int8_t  statusRecOutIdx;
 
 void initEvent();
-void setState(char setState);
+void setState(char newState);
 void handleError(char axis, Error code);
 void eventLoop();  // called once from main.c and never returns
 
