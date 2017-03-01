@@ -16,7 +16,7 @@ volatile char spiBytesInIdx;  // index for spiBytesIn
 char nextRetWordType = 0; // specifies type of word to be returned next
 
 void initSpi() {
-  SSP1SSPPS  = SPI_SS_PPS;       // A7 => select in
+  SSP1SSPPS  = SPI_SS_PPS;       // A7 => slave select in
   SSP1CLKPPS = SPI_CLK_PPS;      // C3 => clock in
   SSP1DATPPS = SPI_DATA_IN_PPS;  // C4 => data in
   SPI_DATA_OUT_PPS = 0x16;       // Data out => C5
@@ -26,7 +26,7 @@ void initSpi() {
   SPI_DATA_IN_TRIS  = 1;         // SPI TRIS data input
   SPI_DATA_OUT_TRIS = 0;         // SPI TRIS data output
   
-  SSP1CON1bits.SSPM  = 4; // mode: spi slave with select enabled
+  SSP1CON1bits.SSPM  = 4; // mode: spi slave with slave select enabled
   SSP1STATbits.SMP   = 0; // input sample edge (must be zero for slave mode)
   SSP1CON1bits.CKP   = 0; // 0: xmit clk low is idle
   SSP1STATbits.CKE   = 1; // clk edge in (1: active ->idle) (1: safe wcol?)
@@ -49,5 +49,4 @@ void initSpi() {
   SPI_SS_IOC = 1;
   SPI_SS_IOC_IF = 0;  // IOC int flag for specific A7 pin
   spiInt = 0;
-  IOCIE = 1;
 }

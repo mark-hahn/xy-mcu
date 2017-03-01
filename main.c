@@ -38,10 +38,14 @@
 #include "event.h"
 #include "dac.h"
 
+#define INT_ERROR_FAULT_X 0x00 | errorFault;
+#define INT_ERROR_FAULT_Y 0x80 | errorFault;
+// interrupt error checked by eventloop, d7 is axis
+volatile char   intError = 0;  
+
 volatile bool_t spiInt  = FALSE;
 volatile bool_t CCP1Int = FALSE;
 volatile bool_t CCP2Int = FALSE;
-volatile char   intError = 0;
 
 // global interrupt routine
 void interrupt isr(void) {
@@ -80,6 +84,8 @@ void interrupt isr(void) {
     CCPR2L   = timeY.timeBytes[0];
     CCP2Int  = TRUE;
   }
+  if(X_FAULT_IOC_IF) intError = INT_ERROR_FAULT_X;
+  if(Y_FAULT_IOC_IF) intError = INT_ERROR_FAULT_Y;
 }  
 
 void main(void) {
@@ -109,6 +115,7 @@ void main(void) {
   setState(statusSleeping);
 
    // global ints on
+  IOCIE =  1; // int on pin change (ss and faults)
   PEIE  =  1; // Peripheral Interrupt Enable
   GIE   =  1; // Global Interrupt Enable
 

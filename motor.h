@@ -13,8 +13,8 @@
 
 // should these be in motorSettings?  TODO
 #define debounceAndSettlingTime 50000 // debounce and time to reverse, 50 ms
-#define homeDistFromLimitSwX   5*5*32 // home distance from limit switch (15 mm)
-#define homeDistFromLimitSwY   2*5*32 // (5 mm)
+#define homeDistFromLimitSwX      160 // home distance from limit switch (1 mm)
+#define homeDistFromLimitSwY      160 // (1 mm)
 
 #define MOTORS_RESET                0 // motor unlocked, no current
 #define MOTORS_NOT_RESET            1 // motor locked with current

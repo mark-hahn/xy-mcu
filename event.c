@@ -135,16 +135,20 @@ void eventLoop() {
       SSP1CON1bits.SSPOV = 0;
       spiInt = CCP1Int = CCP2Int = FALSE;
     }
+    
     if(SSP1CON1bits.WCOL) { // spi write collision
       handleError(0, errorSpiWcol);
       SSP1CON1bits.WCOL = 0;
       spiInt = CCP1Int = CCP2Int = FALSE;
     }
+    
     if(intError) {
-      handleError(0, intError);
+      X_FAULT_IOC_IF = 0;
+      Y_FAULT_IOC_IF = 0;
+      handleError(intError >> 7, intError & 0x7f);
       intError = spiBytesInIdx = 0;
       spiInt = CCP1Int = CCP2Int = FALSE;
-    }
+     }
     
     // check for SPI word input event
     if(spiInt) {

@@ -126,6 +126,13 @@ void initMotor() {
   motorSettings.directionLevelXY     = defDirectionLevelXY;
   
   motorCurrent(defMotorCurrent);
+  
+  // interrupt on either fault pin lowering
+  X_FAULT_IOC_IF = 0;
+  X_FAULT_IOC = 1;
+  Y_FAULT_IOC_IF = 0;
+  Y_FAULT_IOC = 1;
+  spiInt = 0;
 }
 
 void homingSpeed() {
@@ -150,7 +157,6 @@ void motorCurrent(char val) {
 
 ///////////////////////////////// homing ///////////////////////
 
-
 void startHoming() {
   // also stops timers and clears motor reset pins
   setState(statusHoming);
@@ -165,8 +171,10 @@ void startHoming() {
   set_ustep(Y, defHomeUIdx);
   set_dir(Y, BACKWARDS);
   resetTimers();
-  setNextTimeX(debounceAndSettlingTime, START_PULSE); 
-  setNextTimeY(debounceAndSettlingTime, START_PULSE);
+  setNextTimeX(debounceAndSettlingTime, START_PULSE);
+  
+//  setNextTimeY(debounceAndSettlingTime, START_PULSE);
+  homingStateY = homed;  // DEBUG  -- home X only
 }
 
 void chkHomingX() {
@@ -267,14 +275,6 @@ void startMoving() {
     handleError(0, errorMoveWhenUnlocked);
     return;
   }
-  if(!haveVectorsX()) {
-    handleError(X, errorMoveWithNoVectors);
-    return;
-  }
-  if(!haveVectorsY()) {
-    handleError(Y, errorMoveWithNoVectors);
-    return;
-  }
   // this also stops timer and clears motor reset pins
   setState(statusMoving);   
   pulseCountX = 0;
@@ -282,25 +282,31 @@ void startMoving() {
   // first vec cmd can't be a delta or an eof
   deltaVecCountX = 0;
   deltaVecCountY = 0;
-  movingDoneX = FALSE;
-  movingDoneY = FALSE;
-  vecX = getVectorX();
-  vecY = getVectorY();
-  // ctrlWord has five bit fields, from msb to lsb ...
-  //   1 bit: axis X vector, both X and Y clr means command, not vector
-  //   1 bit: axis Y vector, both X and Y set means delta, not absolute, vector
-  //   1 bit: dir (0: backwards, 1: forwards)
-  //   3 bits: ustep idx, 0 (full-step) to 5 (1/32 step)
-  //  10 bits: pulse count
-  set_dir(  X, (vecX->ctrlWord >> 13) & 1);
-  set_ustep(X, (vecX->ctrlWord >> 10) & 0x0007);
-  set_dir(  Y, (vecY->ctrlWord >> 13) & 1);
-  set_ustep(Y, (vecY->ctrlWord >> 10) & 0x0007);
-  resetTimers();
-  usecsPerPulseX = vecX->usecsPerPulse;
-  setNextTimeX(usecsPerPulseX, (vecX->ctrlWord & 0x03ff) == 0); 
-  usecsPerStepY = vecY->usecsPerPulse;
-  setNextTimeY(usecsPerStepY, (vecY->ctrlWord & 0x03ff) == 0);
+  movingDoneX = TRUE;
+  movingDoneY = TRUE;
+  
+  if(haveVectorsX()) {
+    movingDoneX = FALSE;
+    vecX = getVectorX();
+    // ctrlWord has five bit fields, from msb to lsb ...
+    //   1 bit: axis X vector, both X and Y clr means command, not vector
+    //   1 bit: axis Y vector, both X and Y set means delta, not absolute, vector
+    //   1 bit: dir (0: backwards, 1: forwards)
+    //   3 bits: ustep idx, 0 (full-step) to 5 (1/32 step)
+    //  10 bits: pulse count
+    set_dir(  X, (vecX->ctrlWord >> 13) & 1);
+    set_ustep(X, (vecX->ctrlWord >> 10) & 0x0007);
+    setNextTimeX(usecsPerPulseX, (vecX->ctrlWord & 0x03ff) == 0); 
+  }
+  if(haveVectorsY()) {
+    movingDoneY = FALSE;
+    vecY = getVectorY();
+    set_dir(  Y, (vecY->ctrlWord >> 13) & 1);
+    set_ustep(Y, (vecY->ctrlWord >> 10) & 0x0007);
+    resetTimers();
+    usecsPerStepY = vecY->usecsPerPulse;
+    setNextTimeY(usecsPerStepY, (vecY->ctrlWord & 0x03ff) == 0);
+  }
 }
 
 // 4 delta format,  7 bits each: 11s0 wwww wwwX XXXX XXyy yyyy yZZZ ZZZZ
