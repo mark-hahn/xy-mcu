@@ -38,8 +38,9 @@
 #include "event.h"
 #include "dac.h"
 
-#define INT_ERROR_FAULT_X 0x00 | errorFault;
-#define INT_ERROR_FAULT_Y 0x80 | errorFault;
+#define INT_ERROR_FAULT_X (0x00 | errorFault);
+#define INT_ERROR_FAULT_Y (0x80 | errorFault);
+
 // interrupt error checked by eventloop, d7 is axis
 volatile char   intError = 0;  
 
@@ -115,7 +116,7 @@ void main(void) {
   setState(statusSleeping);
 
    // global ints on
-  IOCIE =  1; // int on pin change (ss and faults)
+  IOCIE =  1; // Interrupt on pin change (ss and faults)
   PEIE  =  1; // Peripheral Interrupt Enable
   GIE   =  1; // Global Interrupt Enable
 
