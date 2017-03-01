@@ -33,7 +33,6 @@ extern pos_t homingDistX; // how long each axis traveled to get home
 extern pos_t homingDistY;
 
 void initMotor();
-void set_sleep();
 void set_resets(bool_t resetHigh);
 
 void homingSpeed();

@@ -2,8 +2,6 @@
 #ifndef MCU_H
 #define	MCU_H
 
-#define API_VERSION 1
-
 // This file contains all definitions shared by CPU and MCU
 // and should be included in CPU and MCU apps
 // If this file must change, make sure it is backwards compatible
@@ -46,7 +44,7 @@
 #define Y 1  /* idx for Y axis */
 
 typedef char bool_t;
-#define TRUE 1
+#define TRUE  1
 #define FALSE 0
 
 // time, unit: usec
@@ -79,17 +77,16 @@ typedef long pos_t; // 32 bits signed
 typedef enum Cmd {
   // zero is not used so blank SPI words are ignored
   nopCmd               =  0, // does nothing except get status
-  statusCmd            =  1, // requests entire state rec returned
-  sleepCmd             =  2, // clear state & set all motor pins low
-  resetCmd             =  3, // clear state & hold reset pins on motors low
-  idleCmd              =  4, // abort any commands, clear vec buffers
-  homeCmd              =  5, // goes home and saves homing distance
-  moveCmd              =  6, // enough vectors need to be loaded to do this
-  clearErrorCmd        =  7, // on error, no activity until this command
-  setHomingSpeed       =  8, // set homeUIdx & homeUsecPerPulse settings
-  setHomingBackupSpeed =  9, // set homeBkupUIdx & homeBkupUsecPerPulse settings
-  setMotorCurrent      = 10, // set motorCurrent (0 to 31) immediately
-  setDirectionLevelXY  = 11  // set direction for each motor
+  statusCmd            =  1, // requests status rec returned
+  resetCmd             =  2, // clear state & hold reset pins on motors low
+  idleCmd              =  3, // abort any commands, clear vec buffers
+  homeCmd              =  4, // goes home and saves homing distance
+  moveCmd              =  5, // enough vectors need to be loaded to do this
+  clearErrorCmd        =  6, // on error, no activity until this command
+  setHomingSpeed       =  7, // set homeUIdx & homeUsecPerPulse settings
+  setHomingBackupSpeed =  8, // set homeBkupUIdx & homeBkupUsecPerPulse settings
+  setMotorCurrent      =  9, // set motorCurrent (0 to 31) immediately
+  setDirectionLevelXY  = 10  // set direction for each motor
 } Cmd;
 
 
@@ -133,13 +130,14 @@ typedef union VectorU {
 // values are valid even when error is set, tells what was happening
 // 3 bits
 typedef enum Status {
+#ifdef CPU_H
   statusNoResponse  = 1, // no response from mcu (cpu is receiving 0xff)
-  statusSleeping    = 2, // idle, all motor pins low
-  statusUnlocked    = 3, // idle with motor reset pins low
-  statusHoming      = 4, // auto homing
-  statusLocked      = 5, // idle with motor current
-  statusMoving      = 6, // executing vector moves from vecBuf
-  statusMoved       = 7  // same as statusLocked but after move finishes
+#endif
+  statusUnlocked    = 2, // idle with motor reset pins low
+  statusHoming      = 3, // auto homing
+  statusLocked      = 4, // idle with motor current
+  statusMoving      = 5, // executing vector moves from vecBuf
+  statusMoved       = 6  // same as statusLocked but after move finishes
 } Status;
 
 // state byte...
@@ -163,14 +161,18 @@ typedef enum Status {
 #define spiStateByteErrFlag 0x20
 #define spiStateByteMask    0x1f
 
+// type of rec inside rec, matches command
+#define STATUS_REC 1
+
 // this record is returned to the CPU when requested by statusCmd
 // must be sequential with status byte before and after
 // future api versions may extend record
 typedef struct StatusRec {
-  char apiVers;        // version of this API
+  char len;            // len of this rec in bytes (including this byte)
+  char type;           // type of record (always STATUS_REC for now)
   char mfr;            // manufacturer code (1 == eridien)
   char prod;           // product id (1 = XY base)
-  char vers;           // XY (code or hw) version
+  char vers;           // XY (code and hw) version
   uint32_t homeDistX;  // homing distance of last home operation
   uint32_t homeDistY;
 } StatusRec;
@@ -187,16 +189,15 @@ typedef union StatusRecU {
 // 5 bit code, lsb of error byte reserved for error axis
 typedef enum Error {
   errorFault             =  2, // driver chip fault
-  errorLimit             =  4, // hit error limit switch during move
+  errorLimit             =  4, // hit error limit switch during move backwards
   errorVecBufOverflow    =  6,
   errorVecBufUnderflow   =  8,
-  errorMoveWhenUnlocked  = 10,
-  errorMoveWithNoVectors = 12,
-  errorSpiByteSync       = 14,
-  errorSpiByteOverrun    = 16,
-  errorspiBytesOverrun   = 18,
-  errorSpiOvflw          = 20,
-  errorSpiWcol           = 22
+  errorMoveWithNoVectors = 10,
+  errorSpiByteSync       = 12,
+  errorSpiByteOverrun    = 14,
+  errorspiBytesOverrun   = 16,
+  errorSpiOvflw          = 18,
+  errorSpiWcol           = 20
 } Error;
 
 #endif

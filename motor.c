@@ -87,23 +87,6 @@ bool_t dirIsFwdY() {
   return (DIR_Y_LAT != (motorSettings.directionLevelXY &  1));
 }
 
-void set_sleep() {
-  // all motor inputs must be low when driver sleeping to prevent pin conflict
-  RESET_X_LAT = 0;
-  STEP_X_LAT  = 0;
-  MS1_X_LAT   = 0;
-  MS2_X_LAT   = 0;
-  MS3_X_LAT   = 0;
-  DIR_X_LAT   = 0;
-
-  RESET_Y_LAT = 0;
-  STEP_Y_LAT  = 0;
-  MS1_Y_LAT   = 0;
-  MS2_Y_LAT   = 0;
-  MS3_Y_LAT   = 0;
-  DIR_Y_LAT   = 0;
-}
-
 void set_resets(bool_t resetHigh) {
   RESET_X_LAT = resetHigh;
   RESET_Y_LAT = resetHigh; 
@@ -271,10 +254,6 @@ void chkHomingY() {
 ///////////////////////////////// moving ///////////////////////
 
 void startMoving() {
-  if(mcu_state == statusUnlocked) {
-    handleError(0, errorMoveWhenUnlocked);
-    return;
-  }
   // this also stops timer and clears motor reset pins
   setState(statusMoving);   
   pulseCountX = 0;

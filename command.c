@@ -41,13 +41,6 @@ void immediateCmd() {
       statusRecOutIdx = STATUS_REC_START;
       return;
     
-    case sleepCmd:
-      // this stops everything and sets all motor reset pins low
-      // issue resetCmd to stop sleeping
-      setState(statusSleeping); 
-      initVectors();
-      return;
-      
     case resetCmd: 
       // this stops timer and activates motor reset pins
       setState(statusUnlocked); 

@@ -59,11 +59,15 @@ void interrupt isr(void) {
   if(SPI_SS_IOC_IF) {
   // spi word arrived (SS went high)
     SPI_SS_IOC_IF = 0;
-    if(spiInt)                  
-      intError = errorspiBytesOverrun;
-    else if(SPI_SS && spiBytesInIdx != 4)   {
-      intError = errorSpiByteSync;
-    }
+    
+    if(spiInt) intError = errorspiBytesOverrun;
+    
+    else if(SPI_SS && spiBytesInIdx != 4 && 
+            // one byte word containing zero or one must be allowed
+            // least significant three bytes are garbage
+            (spiBytesInIdx != 1 || SSP1BUF > 1)) 
+          intError = errorSpiByteSync;
+    
     else {
       spiBytesInIdx = 0;   
       spiInt = TRUE; // flag eventloop
@@ -90,7 +94,8 @@ void interrupt isr(void) {
 }  
 
 void main(void) {
-  statusRec.rec.apiVers   = API_VERSION;
+  statusRec.rec.len       = sizeof(StatusRec);
+  statusRec.rec.type      = STATUS_REC;
   statusRec.rec.mfr       = MFR;  
   statusRec.rec.prod      = PROD; 
   statusRec.rec.vers      = VERS; 
@@ -113,7 +118,7 @@ void main(void) {
   initSpi();
   initTimer();
   
-  setState(statusSleeping);
+  setState(statusUnlocked);
 
    // global ints on
   IOCIE =  1; // Interrupt on pin change (ss and faults)

@@ -35,13 +35,8 @@ void setState(char newState) {
     set_resets(MOTORS_RESET);
     return;
   }
-  if(newState == statusSleeping) set_sleep();
-  else {
-    STEP_X_LAT= 1; // turn off sleep by setting step pins idle
-    STEP_Y_LAT= 1;
-    if(newState == statusUnlocked) set_resets(MOTORS_RESET);
-    else set_resets(MOTORS_NOT_RESET);
-  }
+  if(newState == statusUnlocked) set_resets(MOTORS_RESET);
+  else set_resets(MOTORS_NOT_RESET);
   mcu_state = newState;
 }
 
