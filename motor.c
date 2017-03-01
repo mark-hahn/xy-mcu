@@ -25,8 +25,8 @@ AxisHomingState homingStateX;
 AxisHomingState homingStateY;
 pos_t  homingDistX;
 pos_t  homingDistY;
-bool_t firstVecX;
-bool_t firstVecY;
+pos_t  targetDistForHomeX;
+pos_t  targetDistForHomeY;
 char   deltaVecCountX;
 char   deltaVecCountY;
 uint16_t pulseCountX;
@@ -77,6 +77,14 @@ void set_dir(char axis, char val) {
     DIR_X_LAT = (motorSettings.directionLevelXY >> 1) ^ val;
   else
     DIR_Y_LAT = (motorSettings.directionLevelXY &  1) ^ val;
+}
+
+bool_t dirIsFwdX() {
+  return (DIR_X_LAT != (motorSettings.directionLevelXY >> 1));
+}
+
+bool_t dirIsFwdY() {
+  return (DIR_Y_LAT != (motorSettings.directionLevelXY &  1));
 }
 
 void set_sleep() {
@@ -150,6 +158,8 @@ void startHoming() {
   homingStateY = headingHome;
   homingDistX = 0;
   homingDistY = 0;
+  targetDistForHomeX = 0;
+  targetDistForHomeY = 0;
   set_ustep(X, defHomeUIdx);
   set_dir(X, BACKWARDS);
   set_ustep(Y, defHomeUIdx);
@@ -180,10 +190,19 @@ void chkHomingX() {
   else if(homingStateX == backingUpToHome) {
     // subtract distance for pulse that just finished
     homingDistX -= distPerPulse(defHomeBkupUIdx);
+    
     if(!LIMIT_SW_X) {
       // have not gotten back to limit switch yet, keep heading back
       setNextTimeX(defHomeBkupUsecPerPulse, START_PULSE);
-    } 
+    }
+    else if(targetDistForHomeX == 0) {
+     // have gotten back to limit switch, set further distance to home
+      targetDistForHomeX = homingDistX - homeDistFromLimitSwX;
+      setNextTimeX(defHomeBkupUsecPerPulse, START_PULSE);
+    }
+    else if (homingDistX > targetDistForHomeX) {
+      setNextTimeX(defHomeBkupUsecPerPulse, START_PULSE);
+    }
     else {
       // we are done homing X
       homingStateX = homed;
@@ -200,6 +219,7 @@ void chkHomingY() {
   if(homingStateY == headingHome) {
     // add distance for pulse that just finished
     homingDistY += distPerPulse(defHomeUIdx);
+    
     if(LIMIT_SW_Y)
       // have not gotten to limit switch yet, keep heading home
       setNextTimeY(defHomeUsecPerPulse, START_PULSE);
@@ -216,10 +236,19 @@ void chkHomingY() {
   else if(homingStateY == backingUpToHome) {
     // subtract distance for pulse that just finished
     homingDistY -= distPerPulse(defHomeBkupUIdx);
-    if(!LIMIT_SW_Y) { 
+    
+    if(!LIMIT_SW_Y) {
       // have not gotten back to limit switch yet, keep heading back
       setNextTimeY(defHomeBkupUsecPerPulse, START_PULSE);
-    } 
+    }
+    else if(targetDistForHomeY == 0) {
+     // have gotten back to limit switch, set further distance to home
+      targetDistForHomeY = homingDistY - homeDistFromLimitSwY;
+      setNextTimeY(defHomeBkupUsecPerPulse, START_PULSE);
+    }
+    else if (homingDistY > targetDistForHomeY) {
+      setNextTimeY(defHomeBkupUsecPerPulse, START_PULSE);
+    }
     else {
       // we are done homing Y
       homingStateY = homed;
@@ -255,8 +284,6 @@ void startMoving() {
   deltaVecCountY = 0;
   movingDoneX = FALSE;
   movingDoneY = FALSE;
-  firstVecX = TRUE;
-  firstVecY = TRUE;
   vecX = getVectorX();
   vecY = getVectorY();
   // ctrlWord has five bit fields, from msb to lsb ...
@@ -338,11 +365,11 @@ void newDeltaY() {
 
 void chkMovingX() {
   // compare match and X pulse just happened
-  if(!firstVecX && !LIMIT_SW_X)  { 
+  if(!LIMIT_SW_X)  { 
     // unexpected closed limit switch
-    handleError(X, errorLimit);
-    return;
-  }
+      handleError(X, errorLimit); 
+      return;
+    }
   if (deltaXIdx ? (--deltaXIdx == 0) : 
                   (++pulseCountX >= (vecX->ctrlWord & 0x03ff))) {
     // we are done with this vector, get a new one
@@ -378,7 +405,6 @@ void chkMovingX() {
       setNextTimeX(usecsPerPulseX, NO_PULSE);
     }
     else {
-      firstVecX = FALSE;
       // set up absolute vector
       setNextTimeX(usecsPerPulseX, START_PULSE);
     }
@@ -389,7 +415,7 @@ Vector *vecY;
 
 void chkMovingY() {
   // compare match and Y pulse just happened
-  if(!firstVecY && !LIMIT_SW_Y)  { 
+  if(!LIMIT_SW_Y)  { 
     // unexpected closed limit switch
     handleError(Y, errorLimit);
     return;
@@ -427,7 +453,6 @@ void chkMovingY() {
       // pulseCount == 0, this is just a delay
       setNextTimeY(usecsPerPulseY, NO_PULSE);
     } else {
-      firstVecY = FALSE;
       // set up absolute vector
       setNextTimeY(usecsPerPulseY, START_PULSE);
     }

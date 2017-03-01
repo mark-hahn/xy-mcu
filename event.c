@@ -91,32 +91,40 @@ void sendStatusRecByte() {
     // pack every 3 8-bit statusRec bytes into 4 6-bit spi bytes 
     switch(statusRecOutIdx % 4) {
       case 0: 
-        if(SPI_SS) 
-          outbuf = (typeData | (statusRecOut.bytes[statusRecIdx] >> 2));
+        outbuf = (typeData | (statusRecOut.bytes[statusRecIdx] >> 2));
         break;
       case 1: {
-        char left2 = (statusRecOut.bytes[statusRecIdx++] & 0x03) << 4;
-        if(SPI_SS) 
-          outbuf = typeData | left2 | 
+        char left2 = (statusRecOut.bytes[statusRecIdx] & 0x03) << 4;
+        statusRecIdx++;
+        outbuf = typeData | left2 | 
                   ((statusRecOut.bytes[statusRecIdx]   & 0xf0) >> 4);
         break;
       }
       case 2: {
-        char left4 = (statusRecOut.bytes[statusRecIdx++] & 0x0f) << 2;
-        if(SPI_SS) 
-          outbuf = typeData | left4 | 
-                  ((statusRecOut.bytes[statusRecIdx]   & 0xc0) >> 4);
+        char left4 = (statusRecOut.bytes[statusRecIdx] & 0x0f) << 2;
+        statusRecIdx++;
+        outbuf = typeData | left4 | 
+                  ((statusRecOut.bytes[statusRecIdx]   & 0xc0) >> 6);
+        if (statusRecOutIdx == 10 && outbuf == 0x88) {
+          char volatile x = 1;
+        }
         break;
       }
       case 3:
-        if(SPI_SS) 
-          outbuf = typeData | (statusRecOut.bytes[statusRecIdx++] & 0x3f);
+        outbuf = typeData | (statusRecOut.bytes[statusRecIdx] & 0x3f);
+        statusRecIdx++;
         break;
     }
     statusRecOutIdx++;
   }
   if(outbuf && SPI_SS) SSP1BUF = outbuf;
 }
+// from wire
+// 000000 010000 000100 000001 000000 010111 011000 111110 000000 
+// 00-0000 0010-00 101111 - 101111 01-0000 0000-00 000000 
+// 9       10      11       12     13      14      15
+//    7         8           9         10        11
+//    0000 0000 10 110001
 
 // called once from main.c and never returns
 void eventLoop() {
@@ -140,9 +148,9 @@ void eventLoop() {
     
     // check for SPI word input event
     if(spiInt) {
-      // a little-endian 32-bit word (spiBytesIn) arrived (SS went high)
+      FAN_LAT = 0;
 
-      FAN_LAT = 1;
+      // a little-endian 32-bit word (spiBytesIn) arrived (SS went high)
 
       // copy word to buffered interrupt version (global))
       spiWord    = *((uint32_t *) &spiBytesIn);
@@ -171,8 +179,7 @@ void eventLoop() {
       
       // spiInt must be cleared before next 32-bit word arrives (SS high)
       spiInt = FALSE;
-      
-      FAN_LAT = 0;
+      FAN_LAT = 1;
     }
 
     // if error, no homing or moving happens until clearError cmd
