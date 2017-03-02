@@ -75,7 +75,6 @@ typedef long pos_t; // 32 bits signed
 // all others have no params
 // 4 bits
 typedef enum Cmd {
-  // zero is not used so blank SPI words are ignored
   nopCmd               =  0, // does nothing except get status
   statusCmd            =  1, // requests status rec returned
   resetCmd             =  2, // clear state & hold reset pins on motors low
@@ -130,14 +129,11 @@ typedef union VectorU {
 // values are valid even when error is set, tells what was happening
 // 3 bits
 typedef enum Status {
-#ifdef CPU_H
-  statusNoResponse  = 1, // no response from mcu (cpu is receiving 0xff)
-#endif
-  statusUnlocked    = 2, // idle with motor reset pins low
-  statusHoming      = 3, // auto homing
-  statusLocked      = 4, // idle with motor current
-  statusMoving      = 5, // executing vector moves from vecBuf
-  statusMoved       = 6  // same as statusLocked but after move finishes
+  statusUnlocked    = 1, // idle with motor reset pins low
+  statusHoming      = 2, // auto homing
+  statusLocked      = 3, // idle with motor current
+  statusMoving      = 4, // executing vector moves from vecBuf
+  statusMoved       = 5  // same as statusLocked but after move finishes
 } Status;
 
 // state byte...
@@ -152,6 +148,8 @@ typedef enum Status {
 //    d0: axis flag
 
 // byte type in top 2 bits of returned byte
+
+#define RET_TYPE_MASK 0xc0
 #define typeState  0x00  // state byte returned by default
 #define typeState2 0x40  // reserved for possible extended state
 #define typeData   0x80  // status rec data in bottom 6 bits
@@ -168,7 +166,7 @@ typedef enum Status {
 // must be sequential with status byte before and after
 // future api versions may extend record
 typedef struct StatusRec {
-  char len;            // len of this rec in bytes (including this byte)
+  char len;            // number of SPI bytes in rec, NOT sizeof(StatusRec)
   char type;           // type of record (always STATUS_REC for now)
   char mfr;            // manufacturer code (1 == eridien)
   char prod;           // product id (1 = XY base)
@@ -186,7 +184,9 @@ typedef union StatusRecU {
   (((sizeof(StatusRec) % 3) == 0 ?      \
    ((sizeof(StatusRec)*4)/3) : (((sizeof(StatusRec)*4)/3) + 1)))
 
-// 5 bit code, lsb of error byte reserved for error axis
+// top 2 bits are 0b10 (typeError)
+// 5 bit code
+// lsb of error byte reserved for error axis
 typedef enum Error {
   errorFault             =  2, // driver chip fault
   errorLimit             =  4, // hit error limit switch during move backwards
@@ -197,7 +197,8 @@ typedef enum Error {
   errorSpiByteOverrun    = 14,
   errorspiBytesOverrun   = 16,
   errorSpiOvflw          = 18,
-  errorSpiWcol           = 20
+  errorSpiWcol           = 20,
+  errorNoResponse        = 0x3f // miso automatically returns 0xff when no mcu
 } Error;
 
 #endif

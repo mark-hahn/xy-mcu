@@ -62,7 +62,7 @@ void interrupt isr(void) {
     
     if(spiInt) intError = errorspiBytesOverrun;
     
-    else if(SPI_SS && spiBytesInIdx != 4 && 
+    else if(spiBytesInIdx != 4 && SPI_SS &&
             // one byte word containing zero or one must be allowed
             // least significant three bytes are garbage
             (spiBytesInIdx != 1 || SSP1BUF > 1)) 
@@ -94,7 +94,7 @@ void interrupt isr(void) {
 }  
 
 void main(void) {
-  statusRec.rec.len       = sizeof(StatusRec);
+  statusRec.rec.len       = STATUS_SPI_BYTE_COUNT;
   statusRec.rec.type      = STATUS_REC;
   statusRec.rec.mfr       = MFR;  
   statusRec.rec.prod      = PROD; 
