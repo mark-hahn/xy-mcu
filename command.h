@@ -1,12 +1,10 @@
-/* 
- * File:   command.h
- * Author: root
- *
- * Created on February 25, 2017, 6:16 PM
- */
 
 #ifndef COMMAND_H
 #define	COMMAND_H
+
+// used for flashing new MCU code
+#define NEW_RESET_VECTOR   0x200
+#define WRITE_FLASH_BLOCKSIZE 32  
 
 void handleSpiWord();
 

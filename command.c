@@ -75,5 +75,28 @@ void immediateCmd() {
     case setDirectionLevelXY:
       directionLevelXY(spiBytes[0]);
       return;
+      
+    case updateFlashCode:
+      // clobber beginning of existing app code
+      // then enter boot loader by resetting cpu
+      INTCON = 0;  // turn off all interrupts
+      unsigned int wordAddress = NEW_RESET_VECTOR;
+      NVMCON1 = 0x24; // LWLO=1 => don't flash yet, WREN=1 => allow write
+      for (char wordIdx=0; wordIdx < 32; wordIdx++)  {
+        NVMADRL = ((wordAddress) & 0xff);	// load address low byte
+        NVMADRH = ( wordAddress >> 8   );	// load word address high byte
+        if(wordIdx == WRITE_FLASH_BLOCKSIZE-1)
+          LWLO = 0; // do actual flash this time
+        NVMDATL = 0;
+        NVMDATH = 0;
+        NVMCON2 = 0x55;
+        NVMCON2 = 0xaa;
+        WR = 1;       // Start the write
+        wordAddress++;
+      }	
+      // processor freezes here until erase finished
+      RESET();
   }
 }
+
+

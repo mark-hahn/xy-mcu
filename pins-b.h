@@ -51,10 +51,10 @@
 #define SPI_SS_IOC        IOCAPbits.IOCAP7  // interrupt on rising A7 pin
 #define SPI_SS_IOC_IF     IOCAFbits.IOCAF7  // interrupt flag
 
-#define X_FAULT_IOC       IOCBNbits.IOCBN3  // interrupt on falling A7 pin
+#define X_FAULT_IOC       IOCBNbits.IOCBN3  // interrupt on falling B3 pin
 #define X_FAULT_IOC_IF    IOCBFbits.IOCBF3  // interrupt flag
 
-#define Y_FAULT_IOC       IOCCNbits.IOCCN0  // interrupt on falling A7 pin
+#define Y_FAULT_IOC       IOCCNbits.IOCCN0  // interrupt on falling C0 pin
 #define Y_FAULT_IOC_IF    IOCCFbits.IOCCF0  // interrupt flag
 
 #endif	/* PINS_B_H */

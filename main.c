@@ -63,9 +63,9 @@ void interrupt isr(void) {
     if(spiInt) intError = errorspiBytesOverrun;
     
     else if(spiBytesInIdx != 4 && SPI_SS &&
-            // one byte word containing zero or one must be allowed
+            // one byte word containing value < 10 must be supported
             // least significant three bytes are garbage
-            (spiBytesInIdx != 1 || SSP1BUF > 1)) 
+            (spiBytesInIdx != 1 || SSP1BUF >= 10)) 
           intError = errorSpiByteSync;
     
     else {
