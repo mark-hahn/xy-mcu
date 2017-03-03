@@ -60,12 +60,12 @@ void interrupt isr(void) {
   // spi word arrived (SS went high)
     SPI_SS_IOC_IF = 0;
     
-    if(spiInt) intError = errorspiBytesOverrun;
+    if(spiInt) intError = errorSpiBytesOverrun;
     
     else if(spiBytesInIdx != 4 && SPI_SS &&
             // one byte word containing value < 10 must be supported
             // least significant three bytes are garbage
-            (spiBytesInIdx != 1 || SSP1BUF >= 10)) 
+            (spiBytesInIdx != 1 || spiBytesIn[3] >= 10)) 
           intError = errorSpiByteSync;
     
     else {
