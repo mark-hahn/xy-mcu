@@ -19,7 +19,7 @@
 #pragma config WDTCWS = WDTCWS_7// WDT Window Select bits (window always open (100%); software control; keyed access not required)
 #pragma config WDTCCS = SC      // WDT input clock selector (Software Control)
 #pragma config BBSIZE = BB512   //  (512 char boot block size)
-#pragma config BBEN = OFF       //  (Boot Block disabled)
+#pragma config BBEN = ON        //  (Boot Block enabled)
 #pragma config SAFEN = OFF      //  (SAF disabled)
 #pragma config WRTAPP = OFF     //  (Application Block not write protected)
 #pragma config WRTB = OFF       //  (Boot Block not write protected)
@@ -105,6 +105,8 @@ void main(void) {
   ANSELA = 0; // no analog inputs
   ANSELB = 0; // these &^%$&^ regs cause a lot of trouble
   ANSELC = 0; // they should not default to on and override everything else
+
+  FAN_LAT = 0;
 
   // change these to defined constants   TODO
   // and have each init do their own

@@ -147,7 +147,7 @@ void eventLoop() {
     
     // check for SPI word input event
     if(spiInt) {
-      FAN_LAT = 0;
+//      FAN_LAT = 0;
 
       // a little-endian 32-bit word (spiBytesIn) arrived (SS went high)
 
@@ -178,7 +178,7 @@ void eventLoop() {
       
       // spiInt must be cleared before next 32-bit word arrives (SS high)
       spiInt = FALSE;
-      FAN_LAT = 1;
+//      FAN_LAT = 1;
     }
 
     // if error, no homing or moving happens until clearError cmd
