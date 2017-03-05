@@ -35,7 +35,9 @@ void setState(char newState) {
     set_resets(MOTORS_RESET);
     return;
   }
-  if(newState == statusUnlocked) set_resets(MOTORS_RESET);
+  if(newState == statusUnlocked ||
+     newState == statusFlashing) 
+    set_resets(MOTORS_RESET);
   else set_resets(MOTORS_NOT_RESET);
   mcu_state = newState;
 }
@@ -167,11 +169,15 @@ void eventLoop() {
         sendStatusRecByte();
    
       else if (errorCode) {
+              for(char i=0; i < 14; i++) FAN_LAT = !FAN_LAT;
+
         outbuf = (typeError | errorCode | errorAxis);
         if(SPI_SS) SSP1BUF = outbuf;
       }
       else 
         sendStateByte();
+
+       for(char i=0; i < 16; i++) FAN_LAT = !FAN_LAT;
 
       // process input word
       if(spiWord != 0) handleSpiWord();

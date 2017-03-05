@@ -26,6 +26,8 @@ void handleSpiWord() {
 }
 
 void immediateCmd() {
+   for(char i=0; i < spiBytes[3]*2; i++) FAN_LAT = !FAN_LAT;
+
   // word is big-endian, mcu isn't
   switch (spiBytes[3]) {
     
@@ -71,34 +73,23 @@ void immediateCmd() {
     case setMotorCurrent: 
       motorCurrent(spiBytes[0]);
       return;
-      
+    
     case setDirectionLevelXY:
       directionLevelXY(spiBytes[0]);
       return;
-      
+    
     case updateFlashCode:
-       for(char i=0; i < 6; i++) FAN_LAT = !FAN_LAT;
+      setState(statusFlashing);
+      for(char i=0; i < 10; i++) FAN_LAT = !FAN_LAT;
 
-      // clobber beginning of existing app code
-      // then enter boot loader by resetting cpu
-      INTCON = 0;  // turn off all interrupts
-      unsigned int wordAddress = NEW_RESET_VECTOR;
-      NVMCON1 = 0x24; // LWLO=1 => don't flash yet, WREN=1 => allow write
-      for (char wordIdx=0; wordIdx < WRITE_FLASH_BLOCKSIZE; wordIdx++)  {
-        NVMADRL = ((wordAddress) & 0xff);	// load address low byte
-        NVMADRH = ( wordAddress >> 8   );	// load word address high byte
-        if(wordIdx == WRITE_FLASH_BLOCKSIZE-1)
-          LWLO = 0; // do actual flash this time
-        NVMDATL = 0xff;
-        NVMDATH = 0xff;
-        NVMCON2 = 0x55;
-        NVMCON2 = 0xaa;
-        WR = 1;       // Start the write
-        wordAddress++;
-      }	
-      // processor freezes here until erase finished
+      // clear beginning of app code so bootloader with load code at reset
+      NVMADRH = NEW_RESET_VECTOR >> 8; // erase one block at 0x200
+      NVMADRL = NEW_RESET_VECTOR & 0x00ff;
+      NVMCON1 = 0x94; // access FLASH memory, wren=1, FREE specifies erase 
+      NVMCON2 = 0x55;
+      NVMCON2 = 0xaa;
+      NVMCON1bits.WR = 1;
       RESET();
   }
 }
-
 
