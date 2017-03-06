@@ -14,7 +14,7 @@
 #define RESET_Y_TRIS      TRISA4
 #define STEP_X_TRIS       TRISB4 // CCP 1 pin output, X step
 #define STEP_Y_TRIS       TRISC2 // CCP 2 pin output, Y step
-#define FAN_TRIS          TRISC1 // fan pin output
+#define FAN_TRIS          TRISC1 // pwm (fan) pin output
 #define LIMIT_SW_X_TRIS   TRISC6
 #define LIMIT_SW_Y_TRIS   TRISC7
 
@@ -38,8 +38,7 @@
 #define RESET_Y_LAT       LATA4
 #define STEP_Y_LAT        LATC2
 #define DIR_Y_LAT         LATA6
- 
-#define FAN_LAT           LATC1  // fan pin latch
+#define FAN_LAT           LATC1  // pwm (fan) pin latch
 
 
 // SPI: PPS, peripheral select

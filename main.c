@@ -106,7 +106,7 @@ void main(void) {
   ANSELB = 0; // these &^%$&^ regs cause a lot of trouble
   ANSELC = 0; // they should not default to on and override everything else
 
-  FAN_LAT = 0;
+//  FAN_LAT = 0;
 
   // change these to defined constants   TODO
   // and have each init do their own
@@ -119,6 +119,7 @@ void main(void) {
   initEvent();
   initSpi();
   initTimer();
+  initPwm();
   
   setState(statusUnlocked);
 

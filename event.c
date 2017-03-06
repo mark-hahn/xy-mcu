@@ -169,16 +169,14 @@ void eventLoop() {
         sendStatusRecByte();
    
       else if (errorCode) {
-              for(char i=0; i < 14; i++) FAN_LAT = !FAN_LAT;
-
+//        for(char i=0; i < 14; i++) FAN_LAT = !FAN_LAT;
         outbuf = (typeError | errorCode | errorAxis);
         if(SPI_SS) SSP1BUF = outbuf;
       }
       else 
         sendStateByte();
 
-       for(char i=0; i < 16; i++) FAN_LAT = !FAN_LAT;
-
+//      for(char i=0; i < 16; i++) FAN_LAT = !FAN_LAT;
       // process input word
       if(spiWord != 0) handleSpiWord();
       
