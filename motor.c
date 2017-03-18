@@ -1,11 +1,16 @@
 
 #include <xc.h>
-#include "pins-b.h"
+#include "pins.h"
 #include "spi.h"
 #include "motor.h"
 #include "vector.h"
 #include "event.h"
+#ifdef XY
 #include "dac.h"
+#endif
+#ifdef Z2
+#include "pwm-vref.h"
+#endif
 #include "mcu-cpu.h"
 #include "timer.h"
 
@@ -13,8 +18,9 @@ MotorSettings motorSettings;
 
 // used to keep total in deltas
 shortTime_t  usecsPerPulseX;
+#ifdef XY
 shortTime_t  usecsPerStepY;
-
+#endif
 typedef enum AxisHomingState {
   headingHome,
   backingUpToHome,
@@ -22,27 +28,30 @@ typedef enum AxisHomingState {
 } AxisHomingState;
 
 AxisHomingState homingStateX;
-AxisHomingState homingStateY;
-pos_t  homingDistX;
-pos_t  homingDistY;
 pos_t  targetDistForHomeX;
-pos_t  targetDistForHomeY;
+pos_t  homingDistX;
 char   deltaVecCountX;
-char   deltaVecCountY;
 uint16_t pulseCountX;
-uint16_t pulseCountY;
-uint16_t usecsPerPulseY;
-uint16_t usecsPerPulseY;
+uint16_t usecsPerPulseX;
 uint16_t deltaX[4];
 int8_t  deltaXSign;
 char     deltaXIdx;
+bool_t movingDoneX;
+Vector *vecX;
+
+#ifdef XY
+AxisHomingState homingStateY;
+pos_t  targetDistForHomeY;
+pos_t  homingDistY;
+char   deltaVecCountY;
+uint16_t pulseCountY;
+uint16_t usecsPerPulseY;
 uint16_t deltaY[4];
 int8_t   deltaYSign;
 char     deltaYIdx;
-bool_t movingDoneX;
 bool_t movingDoneY;
-Vector *vecX;
 Vector *vecY;
+#endif
 
 ////////////  fixed constants  ///////////////
 
@@ -65,56 +74,69 @@ void set_ustep(char axis, char ustepIdx) {
     MS2_X_LAT = ms2PerIdx[ustepIdx];
     MS3_X_LAT = ms3PerIdx[ustepIdx];
   }
+#ifdef XY
   else {
     MS1_Y_LAT = ms1PerIdx[ustepIdx];
     MS2_Y_LAT = ms2PerIdx[ustepIdx];
     MS3_Y_LAT = ms3PerIdx[ustepIdx];
   }
+#endif
 }
 
 void set_dir(char axis, char val) {
   if(axis == 0)
-    DIR_X_LAT = (motorSettings.directionLevelXY >> 1) ^ val;
+    DIR_X_LAT = (motorSettings.directionLevels >> 1) ^ val;
+#ifdef XY
   else
-    DIR_Y_LAT = (motorSettings.directionLevelXY &  1) ^ val;
+    DIR_Y_LAT = (motorSettings.directionLevels &  1) ^ val;
+#endif
 }
 
 bool_t dirIsFwdX() {
-  return (DIR_X_LAT != (motorSettings.directionLevelXY >> 1));
+  return (DIR_X_LAT != (motorSettings.directionLevels >> 1));
 }
-
+#ifdef XY
 bool_t dirIsFwdY() {
-  return (DIR_Y_LAT != (motorSettings.directionLevelXY &  1));
+  return (DIR_Y_LAT != (motorSettings.directionLevels &  1));
 }
+#endif
 
 void set_resets(bool_t resetHigh) {
   RESET_X_LAT = resetHigh;
+#ifdef XY
   RESET_Y_LAT = resetHigh; 
+#endif
 }
 
 void initMotor() {
   // init dac
+#ifdef XY
   DAC1CON1bits.DAC1R  = 0;  
   DAC1CON0bits.OE1    = 1;
   DAC1CON0bits.OE2    = 0;
   DAC1CON0bits.PSS    = 0;
   DAC1CON0bits.NSS    = 0;
   DAC1CON0bits.EN     = 1;
-
+#endif
+#ifdef Z2
+  initPwmVref();
+#endif
   // set default settings
   motorSettings.homeUIdx             = defHomeUIdx;
   motorSettings.homeUsecPerPulse     = defHomeUsecPerPulse;
   motorSettings.homeBkupUIdx         = defHomeBkupUIdx;
   motorSettings.homeBkupUsecPerPulse = defHomeBkupUsecPerPulse;
-  motorSettings.directionLevelXY     = defDirectionLevelXY;
+  motorSettings.directionLevels      = defDirectionLevels;
   
   motorCurrent(defMotorCurrent);
   
   // interrupt on either fault pin lowering
   X_FAULT_IOC_IF = 0;
   X_FAULT_IOC = 1;
+#ifdef XY
   Y_FAULT_IOC_IF = 0;
   Y_FAULT_IOC = 1;
+#endif
   spiInt = 0;
 }
 
@@ -128,15 +150,19 @@ void homingBackupSpeed() {
   motorSettings.homeBkupUsecPerPulse = spiInts[1];
 }
 
-void directionLevelXY(char val) {
+void directionLevels(char val) {
   // d1 is X and d0 is Y
-  motorSettings.directionLevelXY = val;
+  motorSettings.directionLevels = val;
 }
 
 void motorCurrent(char val) {
+#ifdef XY
   DAC1CON1bits.DAC1R = (val);
+#endif
+#ifdef Z2
+  setPwmVref(val);
+#endif
 }
-
 
 ///////////////////////////////// homing ///////////////////////
 
@@ -144,20 +170,21 @@ void startHoming() {
   // also stops timers and clears motor reset pins
   setState(statusHoming);
   homingStateX = headingHome;
-  homingStateY = headingHome;
   homingDistX = 0;
-  homingDistY = 0;
   targetDistForHomeX = 0;
-  targetDistForHomeY = 0;
   set_ustep(X, defHomeUIdx);
   set_dir(X, BACKWARDS);
-  set_ustep(Y, defHomeUIdx);
-  set_dir(Y, BACKWARDS);
   resetTimers();
   setNextTimeX(debounceAndSettlingTime, START_PULSE);
-  
-//  setNextTimeY(debounceAndSettlingTime, START_PULSE);
-  homingStateY = homed;  // DEBUG  -- home X only
+#ifdef XY
+  homingStateY = headingHome;
+  homingDistY = 0;
+  targetDistForHomeY = 0;
+  set_ustep(Y, defHomeUIdx);
+  set_dir(Y, BACKWARDS);
+  setNextTimeY(debounceAndSettlingTime, START_PULSE);// comment out for dbg
+#endif
+//  homingStateY = homed;  // DEBUG  -- home X only
 }
 
 void chkHomingX() {
@@ -197,13 +224,19 @@ void chkHomingX() {
     else {
       // we are done homing X
       homingStateX = homed;
+#ifdef XY
       // if Y is done then all of homing is done
       if(homingStateY == homed){
         setState(statusLocked);
       }
+#endif
+#ifdef Z2
+      setState(statusLocked);
+#endif
     }
   }
 }
+#ifdef XY
 // duplicate chkHoming code for speed, indexing into X and X variables takes time
 void chkHomingY() {
   // compare match and Y pulse just happened
@@ -250,20 +283,23 @@ void chkHomingY() {
     }
   }
 }
+#endif
 
 ///////////////////////////////// moving ///////////////////////
 
 void startMoving() {
   // this also stops timer and clears motor reset pins
   setState(statusMoving);   
+  
   pulseCountX = 0;
-  pulseCountY = 0;
   // first vec cmd can't be a delta or an eof
   deltaVecCountX = 0;
-  deltaVecCountY = 0;
   movingDoneX = TRUE;
+#ifdef XY
+  pulseCountY = 0;
+  deltaVecCountY = 0;
   movingDoneY = TRUE;
-  
+#endif
   if(haveVectorsX()) {
     movingDoneX = FALSE;
     vecX = getVectorX();
@@ -277,6 +313,7 @@ void startMoving() {
     set_ustep(X, (vecX->ctrlWord >> 10) & 0x0007);
     setNextTimeX(usecsPerPulseX, (vecX->ctrlWord & 0x03ff) == 0); 
   }
+#ifdef XY
   if(haveVectorsY()) {
     movingDoneY = FALSE;
     vecY = getVectorY();
@@ -286,6 +323,7 @@ void startMoving() {
     usecsPerStepY = vecY->usecsPerPulse;
     setNextTimeY(usecsPerStepY, (vecY->ctrlWord & 0x03ff) == 0);
   }
+#endif
 }
 
 // 4 delta format,  7 bits each: 11s0 wwww wwwX XXXX XXyy yyyy yZZZ ZZZZ
@@ -319,7 +357,7 @@ void newDeltaX() {
     deltaXIdx = 2;
   }
 }
-
+#ifdef XY
 void newDeltaY() {
   uint32_t word = *((uint32_t *) &vecY);
   // see mcu-cpu.h for delta format description
@@ -347,6 +385,7 @@ void newDeltaY() {
     deltaYIdx = 2;
   }
 }
+#endif
 
 void chkMovingX() {
   // compare match and X pulse just happened
@@ -369,11 +408,16 @@ void chkMovingX() {
       // end of vector stream
       stopTimerX();
       movingDoneX = TRUE;
+#ifdef XY
       if(movingDoneY) {
         // done with all moving
         setState(statusMoved); 
         return;
       }
+#endif
+#ifdef Z2
+      setState(statusMoved); 
+#endif
     }
   } 
   if(deltaXIdx) {
@@ -395,6 +439,8 @@ void chkMovingX() {
     }
   }
 }
+
+#ifdef XY
 
 Vector *vecY;
 
@@ -443,4 +489,5 @@ void chkMovingY() {
     }
   }
 }
+#endif
 

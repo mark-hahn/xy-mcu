@@ -2,7 +2,7 @@
 #include <xc.h>
 #include "timer.h"
 #include "main.h"
-#include "pins-b.h"
+#include "pins.h"
 
 // these are loaded into CCP compare regs in interrupt
 volatile time_ut timeX;
@@ -23,11 +23,13 @@ void initTimer() {
   CCP1CONbits.MODE = 0x8;  // set output high on compare (output not used)
   CCP1IE           = 0;
   CCP1CONbits.EN   = 1;
-  
+#ifdef XY
   // CCP 2 -- controls Y step interrupt from counter compare 2
   STEP_Y_LAT       = 1;  // high on idle
   CCP2IE           = 0;
   CCP2CONbits.MODE = 0x8;  // set output high on compare (output not used)
+#endif
+ 
   CCP1IE           = 0;
   CCP2CONbits.EN   = 1;
 }
@@ -35,20 +37,24 @@ void initTimer() {
 void stopTimerX() {
   CCP1IE   = 0;
 }
+#ifdef XY
 void stopTimerY() {
   CCP2IE   = 0;
 }
+#endif
 
 void resetTimers() {
-  CCP1IE = 0;
-  CCP2IE = 0;
   TMR1H  = 0;
   TMR1L  = 0;
+  CCP1IE = 0;
   // timeBytes are used as running 16-bit timer positions desired
   timeX.timeBytes[1] = 0;
   timeX.timeBytes[0] = 0;
+#ifdef XY
+  CCP2IE = 0;
   timeY.timeBytes[1] = 0;
   timeY.timeBytes[0] = 0;
+#endif
 }
 
 void setNextTimeX(shortTime_t delta, bool_t startPulse) {
@@ -60,7 +66,7 @@ void setNextTimeX(shortTime_t delta, bool_t startPulse) {
   CCP1IF = 0;
   CCP1IE = 1;
 }
-
+#ifdef XY
 void setNextTimeY(shortTime_t delta, bool_t startPulse) {
   CCP2IE = 0;
   if(startPulse) STEP_Y_LAT = 0;
@@ -70,3 +76,5 @@ void setNextTimeY(shortTime_t delta, bool_t startPulse) {
   CCP2IF = 0;
   CCP2IE = 1;
 }
+#endif
+

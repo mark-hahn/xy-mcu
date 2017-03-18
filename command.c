@@ -2,10 +2,15 @@
 #include <xc.h>
 #include "command.h"
 #include "vector.h"
+#ifdef XY
 #include "dac.h"
+#endif
+#ifdef Z2
+#include "pwm-vref.h"
+#endif
 #include "main.h"
 #include "spi.h"
-#include "pins-b.h"
+#include "pins.h"
 #include "mcu-cpu.h"
 #include "motor.h"
 #include "event.h"
@@ -20,13 +25,15 @@ void handleSpiWord() {
   } 
   else switch(topSpiByte & 0xc0) {
     case 0x80: putVectorX();   break;
+#ifdef XY
     case 0x40: putVectorY();   break;
+#endif
     case 0x00: immediateCmd(); break;
   }
 }
 
 void immediateCmd() {
-//   for(char i=0; i < spiBytes[3]*2; i++) FAN_LAT = !FAN_LAT;
+//   for(char i=0; i < spiBytes[3]*2; i++) PWM_LAT = !PWM_LAT;
 
   // word is big-endian, mcu isn't
   switch (spiBytes[3]) {
@@ -74,17 +81,17 @@ void immediateCmd() {
       motorCurrent(spiBytes[0]);
       return;
     
-    case setDirectionLevelXY:
-      directionLevelXY(spiBytes[0]);
+    case setDirectionLevels:
+      directionLevels(spiBytes[0]);
       return;
     
     case updateFlashCode:
       setState(statusFlashing);
-//      for(char i=0; i < 10; i++) FAN_LAT = !FAN_LAT;
+//      for(char i=0; i < 10; i++) PWM_LAT = !PWM_LAT;
 
       // clear beginning of app code so bootloader with load code at reset
       NVMADRH = NEW_RESET_VECTOR >> 8; // erase one block at 0x200
-      NVMADRL = NEW_RESET_VECTOR & 0x00ff;
+      NVMADRL = NEW_RESET_VECTOR & 0xff;
       NVMCON1 = 0x94; // access FLASH memory, wren=1, FREE specifies erase 
       NVMCON2 = 0x55;
       NVMCON2 = 0xaa;

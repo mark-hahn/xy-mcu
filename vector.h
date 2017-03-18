@@ -9,13 +9,15 @@
 #define VEC_BUF_HI_WATER  95 // flow control limit
 
 void initVectors();
-void putVectorX();
-void putVectorY();
-Vector *getVectorX();
-Vector *getVectorY();
-bool_t haveVectorsX();
-bool_t haveVectorsY();
-bool_t vecBufXIsAtHighWater();
-bool_t vecBufYIsAtHighWater();
 
+void putVectorX();
+Vector *getVectorX();
+bool_t haveVectorsX();
+bool_t vecBufXIsAtHighWater();
+#ifdef XY
+void putVectorY();
+Vector *getVectorY();
+bool_t haveVectorsY();
+bool_t vecBufYIsAtHighWater();
+#endif
 #endif	/* VECTORS_H */

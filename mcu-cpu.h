@@ -88,7 +88,7 @@ typedef enum Cmd {
   setHomingSpeed       = 14, // set homeUIdx & homeUsecPerPulse settings
   setHomingBackupSpeed = 15, // set homeBkupUIdx & homeBkupUsecPerPulse settings
   setMotorCurrent      = 16, // set motorCurrent (0 to 31) immediately
-  setDirectionLevelXY  = 17  // set direction for each motor
+  setDirectionLevels  = 17  // set direction for each motor
 } Cmd;
 
 /////////////////////////////////  Z COMMAND  /////////////////////////////////

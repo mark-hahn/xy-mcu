@@ -9,7 +9,7 @@
 #define defHomeBkupUsecPerPulse  1000 // 1000 => 6.25 mm/sec (0.00625 / 0.001)
 #define defHomeBkupUIdx             5 // 5 => 0.00625 mm/pulse
 #define defMotorCurrent            20 // 20 -> 1.5 amp, 26 -> 2 amp
-#define defDirectionLevelXY      0b11 // x dir: d1, y dir: d0
+#define defDirectionLevels      0b11 // x dir: d1, y dir: d0
 
 // should these be in motorSettings?  TODO
 #define debounceAndSettlingTime 50000 // debounce and time to reverse, 50 ms
@@ -24,29 +24,31 @@ typedef struct MotorSettings {
   shortTime_t homeUsecPerPulse;
   char homeBkupUIdx;
   shortTime_t homeBkupUsecPerPulse;
-  char directionLevelXY;  // d1 is X, d0 is Y, 1 is forward
+  char directionLevels;  // d1 is X, d0 is Y, 1 is forward
 } MotorSettings;
 
 extern MotorSettings motorSettings;
 
+void startHoming();
+void startMoving();
+
 extern pos_t homingDistX; // how long each axis traveled to get home
+void chkHomingX();
+void chkMovingX();
+
+#ifdef XY
 extern pos_t homingDistY;
+void chkHomingY();
+void chkMovingY();
+#endif
 
 void initMotor();
 void set_resets(bool_t resetHigh);
 
 void homingSpeed();
 void homingBackupSpeed();
-void directionLevelXY(char val);
+void directionLevels(char val);
 void motorCurrent(char val);
-
-void startHoming();
-void chkHomingX();
-void chkHomingY();
-
-void startMoving();
-void chkMovingX();
-void chkMovingY();
 
 #endif	/* MOTOR_H */
 

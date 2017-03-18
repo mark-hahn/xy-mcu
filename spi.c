@@ -2,7 +2,7 @@
 #include <xc.h>
 #include "spi.h"
 #include "mcu-cpu.h"
-#include "pins-b.h"
+#include "pins.h"
 #include "vector.h"
 #include "motor.h"
 

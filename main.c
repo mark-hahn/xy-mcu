@@ -30,13 +30,20 @@
 
 #include <xc.h>
 #include "main.h"
+#include "mcu-cpu.h"
 #include "timer.h"
-#include "pins-b.h"
+#include "pins.h"
 #include "vector.h"
 #include "spi.h"
 #include "motor.h"
 #include "event.h"
-#include "dac.h"
+
+#ifdef XY
+#include "fan.h"
+#endif
+#ifdef Z2
+#include "pwm-vref.h"
+#endif
 
 #define INT_ERROR_FAULT_X (0x00 | errorFault);
 #define INT_ERROR_FAULT_Y (0x80 | errorFault);
@@ -46,8 +53,9 @@ volatile char   intError = 0;
 
 volatile bool_t spiInt  = FALSE;
 volatile bool_t CCP1Int = FALSE;
+#ifdef XY
 volatile bool_t CCP2Int = FALSE;
-
+#endif
 // global interrupt routine
 void interrupt isr(void) {
   if(SSP1IF) {
@@ -81,6 +89,8 @@ void interrupt isr(void) {
     CCPR1L   = timeX.timeBytes[0];
     CCP1Int  = TRUE; // flag eventloop
   }
+  if(X_FAULT_IOC_IF) intError = INT_ERROR_FAULT_X;
+#ifdef XY
   if(CCP2IE && CCP2IF) { 
     // Y timer compare int
     CCP2IF     = 0;
@@ -89,8 +99,8 @@ void interrupt isr(void) {
     CCPR2L   = timeY.timeBytes[0];
     CCP2Int  = TRUE;
   }
-  if(X_FAULT_IOC_IF) intError = INT_ERROR_FAULT_X;
   if(Y_FAULT_IOC_IF) intError = INT_ERROR_FAULT_Y;
+#endif
 }  
 
 void main(void) {
@@ -101,26 +111,33 @@ void main(void) {
   statusRec.rec.vers      = VERS; 
   statusRec.rec.homeDistX = 0;
   statusRec.rec.homeDistY = 0;
-
   ANSELA = 0; // no analog inputs
   ANSELB = 0; // these &^%$&^ regs cause a lot of trouble
   ANSELC = 0; // they should not default to on and override everything else
 
-//  FAN_LAT = 0;
+//  PWM_LAT = 0;
 
   // change these to defined constants   TODO
   // and have each init do their own
+#ifdef XY
   TRISA = 0b10100000; // all out except ss and on
   TRISB = 0b11000000; // all out except ICSP pins
   TRISC = 0b11011001; // all in except miso, vstep, and fan
+#endif
+#ifdef Z2
+  TRISA = 0b00001011; // all out except ICSP & MCLR
+  TRISB = 0b01010000; // sclk & mosi in; miso & dbg out
+  TRISC = 0b11000100; // all out except ss, fault, and lim
+#endif
 
   initVectors();
   initMotor();
   initEvent();
   initSpi();
   initTimer();
-  initPwm();
-  
+#ifdef XY
+  initFan();
+#endif
   setState(statusUnlocked);
 
    // global ints on
