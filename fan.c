@@ -23,7 +23,7 @@ void initFan() {
   TMR2IE            = 0; // no interrupts on timer 2
   
   // pwm module 3
-  RC1PPS   = 11; // select pwm3 to output on pin RC1
+  SPI_FAN_OUT_PPS = 0x0b; // select pwm3 to output on pin RC1
   PWM_TRIS = 0;  // output
   PWM3DCL  = 0;  // bot 2 lsb bits are in d7-d6
   PWM3DCH  = 0;  // top 3 bits of 5-bit duty cycle is in d2-d0

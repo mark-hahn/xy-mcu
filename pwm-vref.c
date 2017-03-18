@@ -10,7 +10,6 @@
 
 void initPwmVref() {
   // timer 2 -- input to pwm module
-  // brushless fan needs a really slow period (20 to 160 Hz)
   T2CLKCON          = 6; // clk source MFINTOSC => 31.25 kHz
   T2CONbits.T2CKPS  = 7; // prescale 128:1 => 244 Hz
   PR2               = 8; // period count 8 =>  30 Hz (5 bit resolution)
@@ -23,7 +22,7 @@ void initPwmVref() {
   TMR2IE            = 0; // no interrupts on timer 2
   
   // pwm module 3
-  RC1PPS   = 11; // select pwm3 to output on pin
+  SPI_PWM_VREF_PPS  = 0x0b; // select pwm3 to output on pin RA2
   PWM_VREF_TRIS = 0;  // output
   PWM3DCL  = 0;  // bot 2 lsb bits are in d7-d6
   PWM3DCH  = 0;  // top 3 bits of 5-bit duty cycle is in d2-d0
@@ -31,11 +30,6 @@ void initPwmVref() {
   PWM3EN   = 1;  // enable pwm
 }
 
-// Speed param is 0 to 32 for 0 to 100% pwm duty cycle.
-// Any value over 31 gives 100%.
-// A test with a 12V supply and 5V fan wouldn't reliably start
-//   below a param value of 12 (38%), which is equivalent to 4.5 volts,
-//   but it seemed to run fine at a full 100% 12V :-)
 void setPwmVref(char vref) {
   PWM3DCL =  vref << 6;
   PWM3DCH = (vref & 0x1c) >> 2;
