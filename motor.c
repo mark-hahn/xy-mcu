@@ -5,9 +5,6 @@
 #include "motor.h"
 #include "vector.h"
 #include "event.h"
-#ifdef XY
-#include "dac.h"
-#endif
 #ifdef Z2
 #include "pwm-vref.h"
 #endif

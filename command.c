@@ -2,12 +2,6 @@
 #include <xc.h>
 #include "command.h"
 #include "vector.h"
-#ifdef XY
-#include "dac.h"
-#endif
-#ifdef Z2
-#include "pwm-vref.h"
-#endif
 #include "main.h"
 #include "spi.h"
 #include "pins.h"
