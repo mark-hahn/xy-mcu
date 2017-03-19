@@ -91,7 +91,7 @@
 #define SPI_CLK_PPS       0x0c    // SSP1CLKPPS <= C3, SPI Clock input
 #define SPI_DATA_IN_PPS   0x0e    // SSP1DATPPS <= C4, SPI Data input
 #define SPI_DATA_OUT_PPS  RB5PPS  // Data out   => C5, SPI Data output
-#define SPI_PWM_VREF_PPS  RA2PPS  // pwm3 out   => A2, pwm vref output
+#define PWM_VREF_PPS  RA2PPS  // pwm3 out   => A2, pwm vref output
 
 #define SPI_SS_IOC        IOCCPbits.IOCCP2  // interrupt on rising A7 pin
 #define SPI_SS_IOC_IF     IOCCFbits.IOCCF2  // interrupt flag
