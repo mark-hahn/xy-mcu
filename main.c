@@ -66,6 +66,7 @@ void interrupt isr(void) {
   }
   if(SPI_SS_IOC_IF) {
   // spi word arrived (SS went high)
+    dbg(1);
     SPI_SS_IOC_IF = 0;
     
     if(spiInt) intError = errorSpiBytesOverrun;
@@ -80,6 +81,7 @@ void interrupt isr(void) {
       spiBytesInIdx = 0;   
       spiInt = TRUE; // flag eventloop
     }
+    dbg(0);
   }
   if(CCP1IE && CCP1IF) { 
     // X timer compare int
@@ -101,7 +103,7 @@ void interrupt isr(void) {
   }
   if(Y_FAULT_IOC_IF) intError = INT_ERROR_FAULT_Y;
 #endif
-}  
+  }
 
 void main(void) {
   statusRec.rec.len       = STATUS_SPI_BYTE_COUNT;
@@ -116,7 +118,6 @@ void main(void) {
   ANSELC = 0; // they should not default to on and override everything else
 
 //  PWM_LAT = 0;
-
   // change these to defined constants   TODO
   // and have each init do their own
 #ifdef XY
@@ -126,7 +127,7 @@ void main(void) {
 #endif
 #ifdef Z2
   TRISA = 0b00001011; // all out except ICSP & MCLR
-  TRISB = 0b01010000; // sclk & mosi in; miso & dbg out
+  TRISB = 0b01110000; // sclk & mosi in (miso in until later)
   TRISC = 0b11000100; // all out except ss, fault, and lim
 #endif
 
@@ -138,7 +139,11 @@ void main(void) {
 #ifdef XY
   initFan();
 #endif
+  
+  initDbg(); dbg(0);
+    
   setState(statusUnlocked);
+  
 
    // global ints on
   IOCIE =  1; // Interrupt on pin change (ss and faults)

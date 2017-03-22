@@ -85,13 +85,13 @@
 #define STEP_X_LAT       LATA4
 #define DIR_X_LAT        LATA5
 #define PWM_VREF_LAT     LATA2  // pwm (vref) pin latch
-
+        
 // SPI: PPS, peripheral select
-#define SPI_SS_PPS        0x11    // SSP1SSPPS  <= A7, SPI Slave Select input
-#define SPI_CLK_PPS       0x0c    // SSP1CLKPPS <= C3, SPI Clock input
-#define SPI_DATA_IN_PPS   0x0e    // SSP1DATPPS <= C4, SPI Data input
-#define SPI_DATA_OUT_PPS  RB5PPS  // Data out   => C5, SPI Data output
-#define PWM_VREF_PPS  RA2PPS  // pwm3 out   => A2, pwm vref output
+#define SPI_SS_PPS        0x12    // SSP1SSPPS , SPI Slave Select input
+#define SPI_CLK_PPS       0x0c    // SSP1CLKPPS, SPI Clock input
+#define SPI_DATA_IN_PPS   0x0e    // SSP1DATPPS, SPI Data input
+#define SPI_DATA_OUT_PPS  RB5PPS  // Data out  , SPI Data output
+#define PWM_VREF_PPS      RA2PPS  // pwm3 out , pwm vref output
 
 #define SPI_SS_IOC        IOCCPbits.IOCCP2  // interrupt on rising A7 pin
 #define SPI_SS_IOC_IF     IOCCFbits.IOCCF2  // interrupt flag

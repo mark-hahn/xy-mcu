@@ -23,5 +23,10 @@ extern volatile bool_t CCP2Int;
 #endif
 extern volatile char   intError;
 
+#define initDbg()   LIMIT_SW_X_TRIS = 0
+#define dbg(x)      LIMIT_SW_X = x
+#define dbgToggle() LIMIT_SW_X = !LIMIT_SW_X
+
+
 #endif	/* MAIN_H */
 

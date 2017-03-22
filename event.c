@@ -164,17 +164,14 @@ void eventLoop() {
     
     // check for SPI word input event
     if(spiInt) {
-//      PWM_LAT = 0;
+//      dbg(1);
 
       // a little-endian 32-bit word (spiBytesIn) arrived (SS went high)
-
       // copy word to buffered interrupt version (global))
       spiWord    = *((uint32_t *) spiBytesIn);
-      
       // use spiInts for structs with 2 uint16_t (global))
       spiInts[0] = *((uint16_t *) &spiBytesIn[2]);
       spiInts[1] = *((uint16_t *) &spiBytesIn[0]);
-      
       // little-endian array version of spiWord (global))
       spiBytes   = ((char *) &spiWord);
       
@@ -184,20 +181,18 @@ void eventLoop() {
         sendStatusRecByte();
    
       else if (errorCode) {
-//        for(char i=0; i < 14; i++) PWM_LAT = !PWM_LAT;
         outbuf = (typeError | errorCode | errorAxis);
         if(SPI_SS) SSP1BUF = outbuf;
       }
       else 
         sendStateByte();
 
-//      for(char i=0; i < 16; i++) PWM_LAT = !PWM_LAT;
-      // process input word
       if(spiWord != 0) handleSpiWord();
       
       // spiInt must be cleared before next 32-bit word arrives (SS high)
       spiInt = FALSE;
-//      PWM_LAT = 1;
+      
+//      dbg(0);
     }
 
     // if error, no homing or moving happens until clearError cmd

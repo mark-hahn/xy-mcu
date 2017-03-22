@@ -165,23 +165,32 @@ void motorCurrent(char val) {
 
 void startHoming() {
   // also stops timers and clears motor reset pins
-  setState(statusHoming);
-  homingStateX = headingHome;
   homingDistX = 0;
+  homingStateX = headingHome;
+#ifdef XY
+  if((spiBytes[0] & 0b10) == 0) homingStateX = homed;
+  if((spiBytes[0] & 0b11) == 0) {
+    setState(statusLocked);
+    return;
+  }
+#endif
+  setState(statusHoming);
   targetDistForHomeX = 0;
   set_ustep(X, defHomeUIdx);
   set_dir(X, BACKWARDS);
   resetTimers();
-  setNextTimeX(debounceAndSettlingTime, START_PULSE);
+  if(homingStateX == headingHome)
+    setNextTimeX(debounceAndSettlingTime, START_PULSE);
 #ifdef XY
-  homingStateY = headingHome;
   homingDistY = 0;
+  if((spiBytes[0] & 0b01) == 0) homingStateY = homed;
+  else homingStateY = headingHome;
   targetDistForHomeY = 0;
   set_ustep(Y, defHomeUIdx);
   set_dir(Y, BACKWARDS);
-  setNextTimeY(debounceAndSettlingTime, START_PULSE);// comment out for dbg
+  if( homingStateY == headingHome)
+    setNextTimeY(debounceAndSettlingTime, START_PULSE);
 #endif
-//  homingStateY = homed;  // DEBUG  -- home X only
 }
 
 void chkHomingX() {

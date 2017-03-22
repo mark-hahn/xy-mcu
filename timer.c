@@ -8,8 +8,6 @@
 volatile time_ut timeX;
 volatile time_ut timeY;
 
-bool_t firstPulseX = TRUE;
- 
 void initTimer() {
   // timer 1 -- used only by CCPs below
   T1CLKbits.CS   = 1;      // Fosc/4, 8 MHz before prescale

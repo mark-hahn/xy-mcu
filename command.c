@@ -44,14 +44,18 @@ void immediateCmd() {
       statusRecOutIdx = STATUS_REC_START;
       return;
     
-    case resetCmd: 
-      // this stops timer and activates motor reset pins
+    case lockCmd: 
+      // this stops timer and deactivates motor reset pins (pins high)
+      setState(statusLocked); 
+      return;
+      
+    case unlockCmd: 
+      // this stops timer and activates motor reset pins (pins low)
       setState(statusUnlocked); 
-      initVectors();
       return;
       
     case idleCmd:
-      // this stops everything but doesn't change reset pins
+      // clears vectors and stops timer but doesn't change lock state
       if(RESET_X_LAT) setState(statusLocked);
       else            setState(statusUnlocked);
       initVectors();
