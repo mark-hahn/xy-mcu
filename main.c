@@ -66,7 +66,6 @@ void interrupt isr(void) {
   }
   if(SPI_SS_IOC_IF) {
   // spi word arrived (SS went high)
-    dbg(1);
     SPI_SS_IOC_IF = 0;
     
     if(spiInt) intError = errorSpiBytesOverrun;
@@ -81,7 +80,6 @@ void interrupt isr(void) {
       spiBytesInIdx = 0;   
       spiInt = TRUE; // flag eventloop
     }
-    dbg(0);
   }
   if(CCP1IE && CCP1IF) { 
     // X timer compare int
@@ -117,7 +115,6 @@ void main(void) {
   ANSELB = 0; // these &^%$&^ regs cause a lot of trouble
   ANSELC = 0; // they should not default to on and override everything else
 
-//  PWM_LAT = 0;
   // change these to defined constants   TODO
   // and have each init do their own
 #ifdef XY
@@ -130,6 +127,8 @@ void main(void) {
   TRISB = 0b01110000; // sclk & mosi in (miso in until later)
   TRISC = 0b11000100; // all out except ss, fault, and lim
 #endif
+  
+  initDbg(); dbg(0);
 
   initVectors();
   initMotor();
@@ -140,8 +139,6 @@ void main(void) {
   initFan();
 #endif
   
-  initDbg(); dbg(0);
-    
   setState(statusUnlocked);
   
 

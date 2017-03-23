@@ -27,8 +27,6 @@ void handleSpiWord() {
 }
 
 void immediateCmd() {
-//   for(char i=0; i < spiBytes[3]*2; i++) PWM_LAT = !PWM_LAT;
-
   // word is big-endian, mcu isn't
   switch (spiBytes[3]) {
     
@@ -85,7 +83,6 @@ void immediateCmd() {
     
     case updateFlashCode:
       setState(statusFlashing);
-//      for(char i=0; i < 10; i++) PWM_LAT = !PWM_LAT;
 
       // clear beginning of app code so bootloader with load code at reset
       NVMADRH = NEW_RESET_VECTOR >> 8; // erase one block at 0x200

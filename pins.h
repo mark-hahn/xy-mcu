@@ -87,11 +87,12 @@
 #define PWM_VREF_LAT     LATA2  // pwm (vref) pin latch
         
 // SPI: PPS, peripheral select
-#define SPI_SS_PPS        0x12    // SSP1SSPPS , SPI Slave Select input
+#define PWM3OUT_PPS       0x0b    // PWM3 Output
 #define SPI_CLK_PPS       0x0c    // SSP1CLKPPS, SPI Clock input
 #define SPI_DATA_IN_PPS   0x0e    // SSP1DATPPS, SPI Data input
+#define SPI_SS_PPS        0x12    // SSP1SSPPS , SPI Slave Select input
 #define SPI_DATA_OUT_PPS  RB5PPS  // Data out  , SPI Data output
-#define PWM_VREF_PPS      RA2PPS  // pwm3 out , pwm vref output
+#define PWM_VREF_PPS      RA2PPS  // pwm vref output PIN A2
 
 #define SPI_SS_IOC        IOCCPbits.IOCCP2  // interrupt on rising A7 pin
 #define SPI_SS_IOC_IF     IOCCFbits.IOCCF2  // interrupt flag

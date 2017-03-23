@@ -8,7 +8,14 @@
 #define defHomeUIdx                 2 // 0.05 mm/pulse
 #define defHomeBkupUsecPerPulse  1000 // 1000 => 6.25 mm/sec (0.00625 / 0.001)
 #define defHomeBkupUIdx             5 // 5 => 0.00625 mm/pulse
+
+#ifdef XY
 #define defMotorCurrent            20 // 20 -> 1.5 amp, 26 -> 2 amp
+#endif
+#ifdef Z2
+#define defMotorCurrent           84 // 0.4V, 800 ma
+#endif
+
 #define defDirectionLevels      0b11 // x dir: d1, y dir: d0
 
 // should these be in motorSettings?  TODO

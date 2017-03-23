@@ -23,10 +23,18 @@ extern volatile bool_t CCP2Int;
 #endif
 extern volatile char   intError;
 
-#define initDbg()   LIMIT_SW_X_TRIS = 0
-#define dbg(x)      LIMIT_SW_X = x
-#define dbgToggle() LIMIT_SW_X = !LIMIT_SW_X
+//#define initDbg()   LIMIT_SW_X_TRIS = 0
+//#define dbg(x)      LIMIT_SW_X = x
+//#define dbgToggle() LIMIT_SW_X = !LIMIT_SW_X
 
+#define dbgTris LIMIT_SW_X_TRIS
+#define dbgPin  LIMIT_SW_X
+
+#define initDbg()   dbgTris = 0
+#define dbg(x)      dbgPin = x
+#define dbgToggle() dbgPin = !dbgPin
+#define dbgPulseH(n) for(int nin=0; nin<n; nin++) {dbgPin = 1; dbgPin = 0;}
+#define dbgPulseL(n) for(int nin=0; nin<n; nin++) {dbgPin = 0; dbgPin = 1;}
 
 #endif	/* MAIN_H */
 
