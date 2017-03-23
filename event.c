@@ -26,6 +26,8 @@ void initEvent() {
   setState(statusUnlocked); 
 }
 
+void bark(void) {asm("CLRWDT");} // reset watchdog
+
 // this also clears time and sets or clears motor reset pins
 void setState(char newState) {
   // timer counting and ints off until move or homing command
@@ -46,18 +48,27 @@ void setState(char newState) {
 
 // axis is zero when not specific to axis
 void handleError(char axis, Error code) {
-  setState(statusUnlocked);
-  errorAxis = axis;
-  errorCode = code;
   // wait for SPI idle to repair byte sync and abort word
   while (!SPI_SS); 
+
+  // clean up comm state
   spiBytesInIdx = 0;
   statusRecOutIdx = STATUS_REC_IDLE;
+  
+ // errors don't override old ones
+  if(errorCode == 0 || code == errorReset) {
+    setState(statusUnlocked);
+    errorAxis = axis;
+    errorCode = code;
+  }
 }
 
 // d5: error flag (if error, then no high-waters sent)
 // d4-d3: vector buf high-water flags for X and Y
 // d2-d0: status code (mcu_state)
+
+// Why send error bit if error byte always sent instead?
+// And send Status Rec  ignores errorCode?  TODO
 void sendStateByte() {
   char outbuf = 0;
   if(errorCode) {
@@ -122,12 +133,6 @@ void sendStatusRecByte() {
   }
   if(outbuf && SPI_SS) SSP1BUF = outbuf;
 }
-// from wire
-// 000000 010000 000100 000001 000000 010111 011000 111110 000000 
-// 00-0000 0010-00 101111 - 101111 01-0000 0000-00 000000 
-// 9       10      11       12     13      14      15
-//    7         8           9         10        11
-//    0000 0000 10 110001
 
 // called once from main.c and never returns
 void eventLoop() {
@@ -164,7 +169,9 @@ void eventLoop() {
     
     // check for SPI word input event
     if(spiInt) {
-//      dbg(1);
+      bark(); // spi must arrive within every two secs
+
+      //      dbg(1);
 
       // a little-endian 32-bit word (spiBytesIn) arrived (SS went high)
       // copy word to buffered interrupt version (global))

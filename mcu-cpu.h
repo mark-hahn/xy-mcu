@@ -80,8 +80,8 @@ typedef enum Cmd {
   statusCmd            =  1, // requests status rec returned
   clearErrorCmd        =  2, // on error, no activity until this command
   updateFlashCode      =  3, // set flash bytes as no-app flag and reboot
-
-  // commands specific to one add-on start at 10
+ 
+  // commands specific to one add-on start at 10 
   idleCmd              = 10, // abort any commands, clear vec buffers
   lockCmd              = 11, // set reset pins on motors to low
   unlockCmd            = 12, // clear reset pins on motors to high
@@ -204,7 +204,7 @@ typedef union StatusRecU {
 typedef enum Error {
   // these must be supported by all add-ons
   errorMcuFlashing =    2,
-  errorNoResponse  = 0x3f, // miso automatically returns 0xff when no mcu
+  errorReset       =    4,
 
   // errors specific to add-on start at 10
   errorFault             = 10, // driver chip fault
@@ -218,7 +218,9 @@ typedef enum Error {
   errorSpiByteOverrun    = 50,
   errorSpiBytesOverrun   = 52,
   errorSpiOvflw          = 54,
-  errorSpiWcol           = 56
+  errorSpiWcol           = 56,
+
+  errorNoResponse  = 0x3f // miso pull-up returns 0xff when no mcu
 } Error;
 
 #define spiCommError(byte) ((byte >= (0xc0 | errorSpiByteSync)))

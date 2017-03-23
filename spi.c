@@ -49,4 +49,5 @@ void initSpi() {
   SPI_SS_IOC = 1;
   SPI_SS_IOC_IF = 0;  // IOC int flag for specific A7 pin
   spiInt = 0;
+  
 }
