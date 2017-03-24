@@ -27,8 +27,16 @@ extern volatile char   intError;
 //#define dbg(x)      LIMIT_SW_X = x
 //#define dbgToggle() LIMIT_SW_X = !LIMIT_SW_X
 
-#define dbgTris LIMIT_SW_X_TRIS
-#define dbgPin  LIMIT_SW_X
+
+#ifdef XY
+#define dbgTris TRISC6
+#define dbgPin  RC6
+#endif
+
+#ifdef Z2
+#define dbgTris TRISB7
+#define dbgPin  RB7
+#endif
 
 #define initDbg()   dbgTris = 0
 #define dbg(x)      dbgPin = x

@@ -63,11 +63,15 @@ void interrupt isr(void) {
   // spi byte arrived
     SSP1IF = 0;
     spiBytesIn[3-spiBytesInIdx++] = SSP1BUF;
-   // does not flag eventloop, IOC does below after all four bytes arrived    
+   // does not flag eventloop, IOC does below after all bytes arrived    
   }
   if(SPI_SS_IOC_IF) {
   // spi word arrived (SS went high)
     SPI_SS_IOC_IF = 0;
+    
+     if(spiBytesIn[3] == homeCmd)
+       dbgPulseH(2);
+
     
     if(spiInt) intError = errorSpiBytesOverrun;
     

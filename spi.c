@@ -14,11 +14,6 @@ volatile char spiBytesIn[4];  // a word (four chars) from SPI, big-endian
 volatile char spiBytesInIdx;  // index for spiBytesIn
 
 void initSpi() {
-  SSP1SSPPS  = SPI_SS_PPS;       // slave select in
-  SSP1CLKPPS = SPI_CLK_PPS;      // clock in
-  SSP1DATPPS = SPI_DATA_IN_PPS;  // data in
-  SPI_DATA_OUT_PPS = 0x16;       // Data out (0x16: spi miso)
-   
   SPI_SS_TRIS       = 1;         // SPI TRIS select input
   SPI_CLK_TRIS      = 1;         // SPI TRIS clock input
   SPI_DATA_IN_TRIS  = 1;         // SPI TRIS data input
@@ -30,6 +25,12 @@ void initSpi() {
   SSP1STATbits.CKE   = 1; // clk edge in (1: falling edge if above is 0)
   SSP1CON3bits.BOEN  = 1; // enable buffer input overflow check (SSPOV))
   spiBytesInIdx = 0;
+
+  SSP1SSPPS  = SPI_SS_PPS;       // slave select in
+  SSP1CLKPPS = SPI_CLK_PPS;      // clock in
+  SSP1DATPPS = SPI_DATA_IN_PPS;  // data in
+  SPI_DATA_OUT_PPS = 0x16;       // Data out (0x16: spi miso)
+   
   /* From datasheet: Before enabling the module in SPI Slave mode, the clock
    line must match the proper Idle state (CKP) */
   while(SPI_CLK);

@@ -171,7 +171,7 @@ void eventLoop() {
     if(spiInt) {
       bark(); // spi must arrive within every two secs
 
-      //      dbg(1);
+      dbg(1);
 
       // a little-endian 32-bit word (spiBytesIn) arrived (SS went high)
       // copy word to buffered interrupt version (global))
@@ -182,7 +182,10 @@ void eventLoop() {
       // little-endian array version of spiWord (global))
       spiBytes   = ((char *) &spiWord);
       
-      // return state, error, or statusRec data in SPI output buf
+      if(spiBytes[3] == homeCmd)
+        dbgPulseH(3);
+      
+    // return state, error, or statusRec data in SPI output buf
       // status rec is always surrounded by state bytes
       if (statusRecOutIdx != STATUS_REC_IDLE)
         sendStatusRecByte();
@@ -194,12 +197,13 @@ void eventLoop() {
       else 
         sendStateByte();
 
-      if(spiWord != 0) handleSpiWord();
+      dbg(0);
+      if(!SPI_SS) dbgPulseH(20);
+
+       if(spiWord != 0) handleSpiWord();
       
       // spiInt must be cleared before next 32-bit word arrives (SS high)
       spiInt = FALSE;
-      
-//      dbg(0);
     }
 
     // if error, no homing or moving happens until clearError cmd
