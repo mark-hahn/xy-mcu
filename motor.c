@@ -160,7 +160,7 @@ void motorCurrent(char val) {
   setPwmVref(val);
 #endif
 }
-
+ 
 ///////////////////////////////// homing ///////////////////////
 
 void startHoming() {

@@ -183,7 +183,7 @@ void eventLoop() {
       spiBytes   = ((char *) &spiWord);
       
       if(spiBytes[3] == homeCmd)
-        dbgPulseH(3);
+        dbgPulseL(3);
       
     // return state, error, or statusRec data in SPI output buf
       // status rec is always surrounded by state bytes

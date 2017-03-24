@@ -56,30 +56,23 @@ volatile bool_t CCP1Int = FALSE;
 #ifdef XY
 volatile bool_t CCP2Int = FALSE;
 #endif
-
+ 
 // global interrupt routine
 void interrupt isr(void) {
   if(SSP1IF) {
   // spi byte arrived
     SSP1IF = 0;
-    spiBytesIn[3-spiBytesInIdx++] = SSP1BUF;
+    if(++spiBytesInIdx > 4) 
+      intError = errorSpiByteSync;
+    else
+      spiBytesIn[4-spiBytesInIdx] = SSP1BUF;
    // does not flag eventloop, IOC does below after all bytes arrived    
   }
   if(SPI_SS_IOC_IF) {
   // spi word arrived (SS went high)
     SPI_SS_IOC_IF = 0;
     
-     if(spiBytesIn[3] == homeCmd)
-       dbgPulseH(2);
-
-    
     if(spiInt) intError = errorSpiBytesOverrun;
-    
-    else if(spiBytesInIdx != 4 && SPI_SS &&
-            // one byte word containing value < 10 must be supported
-            // least significant three bytes are garbage
-            (spiBytesInIdx != 1 || spiBytesIn[3] >= 10)) 
-          intError = errorSpiByteSync;
     
     else {
       spiBytesInIdx = 0;   
