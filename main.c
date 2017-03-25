@@ -28,9 +28,11 @@
 #pragma config LVP = OFF        // Low Voltage Programming Enable bit (High Voltage on MCLR/Vpp must be used for programming)
 #pragma config CP = OFF         // UserNVM Program memory code protection bit (UserNVM code protection disabled)
 
+//#include <stdint.h>
 #include <xc.h>
 #include "main.h"
 #include "mcu-cpu.h"
+#include "invtable.h"
 #include "timer.h"
 #include "pins.h"
 #include "vector.h"
