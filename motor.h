@@ -11,12 +11,12 @@
 
 #ifdef XY
 #define defMotorCurrent            20 // 20 -> 1.5 amp, 26 -> 2 amp
+#define defDirectionLevels      0b11 // x dir: d1, y dir: d0
 #endif
 #ifdef Z2
 #define defMotorCurrent           84 // 0.4V, 800 ma
+#define defDirectionLevels      0b00 // x dir: d1, y dir: d0
 #endif
-
-#define defDirectionLevels      0b11 // x dir: d1, y dir: d0
 
 // should these be in motorSettings?  TODO
 #define debounceAndSettlingTime 50000 // debounce and time to reverse, 50 ms
