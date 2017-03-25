@@ -28,7 +28,6 @@
 #pragma config LVP = OFF        // Low Voltage Programming Enable bit (High Voltage on MCLR/Vpp must be used for programming)
 #pragma config CP = OFF         // UserNVM Program memory code protection bit (UserNVM code protection disabled)
 
-//#include <stdint.h>
 #include <xc.h>
 #include "main.h"
 #include "mcu-cpu.h"
@@ -104,6 +103,9 @@ void interrupt isr(void) {
   }
 
 void main(void) {
+  volatile uint16_t x = pps2usecs(1000);
+  while(1);
+          
   SWDTEN = 1;  // start watchdog, must bark before 2 seconds
 
   statusRec.rec.len       = STATUS_SPI_BYTE_COUNT;
