@@ -4,7 +4,6 @@
 #include "invtable.h"
 #include "main.h"
 
-
 uint16_t pps2usecs(uint16_t pps) {
   uint16_t addr;
   if(pps < 0x800)

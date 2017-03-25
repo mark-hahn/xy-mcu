@@ -187,16 +187,13 @@ typedef struct StatusRec {
   uint32_t homeDistY;
 } StatusRec;
 
+#define STATUS_SPI_BYTE_COUNT \
+  (((sizeof(StatusRec) * 4) / 3) + (char)((sizeof(StatusRec) % 3) != 0))
+
 typedef union StatusRecU {
   StatusRec rec;
   char      bytes[sizeof(StatusRec)];
 } StatusRecU;
-
-#define STATUS_SPI_BYTE_COUNT_MIN 7 // just mfr, prod, vers, 40 bits in 7 bytes
-
-#define STATUS_SPI_BYTE_COUNT           \
-  (((sizeof(StatusRec) % 3) == 0 ?      \
-   ((sizeof(StatusRec)*4)/3) : (((sizeof(StatusRec)*4)/3) + 1)))
 
 // top 2 bits are 0b11 (typeError)
 // lsb of error byte reserved for error axis

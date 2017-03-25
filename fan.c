@@ -36,9 +36,9 @@ void initFan() {
 // A test with a 12V supply and 5V fan wouldn't reliably start 
 // below a param value of 12 (38%), which is equivalent to 4.5 volts,
 // but it seemed to run fine at a full 100% 12V :-)
-void setFanSpeed(char speed) {
-  PWM3DCL =  speed << 6;
-  PWM3DCH = (speed & 0x1c) >> 2;
-}
+//void setFanSpeed(char speed) {
+//  PWM3DCL =  speed << 6;
+//  PWM3DCH = (speed & 0x1c) >> 2;
+//}
 
 #endif

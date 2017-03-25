@@ -89,15 +89,6 @@ void set_dir(char axis, char val) {
 #endif
 }
 
-bool_t dirIsFwdX() {
-  return (DIR_X_LAT != (motorSettings.directionLevels >> 1));
-}
-#ifdef XY
-bool_t dirIsFwdY() {
-  return (DIR_Y_LAT != (motorSettings.directionLevels &  1));
-}
-#endif
-
 void set_resets(bool_t resetHigh) {
   RESET_X_LAT = resetHigh;
 #ifdef XY

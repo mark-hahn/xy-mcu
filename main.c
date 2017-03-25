@@ -31,7 +31,6 @@
 #include <xc.h>
 #include "main.h"
 #include "mcu-cpu.h"
-#include "invtable.h"
 #include "timer.h"
 #include "pins.h"
 #include "vector.h"
@@ -103,9 +102,6 @@ void interrupt isr(void) {
   }
 
 void main(void) {
-  volatile uint16_t x = pps2usecs(1000);
-  while(1);
-          
   SWDTEN = 1;  // start watchdog, must bark before 2 seconds
 
   statusRec.rec.len       = STATUS_SPI_BYTE_COUNT;
@@ -115,6 +111,7 @@ void main(void) {
   statusRec.rec.vers      = VERS; 
   statusRec.rec.homeDistX = 0;
   statusRec.rec.homeDistY = 0;
+  
   ANSELA = 0; // no analog inputs
   ANSELB = 0; // these &^%$&^ regs cause a lot of trouble
   ANSELC = 0; // they should not default to on and override everything else

@@ -86,8 +86,8 @@ void immediateCmd() {
       setState(statusFlashing);
 
       // clear beginning of app code so bootloader with load code at reset
-      NVMADRH = NEW_RESET_VECTOR >> 8; // erase one block at 0x200
-      NVMADRL = NEW_RESET_VECTOR & 0xff;
+      NVMADRH = 0x02; // erase one block at 0x200
+      NVMADRL = 0x00;
       NVMCON1 = 0x94; // access FLASH memory, wren=1, FREE specifies erase 
       NVMCON2 = 0x55;
       NVMCON2 = 0xaa;
