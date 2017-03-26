@@ -28,11 +28,24 @@
 
 typedef struct MotorSettings {
   char homeUIdx;
-  uint32_t homeUsecPerPulse;
+  uint16_t homeUsecPerPulse;
   char homeBkupUIdx;
-  uint32_t homeBkupUsecPerPulse;
+  uint16_t homeBkupUsecPerPulse;
   char directionLevels;  // d1 is X, d0 is Y, 1 is forward
 } MotorSettings;
+
+
+typedef struct MoveState {
+  uint8_t  dir;
+  uint8_t  ustep;
+  uint16_t pps;
+  int8_t   acceleration;
+  uint16_t pulseCount;
+  int8_t   accells[10];
+  uint8_t  accellsIdx;
+  bool_t   done;
+} MoveState;
+
 
 extern MotorSettings motorSettings;
 

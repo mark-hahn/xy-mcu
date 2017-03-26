@@ -8,7 +8,7 @@
 #define NO_PULSE 0
 
 typedef union time_ut {
-  uint32_t timeShort;
+  uint16_t timeShort;
   char        timeBytes[2]; // remember, little-endian
 } time_ut;
 
@@ -18,11 +18,11 @@ void resetTimers();
 
 extern volatile time_ut timeX;
 void stopTimerX();
-void setNextTimeX(uint32_t delta, bool_t startPulse);
+void setNextTimeX(uint16_t delta, bool_t startPulse);
 #ifdef XY
 extern volatile time_ut timeY;
 void stopTimerY();
-void setNextTimeY(uint32_t delta, bool_t startPulse);
+void setNextTimeY(uint16_t delta, bool_t startPulse);
 #endif
 
 #endif	/* TIMER_H */

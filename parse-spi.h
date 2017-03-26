@@ -3,9 +3,10 @@
 #define	PARSE_SPI_H
 
 #include <stdint.h>
+#include "motor.h"
 
 uint8_t axisFromSpiWord(uint32_t *word);
-void    accelsFromSpiWord(uint32_t *word, int8_t *accels);
+void    parseMove(uint32_t *word, MoveState *moveState);
 
 #endif	/* PARSE_SPI_H */
 

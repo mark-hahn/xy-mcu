@@ -14,11 +14,6 @@
 
 MotorSettings motorSettings;
 
-// used to keep total in deltas
-uint32_t  usecsPerPulseX;
-#ifdef XY
-uint32_t  usecsPerStepY;
-#endif
 typedef enum AxisHomingState {
   headingHome,
   backingUpToHome,
@@ -26,29 +21,15 @@ typedef enum AxisHomingState {
 } AxisHomingState;
 
 AxisHomingState homingStateX;
-pos_t  targetDistForHomeX;
-pos_t  homingDistX;
-char   deltaVecCountX;
-uint16_t pulseCountX;
-uint16_t usecsPerPulseX;
-uint16_t deltaX[4];
-int8_t  deltaXSign;
-char     deltaXIdx;
-bool_t movingDoneX;
-uint32_t *vecX;
+uint16_t        targetDistForHomeX;
+uint16_t        homingDistX;
+MoveState       moveStateX;
 
 #ifdef XY
 AxisHomingState homingStateY;
-pos_t  targetDistForHomeY;
-pos_t  homingDistY;
-char   deltaVecCountY;
-uint16_t pulseCountY;
-uint16_t usecsPerPulseY;
-uint16_t deltaY[4];
-int8_t   deltaYSign;
-char     deltaYIdx;
-bool_t movingDoneY;
-uint32_t *vecY;
+uint16_t        targetDistForHomeY;
+uint16_t        homingDistY;
+MoveState       moveStateY;
 #endif
 
 ////////////  fixed constants  ///////////////
@@ -289,15 +270,20 @@ void startMoving() {
   // this also stops timer and clears motor reset pins
   setState(statusMoving);   
   
+  parseMove(&spiWord, &moveStateX);
+  
+  moveStateX->pulseCount = 0;
+  
   pulseCountX = 0;
   // first vec cmd can't be a delta or an eof
-  deltaVecCountX = 0;
+  accellsCountX = 0;
   movingDoneX = TRUE;
 #ifdef XY
   pulseCountY = 0;
-  deltaVecCountY = 0;
+  accellsCountY = 0;
   movingDoneY = TRUE;
 #endif
+  char ParsedVec parsedVec;
   if(haveVectorsX()) {
     movingDoneX = FALSE;
     vecX = getVectorX();
@@ -307,9 +293,10 @@ void startMoving() {
     //   1 bit: dir (0: backwards, 1: forwards)
     //   3 bits: ustep idx, 0 (full-step) to 5 (1/32 step)
     //  10 bits: pulse count
+    
     set_dir(  X, (vecX->ctrlWord >> 13) & 1);
     set_ustep(X, (vecX->ctrlWord >> 10) & 0x0007);
-    setNextTimeX(usecsPerPulseX, (vecX->ctrlWord & 0x03ff) == 0); 
+    setNextTimeX(moveStateX, (vecX->ctrlWord & 0x03ff) == 0); 
   }
 #ifdef XY
   if(haveVectorsY()) {
@@ -318,8 +305,8 @@ void startMoving() {
     set_dir(  Y, (vecY->ctrlWord >> 13) & 1);
     set_ustep(Y, (vecY->ctrlWord >> 10) & 0x0007);
     resetTimers();
-    usecsPerStepY = vecY->usecsPerPulse;
-    setNextTimeY(usecsPerStepY, (vecY->ctrlWord & 0x03ff) == 0);
+    moveStateY->pps = vecY->usecsPerPulse;
+    setNextTimeY(moveStateY->pps, (vecY->ctrlWord & 0x03ff) == 0);
   }
 #endif
 }
@@ -335,24 +322,24 @@ void newDeltaX() {
   deltaXSign = ((word & 0x02000000) == 0 ? +1 : -1);
   if ((word & 0x01000000) == 0) {
     // we have a 4-delta word with 7 bits per delta
-    deltaX[0] = (word & 0x0000007f);
-    deltaX[1] = (word & 0x00003f80) >>  7;
-    deltaX[2] = (word & 0x001fc000) >> 14;
-    deltaX[3] = (word & 0x0fe00000) >> 21;
-    deltaXIdx = 4;   // deltas are indexed backwards and 1-indexed
+    curveAccelsX[0] = (word & 0x0000007f);
+    curveAccelsX[1] = (word & 0x00003f80) >>  7;
+    curveAccelsX[2] = (word & 0x001fc000) >> 14;
+    curveAccelsX[3] = (word & 0x0fe00000) >> 21;
+    curveAccelsIdxX = 4;   // deltas are indexed backwards and 1-indexed
   }
   if ((word & 0x01800000) == 0x01000000) {
     // we have a 3-delta word with 9 bits per delta
-    deltaX[0] = (word & 0x000001ff);
-    deltaX[1] = (word & 0x0003fe00) >>  9;
-    deltaX[2] = (word & 0x07fc0000) >> 18;
-    deltaXIdx = 3;
+    curveAccelsX[0] = (word & 0x000001ff);
+    curveAccelsX[1] = (word & 0x0003fe00) >>  9;
+    curveAccelsX[2] = (word & 0x07fc0000) >> 18;
+    curveAccelsIdxX = 3;
   }
   if ((word & 0x01c00000) == 0x01800000) {
     // we have a 2-delta word with 13 and 14 bits per delta
-    deltaX[0] = (word & 0x00003fff);
-    deltaX[1] = (word & 0x07ffc000) >> 14;
-    deltaXIdx = 2;
+    curveAccelsX[0] = (word & 0x00003fff);
+    curveAccelsX[1] = (word & 0x07ffc000) >> 14;
+    curveAccelsIdxX = 2;
   }
 }
 #ifdef XY
@@ -363,24 +350,24 @@ void newDeltaY() {
   deltaYSign = ((word & 0x02000000) == 0 ? +1 : -1);
   if ((word & 0x01000000) == 0) {
     // we have a 4-delta word with 7 bits per delta
-    deltaY[0] = (word & 0x0000007f);
-    deltaY[1] = (word & 0x00003f80) >>  7;
-    deltaY[2] = (word & 0x001fc000) >> 14;
-    deltaY[3] = (word & 0x0fe00000) >> 21;
-    deltaYIdx = 4;  // deltas are indexed backwards and 1-indexed
+    curveAccelsY[0] = (word & 0x0000007f);
+    curveAccelsY[1] = (word & 0x00003f80) >>  7;
+    curveAccelsY[2] = (word & 0x001fc000) >> 14;
+    curveAccelsY[3] = (word & 0x0fe00000) >> 21;
+    curveAccelsIdxY = 4;  // deltas are indexed backwards and 1-indexed
   }
   if ((word & 0x01800000) == 0x01000000) {
     // we have a 3-delta word with 9 bits per delta
-    deltaY[0] = (word & 0x000001ff);
-    deltaY[1] = (word & 0x0003fe00) >>  9;
-    deltaY[2] = (word & 0x07fc0000) >> 18;
-    deltaYIdx = 3;
+    curveAccelsY[0] = (word & 0x000001ff);
+    curveAccelsY[1] = (word & 0x0003fe00) >>  9;
+    curveAccelsY[2] = (word & 0x07fc0000) >> 18;
+    curveAccelsIdxY = 3;
   }
   if ((word & 0x01c00000) == 0x01800000) {
     // we have a 2-delta word with 13 and 14 bits per delta
-    deltaY[0] = (word & 0x00003fff);
-    deltaY[1] = (word & 0x07ffc000) >> 14;
-    deltaYIdx = 2;
+    curveAccelsY[0] = (word & 0x00003fff);
+    curveAccelsY[1] = (word & 0x07ffc000) >> 14;
+    curveAccelsIdxY = 2;
   }
 }
 #endif
@@ -392,7 +379,7 @@ void chkMovingX() {
       handleError(X, errorLimit); 
       return;
     }
-  if (deltaXIdx ? (--deltaXIdx == 0) : 
+  if (curveAccelsIdxX ? (--curveAccelsIdxX == 0) : 
                   (++pulseCountX >= (vecX->ctrlWord & 0x03ff))) {
     // we are done with this vector, get a new one
     pulseCountX = 0;
@@ -418,22 +405,22 @@ void chkMovingX() {
 #endif
     }
   } 
-  if(deltaXIdx) {
+  if(curveAccelsIdxX) {
     // leave ustep and dir pins still set to last word
-    usecsPerPulseX += deltaXSign * ((int) deltaX[deltaXIdx-1]);
-    setNextTimeX(usecsPerPulseX, START_PULSE);
+    moveStateX += deltaXSign * ((int) curveAccelsX[curveAccelsIdxX-1]);
+    setNextTimeX(moveStateX, START_PULSE);
   } 
   else {
-    usecsPerPulseX = vecX->usecsPerPulse;
+    moveStateX = vecX->usecsPerPulse;
     set_dir(X, (vecX->ctrlWord >> 13) & 1);
     set_ustep(X, (vecX->ctrlWord >> 10) & 0x0007);
     if ((vecX->ctrlWord & 0x03ff) == 0) {
       // pulseCount == 0, this is just a delay
-      setNextTimeX(usecsPerPulseX, NO_PULSE);
+      setNextTimeX(moveStateX, NO_PULSE);
     }
     else {
       // set up absolute vector
-      setNextTimeX(usecsPerPulseX, START_PULSE);
+      setNextTimeX(moveStateX, START_PULSE);
     }
   }
 }
@@ -449,7 +436,7 @@ void chkMovingY() {
     handleError(Y, errorLimit);
     return;
   }
-  if (deltaYIdx ? (--deltaYIdx == 0) : 
+  if (curveAccelsIdxY ? (--curveAccelsIdxY == 0) : 
                   (++pulseCountY >= (vecY->ctrlWord & 0x03ff))) {
     // we are done with this vector, get a new one
     pulseCountY = 0;
@@ -469,21 +456,21 @@ void chkMovingY() {
       }
     }
   }
-  if(deltaYIdx) {
+  if(curveAccelsIdxY) {
     // leave ustep and dir pins still set to last word
-    usecsPerPulseY += deltaYSign * ((int) deltaY[deltaYIdx-1]);
-    setNextTimeY(usecsPerPulseY, START_PULSE);
+    ppsY += deltaYSign * ((int) curveAccelsY[curveAccelsIdxY-1]);
+    setNextTimeY(ppsY, START_PULSE);
   } 
   else {
-    usecsPerPulseY = vecY->usecsPerPulse;
+    ppsY = vecY->usecsPerPulse;
     set_dir(Y, (vecY->ctrlWord >> 13) & 1);
     set_ustep(Y, (vecY->ctrlWord >> 10) & 0x0007);
     if ((vecY->ctrlWord & 0x03ff) == 0) {
       // pulseCount == 0, this is just a delay
-      setNextTimeY(usecsPerPulseY, NO_PULSE);
+      setNextTimeY(ppsY, NO_PULSE);
     } else {
       // set up absolute vector
-      setNextTimeY(usecsPerPulseY, START_PULSE);
+      setNextTimeY(ppsY, START_PULSE);
     }
   }
 }
