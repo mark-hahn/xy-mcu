@@ -2,6 +2,8 @@
 #ifndef MCU_H
 #define	MCU_H
 
+#include <stdint.h>
+
 // This file contains all definitions shared by CPU and MCU
 // and should be included in CPU and MCU apps
 // If this file must change, make sure it is backwards compatible
@@ -53,11 +55,8 @@ typedef unsigned int shortTime_t; // 16 bits unsigned
 
 // position, unit: 0.00625 mm, 1/32 step distance (smallest microstep)
 // max position is +- 52 meters
-#ifdef MCU_H
-typedef signed char         int8_t;
-typedef unsigned int      uint16_t;
-typedef unsigned long     uint32_t;
-typedef signed short long    pos_t; // 24 bits signed
+#ifdef   MCU_H
+typedef signed short long pos_t; // 24 bits signed
 #else // CPU_H
 typedef long pos_t; // 32 bits signed
 #endif
