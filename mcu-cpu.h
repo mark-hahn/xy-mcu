@@ -49,10 +49,6 @@ typedef char bool_t;
 #define TRUE  1
 #define FALSE 0
 
-// time, unit: usec
-// max time is 65 ms
-typedef unsigned int shortTime_t; // 16 bits unsigned
-
 // position, unit: 0.00625 mm, 1/32 step distance (smallest microstep)
 // max position is +- 52 meters
 #ifdef   MCU_H

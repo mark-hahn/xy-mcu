@@ -28,9 +28,9 @@
 
 typedef struct MotorSettings {
   char homeUIdx;
-  shortTime_t homeUsecPerPulse;
+  uint32_t homeUsecPerPulse;
   char homeBkupUIdx;
-  shortTime_t homeBkupUsecPerPulse;
+  uint32_t homeBkupUsecPerPulse;
   char directionLevels;  // d1 is X, d0 is Y, 1 is forward
 } MotorSettings;
 

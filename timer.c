@@ -55,7 +55,7 @@ void resetTimers() {
 #endif
 }
 
-void setNextTimeX(shortTime_t delta, bool_t startPulse) {
+void setNextTimeX(uint32_t delta, bool_t startPulse) {
   CCP1IE = 0;
   if(startPulse) STEP_X_LAT = 0;
   timeX.timeShort += delta;
@@ -65,7 +65,7 @@ void setNextTimeX(shortTime_t delta, bool_t startPulse) {
   CCP1IE = 1;
 }
 #ifdef XY
-void setNextTimeY(shortTime_t delta, bool_t startPulse) {
+void setNextTimeY(uint32_t delta, bool_t startPulse) {
   CCP2IE = 0;
   if(startPulse) STEP_Y_LAT = 0;
   timeY.timeShort += delta;

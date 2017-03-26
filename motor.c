@@ -1,4 +1,5 @@
 
+#include <stdint.h>
 #include <xc.h>
 #include "pins.h"
 #include "spi.h"
@@ -14,9 +15,9 @@
 MotorSettings motorSettings;
 
 // used to keep total in deltas
-shortTime_t  usecsPerPulseX;
+uint32_t  usecsPerPulseX;
 #ifdef XY
-shortTime_t  usecsPerStepY;
+uint32_t  usecsPerStepY;
 #endif
 typedef enum AxisHomingState {
   headingHome,
