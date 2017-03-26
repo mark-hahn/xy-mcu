@@ -7,11 +7,11 @@
 
 
 // separate vector buffers for X and Y
-Vector vecBufX[VEC_BUF_SIZE];
-Vector *vecBufHeadX, *currentVectorX;
+uint32_t vecBufX[VEC_BUF_SIZE];
+uint32_t *vecBufHeadX, *currentVectorX;
 #ifdef XY
-Vector vecBufY[VEC_BUF_SIZE];
-Vector *vecBufHeadY, *currentVectorY;
+uint32_t vecBufY[VEC_BUF_SIZE];
+uint32_t *vecBufHeadY, *currentVectorY;
 #endif
 
 
@@ -23,13 +23,12 @@ void initVectors() {
 }
 
 void putVectorX() {
-  vecBufHeadX->ctrlWord      = spiInts[0];
-  vecBufHeadX->usecsPerPulse = spiInts[1];
+  *vecBufHeadX = spiWord;
   if (++vecBufHeadX == vecBufX + VEC_BUF_SIZE) vecBufHeadX = vecBufX;
   if (vecBufHeadX == currentVectorX) handleError(X, errorVecBufOverflow);
 }
-Vector *getVectorX() {
-  Vector *vec = currentVectorX;
+uint32_t *getVectorX() {
+  uint32_t *vec = currentVectorX;
   if(currentVectorX == vecBufHeadX)
     // vector buf is empty
     handleError(X, errorVecBufUnderflow);
@@ -49,13 +48,12 @@ bool_t vecBufXIsAtHighWater() {
 
 #ifdef XY
 void putVectorY() {
-    vecBufHeadY->ctrlWord      = spiInts[0];
-    vecBufHeadY->usecsPerPulse = spiInts[1];
+    *vecBufHeadY = spiWord;
     if (++vecBufHeadY == vecBufY + VEC_BUF_SIZE) vecBufHeadY = vecBufY;
     if (vecBufHeadY == currentVectorY) handleError(Y, errorVecBufOverflow);
 }
-Vector *getVectorY() {
-  Vector *vec = currentVectorY;
+uint32_t *getVectorY() {
+  uint32_t *vec = currentVectorY;
   if(currentVectorY == vecBufHeadY)
     // vector buf is empty
     handleError(Y, errorVecBufUnderflow);

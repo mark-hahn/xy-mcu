@@ -15,14 +15,25 @@ void handleSpiWord() {
   Cmd topSpiByte = spiBytes[3];
   if(errorCode) {
     if (topSpiByte == clearErrorCmd) immediateCmd();
-    // else all other vectors/commands not allowed
+    // else all other vectors/commands are ignored
   } 
-  else switch(topSpiByte & 0xc0) {
-    case 0x80: putVectorX();   break;
+  else if ((topSpiByte & 0x80) == 0) immediateCmd();
+  
+  else {
 #ifdef XY
-    case 0x40: putVectorY();   break;
+    if ((topSpiByte & 0xe0) == 0x80) {       // velocity
+      if(topSpiByte & 0x10) putVectorY(); else putVectorX();
+    }
+    else if ((topSpiByte & 0xfe) == 0xfe) {  // acceleration
+      if(topSpiByte & 0x01) putVectorY(); else putVectorX();
+    }
+    else { // curve
+      if(axisFromSpiWord(&spiWord)) putVectorY(); else putVectorX();
+    }
 #endif
-    case 0x00: immediateCmd(); break;
+#ifdef Z2
+  putVectorX();
+#endif
   }
 }
 

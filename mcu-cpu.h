@@ -92,44 +92,6 @@ typedef enum Cmd {
   setDirectionLevels   = 18  // set direction for each motor
 } Cmd;
 
-/////////////////////////////////  Z COMMAND  /////////////////////////////////
-// top 2 bits of zero is normal command from above, statusCmd etc.
-
-#define Z_SET_CURL_CMD 0x80   // top == 0b10 sets Low  2 bits solenoid current
-#define Z_SET_CURH_CMD 0xc0   // top == 0b11 sets High 6 bits solenoid current
-
-
-/////////////////////////////////  Vectors  ///////////////////////////
-
-// absolute vector 32-bit words -- constant speed travel
-typedef struct Vector {
-  // ctrlWord has five bit fields, from msb to lsb ...
-  //   1 bit: axis X vector, both X and Y clr means command, not vector
-  //   1 bit: axis Y vector, both X and Y set means delta, not absolute, vector
-  //   1 bit: dir (0: backwards, 1: forwards)
-  //   3 bits: ustep idx, 0 (full-step) to 5 (1/32 step)
-  //  10 bits: pulse count
-  unsigned int ctrlWord;
-  shortTime_t  usecsPerPulse;
-} Vector;
-
-typedef union VectorU {
-  Vector   vec;
-  uint32_t word;
-} VectorU;
-
-// delta 32-bit words -- varying speed travel
-// this word appears after an absolute vector with multiple vectors per word
-// it has same axis, dir, and micro-index as the previous vector
-// delta values are the difference in usecsPerPulse
-// there are 4, 3, and 2 deltas possible per word
-// the letter s below is delta sign, 1: minus, 0: plus
-// a: first delta, b: 2nd, c: 3rd, d: 4th
-// 4 delta format,  7 bits each: 11s0 aaaa aaaB BBBB BBcc cccc cDDD DDDD
-// 3 delta format,  9 bits each: 11s1 0aaa aaaa aaBB BBBB BBBc cccc cccc
-// 2 delta format, 13 bits each: 11s1 10aa aaaa aaaa aaaB BBBB BBBB BBBB
-
-
 /////////////////////////////////  MCU => CPU  ///////////////////////////
 
 // only first returned (mcu to cpu) byte of 32-bit word is used

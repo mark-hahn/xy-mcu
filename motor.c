@@ -34,7 +34,7 @@ uint16_t deltaX[4];
 int8_t  deltaXSign;
 char     deltaXIdx;
 bool_t movingDoneX;
-Vector *vecX;
+uint32_t *vecX;
 
 #ifdef XY
 AxisHomingState homingStateY;
@@ -47,7 +47,7 @@ uint16_t deltaY[4];
 int8_t   deltaYSign;
 char     deltaYIdx;
 bool_t movingDoneY;
-Vector *vecY;
+uint32_t *vecY;
 #endif
 
 ////////////  fixed constants  ///////////////
@@ -439,7 +439,7 @@ void chkMovingX() {
 
 #ifdef XY
 
-Vector *vecY;
+uint32_t *vecY;
 
 void chkMovingY() {
   // compare match and Y pulse just happened

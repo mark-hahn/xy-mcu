@@ -44,7 +44,7 @@ char axisFromSpiWord(uint32_t *word) {
 }
 
 // returns accelerations from packed spi word
-// first array item is number of packed values (len)
+// first accels item is number of packed values (len)
 // each item value is sign-extended to int8_t
 void accelsFromSpiWord(uint32_t *word, int8_t *accels) {
   uint32_t wordVal = *word;

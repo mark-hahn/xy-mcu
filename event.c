@@ -145,6 +145,7 @@ void eventLoop() {
 #ifdef XY
       CCP2Int = FALSE;
 #endif
+      
     }
     
     if(SSP1CON1bits.WCOL) { // spi write collision
