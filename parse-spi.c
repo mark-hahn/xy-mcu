@@ -19,8 +19,9 @@ uint8_t numLeading1s(uint32_t *word) {
   } 
   else {
     byt = ((char *) word)[0];
-    for(char count = 24; ; count++, mask >> 1) 
+    for(char count = 24; count < 32; count++, mask >> 1) 
       if((byt & mask) == 0) return count;
+    return 32;
   }
 }
 
