@@ -12,9 +12,10 @@
 /*
 iiiiiii:        7-bit immediate cmd
 a:              axis, X (0) or Y (1)
+d:              direction (0: backwards, 1:forwards)
 uuu:            microstep, 0 (1x) to 5 (32x)
 xxxxxxxx:        8-bit signed acceleration in pulses/sec/sec
-vvvvvvvvvvvvv:  13-bit signed velocity in pulses/sec
+vvvvvvvvvvvv:   12-bit velocity in pulses/sec
 cccccccccccc:   12-bit pulse count
 E-M: curve acceleration field, signed
 zzzz: vector list markers
@@ -25,9 +26,9 @@ zzzz: vector list markers
 Number before : is number of leading 1's
  
  0:  0iii iiii  -- 7-bit immediate cmd - more bytes may follow
- 1:  100a uuuv vvvv vvvv vvvv cccc cccc cccc    (1 unused bit)
-         -- velocity vector, 13-bit signed velocity in PPS, 
-                             12-bit pulse count
+ 1:  100a duuu vvvv vvvv vvvv cccc cccc cccc  -- velocity vector  (1 unused bit)
+            if pulse count is zero, then velocity is usecs delay
+ 
  7:  1111 1110 auuu xxxx xxxx cccc cccc cccc  -- acceleration vector
 
 Curve vectors, each field is one pulse of signed acceleration ...
@@ -40,10 +41,10 @@ Curve vectors, each field is one pulse of signed acceleration ...
 10:  1111 1111 110a FFFF FGGG GGHH HHHI IIII --  4 5-bit
  9:  1111 1111 10aF FFFF FFGG GGGG GHHH HHHH --  3 7-bit
 14:  1111 1111 1111 110a GGGG GGGG HHHH HHHH --  2 8-bit
+
 26:  1111 1111 1111 1111 1111 1111 110a zzzz  -- 4-bit vector marker
 
-Sample Calculations ...
- 
+Sample Calculations (unfinished) ...
 
 Typical case:
 

@@ -37,6 +37,7 @@
 #include "spi.h"
 #include "motor.h"
 #include "event.h"
+#include "invtable.h"
 
 #ifdef XY
 #include "fan.h"
@@ -131,6 +132,7 @@ void main(void) {
   
   initDbg(); dbgPulseH(3);
 
+  initInvtable();
   initVectors();
   initMotor();
   initEvent();

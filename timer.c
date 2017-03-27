@@ -3,6 +3,7 @@
 #include "timer.h"
 #include "main.h"
 #include "pins.h"
+#include "invtable.h"
 
 // these are loaded into CCP compare regs in interrupt
 volatile time_ut timeX;
@@ -58,17 +59,38 @@ void resetTimers() {
 void setNextTimeX(uint16_t delta, bool_t startPulse) {
   CCP1IE = 0;
   if(startPulse) STEP_X_LAT = 0;
-  timeX.timeShort += delta;
+  timeX.time += delta;
   CCPR1H = timeX.timeBytes[1];
   CCPR1L = timeX.timeBytes[0];
   CCP1IF = 0;
   CCP1IE = 1;
 }
+
+void setNextPpsX(uint16_t pps, bool_t startPulse) {
+  CCP1IE = 0;
+  if(startPulse) STEP_X_LAT = 0;
+  timeX.time += pps2usecs(pps);
+  CCPR1H = timeX.timeBytes[1];
+  CCPR1L = timeX.timeBytes[0];
+  CCP1IF = 0;
+  CCP1IE = 1;
+}
+
 #ifdef XY
 void setNextTimeY(uint16_t delta, bool_t startPulse) {
   CCP2IE = 0;
   if(startPulse) STEP_Y_LAT = 0;
-  timeY.timeShort += delta;
+  timeY.time += delta;
+  CCPR2H = timeY.timeBytes[1];
+  CCPR2L = timeY.timeBytes[0];
+  CCP2IF = 0;
+  CCP2IE = 1;
+}
+
+void setNextPpsY(uint16_t pps, bool_t startPulse) {
+  CCP2IE = 0;
+  if(startPulse) STEP_Y_LAT = 0;
+  timeY.time += pps2usecs(pps);
   CCPR2H = timeY.timeBytes[1];
   CCPR2L = timeY.timeBytes[0];
   CCP2IF = 0;

@@ -52,15 +52,15 @@ extern MotorSettings motorSettings;
 void startHoming();
 void startMoving();
 
-extern pos_t homingDistX; // how long each axis traveled to get home
+extern uint16_t homingDistX; // how long each axis traveled to get home
 void chkHomingX();
-void chkMovingX();
 
 #ifdef XY
-extern pos_t homingDistY;
+extern uint16_t homingDistY;
 void chkHomingY();
-void chkMovingY();
 #endif
+
+void chkMoving(char axis);
 
 void initMotor();
 void set_resets(bool_t resetHigh);

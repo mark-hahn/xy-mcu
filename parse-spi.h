@@ -5,8 +5,11 @@
 #include <stdint.h>
 #include "motor.h"
 
+#ifdef XY
 uint8_t axisFromSpiWord(uint32_t *word);
-void    parseMove(uint32_t *word, MoveState *moveState);
+#endif
+
+uint8_t parseVector(uint32_t *vector, MoveState *moveState);
 
 #endif	/* PARSE_SPI_H */
 

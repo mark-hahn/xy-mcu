@@ -8,6 +8,7 @@
 #include "mcu-cpu.h"
 #include "motor.h"
 #include "event.h"
+#include "parse-spi.h"
 
 void immediateCmd();
 

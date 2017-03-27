@@ -4,6 +4,7 @@
 
 #include <stdint.h>
 
+void initInvtable();
 uint16_t pps2usecs(uint16_t pps);
 
 #endif

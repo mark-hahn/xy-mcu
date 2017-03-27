@@ -164,8 +164,6 @@ typedef enum Error {
   errorFault             = 10, // driver chip fault
   errorLimit             = 12, // hit error limit switch during move backwards
   errorVecBufOverflow    = 14,
-  errorVecBufUnderflow   = 16,
-  errorMoveWithNoVectors = 18,
 
   // comm errors must start at errorSpiByteSync and be last
   errorSpiByteSync       = 48,

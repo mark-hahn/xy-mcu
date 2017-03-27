@@ -27,17 +27,13 @@ void putVectorX() {
   if (++vecBufHeadX == vecBufX + VEC_BUF_SIZE) vecBufHeadX = vecBufX;
   if (vecBufHeadX == currentVectorX) handleError(X, errorVecBufOverflow);
 }
+
 uint32_t *getVectorX() {
+  if(currentVectorX == vecBufHeadX) return (uint32_t *) 0;
   uint32_t *vec = currentVectorX;
-  if(currentVectorX == vecBufHeadX)
-    // vector buf is empty
-    handleError(X, errorVecBufUnderflow);
   if(++currentVectorX == vecBufX + VEC_BUF_SIZE) 
        currentVectorX = vecBufX;
   return vec;
-}
-bool_t haveVectorsX() {
-  return (currentVectorX != vecBufHeadX);
 }
 
 bool_t vecBufXIsAtHighWater() {
@@ -48,22 +44,19 @@ bool_t vecBufXIsAtHighWater() {
 
 #ifdef XY
 void putVectorY() {
-    *vecBufHeadY = spiWord;
-    if (++vecBufHeadY == vecBufY + VEC_BUF_SIZE) vecBufHeadY = vecBufY;
-    if (vecBufHeadY == currentVectorY) handleError(Y, errorVecBufOverflow);
+  *vecBufHeadY = spiWord;
+  if (++vecBufHeadY == vecBufY + VEC_BUF_SIZE) vecBufHeadY = vecBufY;
+  if (vecBufHeadY == currentVectorY) handleError(Y, errorVecBufOverflow);
 }
+
 uint32_t *getVectorY() {
+  if(currentVectorY == vecBufHeadY) return (uint32_t *) 0;
   uint32_t *vec = currentVectorY;
-  if(currentVectorY == vecBufHeadY)
-    // vector buf is empty
-    handleError(Y, errorVecBufUnderflow);
   if(++currentVectorY == vecBufY + VEC_BUF_SIZE) 
        currentVectorY = vecBufY;
   return vec;
 }
-bool_t haveVectorsY() {
-  return (currentVectorY != vecBufHeadY);
-}
+
 bool_t vecBufYIsAtHighWater() {
   int diff = (vecBufHeadY - currentVectorY);
   if(diff < 0) diff += VEC_BUF_SIZE;

@@ -26,6 +26,7 @@ uint8_t numLeading1s(uint32_t *word) {
   }
 }
 
+#ifdef XY
 // returns axis from spi vector (X:0, Y:1)
 char axisFromSpiWord(uint32_t *word) {
   switch (numLeading1s(word)) {
@@ -43,61 +44,45 @@ char axisFromSpiWord(uint32_t *word) {
   }
   return 0;  // shouldn't get here
 }
-
-/*
-typedef struct MoveState {
-  uint8_t  dir;
-  uint8_t  ustep;
-  uint16_t pps;
-  int8_t   acceleration;
-  uint16_t curPulseCount;
-  uint16_t pulsesInMove;
-  int8_t   accells[10];
-  uint8_t  accellsCount;
-  uint8_t  accellsIdx;
-  bool_t   done;
-} MoveState;
-*/
+#endif
 
 // parse accelleration, velocity, curve, or marker vector
 // returns marker code, or zero if not marker
-uint8_t  parseMove(MoveState *moveState){
+uint8_t  parseVector(uint32_t *vector, MoveState *moveState){
+  uint16_t vecInts[2];
+  vecInts[0] = *((uint16_t *) &((uint8_t *) vector)[2]);
+  vecInts[1] = *((uint16_t *) &((uint8_t *) vector)[0]);
+  
   // marker
-  if(spiInts[1] = 0xffff && (spiInts[0] & 0xfff0) == 0xfff0)    
-    return (spiInts[0] & 0x000f);
-    
+  if(vecInts[1] == 0xffff && (vecInts[0] & 0xffe0) == 0xffc0)    
+    return (vecInts[0] & 0x000f);
+  
   // velocity
-  else  if((spiBytes[3] & 0xe0) == 0x80) {                      
+  else  if((((uint8_t *) vector)[3] & 0xe0) == 0x80) {                      
     moveState->acceleration = 0;
     moveState->accellsIdx   = 0;
-    moveState->ustep = (spiBytes[3] >> 1) & 0x07;
-    int16_t pps = (int16_t) ((spiWord >> 12) & 0x1fff);
-    if(pps & 0x01000) pps |= 0xe000;
-    if(pps < 0) {
-      pps = -pps;
-      moveState->dir = 0;
-    }
-    else
-      moveState->dir = 1;
-    moveState->pps = (uint16_t) pps;
-    moveState->pulseCount = spiInts[0] & 0x0fff;
+    moveState->ustep = (((uint8_t *) vector)[3] >> 1) & 0x07;
+    moveState->dir = ((uint8_t *) vector)[3] & 0x01;
+    moveState->pps =  (uint16_t)(((((uint8_t *) vector)[2]) << 4) | 
+                                 ((((uint8_t *) vector)[1]) >> 4));
+    moveState->pulseCount = (vecInts[0] & 0x0fff);
   } 
 
   // acceleration
-  else if (spiBytes[3] == 0xff && spiBytes[2] == 0xe0) {       
+  else if (((uint8_t *) vector)[3] == 0xff && ((uint8_t *) vector)[2] == 0xe0) {       
     moveState->accellsIdx = 0;
-    moveState->ustep = (spiBytes[2] >> 4) & 0x07;
-    moveState->acceleration = 
-      (int8_t)(((spiBytes[2] & 0x0f) << 4) | (spiBytes[1] >> 4));
-    moveState->pulseCount = spiInts[0] & 0x0fff;
+    moveState->ustep = (((uint8_t *) vector)[2] >> 4) & 0x07;
+    moveState->acceleration = (int8_t)(((((uint8_t *) vector)[2] & 0x0f) << 4) | 
+                                        (((uint8_t *) vector)[1] >> 4));
+    moveState->pulseCount = vecInts[0] & 0x0fff;
   }
   
   // curve
   // each item value is sign-extended to int8_t
-  // destroys global spiWord
-  else {                          
+  else {            
+    uint32_t vec = *vector;
     uint8_t  i, len, bits, mask, byteVal, signMask, extbits;
-    switch (numLeading1s(&spiWord)) {
+    switch (numLeading1s(&vec)) {
       case  3: 
         len  = 9;
         bits = 3;
@@ -145,15 +130,15 @@ uint8_t  parseMove(MoveState *moveState){
     if(len != 2) {
       signMask = (mask+1) >> 1;
       extbits  = ~mask;
-      for(i=len-1; i >= 0; i--, spiWord >>= bits) {
-        byteVal = spiWord & mask;
+      for(int idx =len-1; idx >= 0; idx--, vec >>= bits) {
+        byteVal = vec & mask;
         if(byteVal & signMask) byteVal |= extbits;
-        moveState->accells[i] = (int8_t) byteVal;
+        moveState->accells[idx] = (int8_t) byteVal;
       }
     }
     else {
-      moveState->accells[0] = (int8_t *) spiBytes[1];
-      moveState->accells[1] = (int8_t *) spiBytes[0];
+      moveState->accells[0] = ((uint8_t *) vector)[1];
+      moveState->accells[1] = ((uint8_t *) vector)[0];
     }
   }
   moveState->done = FALSE;

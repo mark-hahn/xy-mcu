@@ -10,12 +10,13 @@
 
 void initVectors();
 
+void putVectorX();
 uint32_t *getVectorX();
-bool_t haveVectorsX();
 bool_t vecBufXIsAtHighWater();
+
 #ifdef XY
+void putVectorY();
 uint32_t *getVectorY();
-bool_t haveVectorsY();
 bool_t vecBufYIsAtHighWater();
 #endif
 

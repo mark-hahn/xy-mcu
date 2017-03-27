@@ -2,6 +2,7 @@
 #ifndef SPI_H
 #define	SPI_H
 
+#include <stdint.h>
 #include "main.h"
 
 extern uint32_t spiWord;

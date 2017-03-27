@@ -11,6 +11,7 @@
 #endif
 #include "mcu-cpu.h"
 #include "timer.h"
+#include "parse-spi.h"
 
 MotorSettings motorSettings;
 
@@ -267,212 +268,111 @@ void chkHomingY() {
 ///////////////////////////////// moving ///////////////////////
 
 void startMoving() {
+  uint8_t marker;
+  uint32_t *vec;
   // this also stops timer and clears motor reset pins
-  setState(statusMoving);   
+  setState(statusMoving); 
   
-  parseMove(&spiWord, &moveStateX);
-  
-  moveStateX->pulseCount = 0;
-  
-  pulseCountX = 0;
-  // first vec cmd can't be a delta or an eof
-  accellsCountX = 0;
-  movingDoneX = TRUE;
-#ifdef XY
-  pulseCountY = 0;
-  accellsCountY = 0;
-  movingDoneY = TRUE;
-#endif
-  char ParsedVec parsedVec;
-  if(haveVectorsX()) {
-    movingDoneX = FALSE;
-    vecX = getVectorX();
-    // ctrlWord has five bit fields, from msb to lsb ...
-    //   1 bit: axis X vector, both X and Y clr means command, not vector
-    //   1 bit: axis Y vector, both X and Y set means delta, not absolute, vector
-    //   1 bit: dir (0: backwards, 1: forwards)
-    //   3 bits: ustep idx, 0 (full-step) to 5 (1/32 step)
-    //  10 bits: pulse count
-    
-    set_dir(  X, (vecX->ctrlWord >> 13) & 1);
-    set_ustep(X, (vecX->ctrlWord >> 10) & 0x0007);
-    setNextTimeX(moveStateX, (vecX->ctrlWord & 0x03ff) == 0); 
+  if(vec = getVectorX()) {
+    // first vector is always a velocity vector
+    if(moveStateX.pulseCount == 0)
+      // this is just a delay with pps in usecs
+      setNextTimeX(moveStateX.pps, FALSE);
+    else {
+      set_dir(  X, moveStateX.dir);
+      set_ustep(X, moveStateX.ustep);
+      setNextPpsX(moveStateX.pps, (moveStateX.pulseCount > 0));
+    }
   }
+  
 #ifdef XY
-  if(haveVectorsY()) {
-    movingDoneY = FALSE;
-    vecY = getVectorY();
-    set_dir(  Y, (vecY->ctrlWord >> 13) & 1);
-    set_ustep(Y, (vecY->ctrlWord >> 10) & 0x0007);
-    resetTimers();
-    moveStateY->pps = vecY->usecsPerPulse;
-    setNextTimeY(moveStateY->pps, (vecY->ctrlWord & 0x03ff) == 0);
+  if(vec = getVectorY()) {
+    // first vector is always a velocity vector
+    if(moveStateY.pulseCount == 0)
+      // this is just a delay with pps in usecs
+      setNextTimeY(moveStateY.pps, FALSE);
+    else {
+      set_dir(  Y, moveStateY.dir);
+      set_ustep(Y, moveStateY.ustep);
+      setNextPpsY(moveStateY.pps, (moveStateY.pulseCount > 0));
+    }
   }
 #endif
 }
 
-// 4 delta format,  7 bits each: 11s0 wwww wwwX XXXX XXyy yyyy yZZZ ZZZZ
-// 3 delta format,  9 bits each: 11s1 0www wwww wwXX XXXX XXXy yyyy yyyy
-// 2 delta format, 13 bits each: 11s1 10ww wwww wwww wwwX XXXX XXXX XXXX
-
-void newDeltaX() {
-  uint32_t word = *((uint32_t *) &vecX);
-  // see mcu-cpu.h for delta format description
-  // all deltas have the same sign
-  deltaXSign = ((word & 0x02000000) == 0 ? +1 : -1);
-  if ((word & 0x01000000) == 0) {
-    // we have a 4-delta word with 7 bits per delta
-    curveAccelsX[0] = (word & 0x0000007f);
-    curveAccelsX[1] = (word & 0x00003f80) >>  7;
-    curveAccelsX[2] = (word & 0x001fc000) >> 14;
-    curveAccelsX[3] = (word & 0x0fe00000) >> 21;
-    curveAccelsIdxX = 4;   // deltas are indexed backwards and 1-indexed
-  }
-  if ((word & 0x01800000) == 0x01000000) {
-    // we have a 3-delta word with 9 bits per delta
-    curveAccelsX[0] = (word & 0x000001ff);
-    curveAccelsX[1] = (word & 0x0003fe00) >>  9;
-    curveAccelsX[2] = (word & 0x07fc0000) >> 18;
-    curveAccelsIdxX = 3;
-  }
-  if ((word & 0x01c00000) == 0x01800000) {
-    // we have a 2-delta word with 13 and 14 bits per delta
-    curveAccelsX[0] = (word & 0x00003fff);
-    curveAccelsX[1] = (word & 0x07ffc000) >> 14;
-    curveAccelsIdxX = 2;
-  }
-}
+void chkMoving(char axis) {
+  uint8_t marker;
+  uint32_t *vec;
+  int8_t accel = 0;
+  bool_t haveMove = FALSE;
+  
 #ifdef XY
-void newDeltaY() {
-  uint32_t word = *((uint32_t *) &vecY);
-  // see mcu-cpu.h for delta format description
-  // all deltas have the same sign
-  deltaYSign = ((word & 0x02000000) == 0 ? +1 : -1);
-  if ((word & 0x01000000) == 0) {
-    // we have a 4-delta word with 7 bits per delta
-    curveAccelsY[0] = (word & 0x0000007f);
-    curveAccelsY[1] = (word & 0x00003f80) >>  7;
-    curveAccelsY[2] = (word & 0x001fc000) >> 14;
-    curveAccelsY[3] = (word & 0x0fe00000) >> 21;
-    curveAccelsIdxY = 4;  // deltas are indexed backwards and 1-indexed
+  MoveState *moveState = (axis? &moveStateY : &moveStateX);
+  
+  if(!axis && !LIMIT_SW_X || axis && !LIMIT_SW_Y)  { 
+    // unexpected closed limit switch
+      handleError(axis, errorLimit); 
+      return;
   }
-  if ((word & 0x01800000) == 0x01000000) {
-    // we have a 3-delta word with 9 bits per delta
-    curveAccelsY[0] = (word & 0x000001ff);
-    curveAccelsY[1] = (word & 0x0003fe00) >>  9;
-    curveAccelsY[2] = (word & 0x07fc0000) >> 18;
-    curveAccelsIdxY = 3;
-  }
-  if ((word & 0x01c00000) == 0x01800000) {
-    // we have a 2-delta word with 13 and 14 bits per delta
-    curveAccelsY[0] = (word & 0x00003fff);
-    curveAccelsY[1] = (word & 0x07ffc000) >> 14;
-    curveAccelsIdxY = 2;
-  }
-}
 #endif
-
-void chkMovingX() {
-  // compare match and X pulse just happened
+#ifdef Z2
+  MoveState *moveState = &moveStateX;
+  
   if(!LIMIT_SW_X)  { 
     // unexpected closed limit switch
       handleError(X, errorLimit); 
       return;
-    }
-  if (curveAccelsIdxX ? (--curveAccelsIdxX == 0) : 
-                  (++pulseCountX >= (vecX->ctrlWord & 0x03ff))) {
-    // we are done with this vector, get a new one
-    pulseCountX = 0;
-    vecX = getVectorX();
-    if(errorCode) return;
-    
-    if ((vecX->ctrlWord & 0xc000) == 0xc000) 
-      newDeltaX();
-    
-    else if(vecX->usecsPerPulse == 1) {
-      // end of vector stream
-      stopTimerX();
-      movingDoneX = TRUE;
+  }
+#endif
+  
+  if(moveState->accellsIdx) {
+    accel = moveState->accells[--moveState->accellsIdx];
+    haveMove = TRUE;
+  }
+  else if(moveState->pulseCount) {
+    accel = moveState->acceleration;
+    moveState->pulseCount--;
+    haveMove = TRUE;
+  }
+  if(accel) moveState->pps += accel;
 #ifdef XY
-      if(movingDoneY) {
-        // done with all moving
-        setState(statusMoved); 
-        return;
-      }
+  if(!axis && haveMove) setNextPpsX(moveState->pps, START_PULSE);
+  if( axis && haveMove) setNextPpsY(moveState->pps, START_PULSE);
 #endif
 #ifdef Z2
-      setState(statusMoved); 
+  if(haveMove) setNextPpsX(moveState->pps, START_PULSE);
 #endif
-    }
-  } 
-  if(curveAccelsIdxX) {
-    // leave ustep and dir pins still set to last word
-    moveStateX += deltaXSign * ((int) curveAccelsX[curveAccelsIdxX-1]);
-    setNextTimeX(moveStateX, START_PULSE);
-  } 
-  else {
-    moveStateX = vecX->usecsPerPulse;
-    set_dir(X, (vecX->ctrlWord >> 13) & 1);
-    set_ustep(X, (vecX->ctrlWord >> 10) & 0x0007);
-    if ((vecX->ctrlWord & 0x03ff) == 0) {
-      // pulseCount == 0, this is just a delay
-      setNextTimeX(moveStateX, NO_PULSE);
-    }
-    else {
-      // set up absolute vector
-      setNextTimeX(moveStateX, START_PULSE);
-    }
-  }
-}
+  
+  if(moveState->accellsIdx == 0 && moveState->pulseCount == 0) {
 
 #ifdef XY
-
-uint32_t *vecY;
-
-void chkMovingY() {
-  // compare match and Y pulse just happened
-  if(!LIMIT_SW_Y)  { 
-    // unexpected closed limit switch
-    handleError(Y, errorLimit);
-    return;
-  }
-  if (curveAccelsIdxY ? (--curveAccelsIdxY == 0) : 
-                  (++pulseCountY >= (vecY->ctrlWord & 0x03ff))) {
-    // we are done with this vector, get a new one
-    pulseCountY = 0;
-    vecY = getVectorY();
-    if(errorCode) return;
-    
-    if ((vecY->ctrlWord & 0xc000) == 0xc000) newDeltaY();
-    
-    else if(vecY->usecsPerPulse == 1) {
-      // end of vector stream
-      stopTimerY();
-      movingDoneY = TRUE;
-      if(movingDoneX) {
-        // done with all moving
-        setState(statusMoved); 
-        return;
+    if(!axis && (vec = getVectorX())) {
+      if(parseVector(vec, &moveStateX)) {
+        // only marker is EOF for now
+        stopTimerX();
+        moveStateX.done = TRUE;
+        // done with all moving?
+        if(moveStateY.done) setState(statusMoved); 
       }
     }
-  }
-  if(curveAccelsIdxY) {
-    // leave ustep and dir pins still set to last word
-    ppsY += deltaYSign * ((int) curveAccelsY[curveAccelsIdxY-1]);
-    setNextTimeY(ppsY, START_PULSE);
-  } 
-  else {
-    ppsY = vecY->usecsPerPulse;
-    set_dir(Y, (vecY->ctrlWord >> 13) & 1);
-    set_ustep(Y, (vecY->ctrlWord >> 10) & 0x0007);
-    if ((vecY->ctrlWord & 0x03ff) == 0) {
-      // pulseCount == 0, this is just a delay
-      setNextTimeY(ppsY, NO_PULSE);
-    } else {
-      // set up absolute vector
-      setNextTimeY(ppsY, START_PULSE);
+    else if(axis && (vec = getVectorY())) {
+      if(parseVector(vec, &moveStateY)) {
+        // only marker is EOF for now
+        stopTimerY();
+        moveStateY.done = TRUE;
+        // done with all moving?
+        if(moveStateX.done) setState(statusMoved); 
+      }
     }
+#endif
+#ifdef Z2
+    if(vec = getVectorX()) {
+      if(parseVector(vec, &moveStateX)) {
+        // only marker is EOF for now
+        stopTimerX();
+        setState(statusMoved); 
+      }
+    }
+#endif
   }
 }
-#endif
-
