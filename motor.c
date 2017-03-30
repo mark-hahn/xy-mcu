@@ -277,11 +277,14 @@ void startMoving() {
     // first vector is always a velocity vector
     if(moveStateX.pulseCount == 0)
       // this is just a delay with pps in usecs
-      setNextTimeX(moveStateX.pps, FALSE);
+      
+      setNextTimeX((((uint16_t) moveStateX->dir)          << 15) |
+                   (((uint16_t) moveStateX->ustep & 0x07) << 12) |
+                                moveStateX->pps, FALSE);
     else {
       set_dir(  X, moveStateX.dir);
       set_ustep(X, moveStateX.ustep);
-      setNextPpsX(moveStateX.pps, (moveStateX.pulseCount > 0));
+      setNextPpsX(moveStateX.pps, TRUE);
     }
   }
   
@@ -290,11 +293,13 @@ void startMoving() {
     // first vector is always a velocity vector
     if(moveStateY.pulseCount == 0)
       // this is just a delay with pps in usecs
-      setNextTimeY(moveStateY.pps, FALSE);
+      setNextTimeY((((uint16_t) moveStateY->dir)          << 15) |
+                   (((uint16_t) moveStateY->ustep & 0x07) << 12) |
+                                moveStateY->pps, FALSE);
     else {
       set_dir(  Y, moveStateY.dir);
       set_ustep(Y, moveStateY.ustep);
-      setNextPpsY(moveStateY.pps, (moveStateY.pulseCount > 0));
+      setNextPpsY(moveStateY.pps, TRUE);
     }
   }
 #endif

@@ -72,3 +72,34 @@ void motorCurrent(char val);
 
 #endif	/* MOTOR_H */
 
+
+/////////////////////////////////  Notes  ///////////////////////////
+
+// CPU ...
+//   for max stepper speed calculator see ...
+//     http://techref.massmind.org/techref/io/stepper/estimate.htm
+//   assuming 1A, 2.6mH, 12V, and 200 steps per rev; min is 433 usecs full step
+
+// MOTOR ...
+// distance per step
+// 0: 0.2 mm
+// 1: 0.1 mm
+// 2: 0.05 mm
+// 3: 0.025 mm
+// 4: 0.0125 mm
+// 5: 0.00625 mm
+
+// DAC ...
+// vref = (val * 3.3 / 32 - 0.65)/2; amps = 2 * V
+// The following are motor current VREFs measured by dac settings
+//  4 -> 0       s.b. -0.119
+//  5 -> 0.009   s.b. -0.067
+//  6 -> 0.041   s.b. -0.035
+//  7 -> 0.083   s.b.  0.036
+//  8 -> 0.128   s.b.  0.088
+//  9 -> 0.175   s.b.  0.139
+// 10 -> 0.222   s.b.  0.191
+// 20 -> 0.710   s.b.  0.706
+// 31 -> 1.275   s.b.  1.273
+
+

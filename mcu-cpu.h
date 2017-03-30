@@ -10,46 +10,19 @@
 // Keep this file in both apps the same (except for MCU_H and CPU_H defines)
 
 
-/////////////////////////////////  Notes  ///////////////////////////
-
-// CPU ...
-//   for max stepper speed calculator see ...
-//     http://techref.massmind.org/techref/io/stepper/estimate.htm
-//   assuming 1A, 2.6mH, 12V, and 200 steps per rev; min is 433 usecs full step
-
-// MOTOR ...
-// distance per step
-// 0: 0.2 mm
-// 1: 0.1 mm
-// 2: 0.05 mm
-// 3: 0.025 mm
-// 4: 0.0125 mm
-// 5: 0.00625 mm
-
-// DAC ...
-// vref = (val * 3.3 / 32 - 0.65)/2; amps = 2 * V
-// The following are motor current VREFs measured by dac settings
-//  4 -> 0       s.b. -0.119
-//  5 -> 0.009   s.b. -0.067
-//  6 -> 0.041   s.b. -0.035
-//  7 -> 0.083   s.b.  0.036
-//  8 -> 0.128   s.b.  0.088
-//  9 -> 0.175   s.b.  0.139
-// 10 -> 0.222   s.b.  0.191
-// 20 -> 0.710   s.b.  0.706
-// 31 -> 1.275   s.b.  1.273
-
-
 /////////////////////////////////  Definitions  ///////////////////////////
 
 #define X 0  /* idx for X axis */
 #define Y 1  /* idx for Y axis */
 
-typedef char bool_t;
+#define FORWARD   1 // motor dir bit
+#define BACKWARDS 0
+
+typedef uint8_t bool_t;
 #define TRUE  1
 #define FALSE 0
 
-// position, unit: 0.00625 mm, 1/32 step distance (smallest microstep)
+// position, unit: 0.00625 mm (160/mm), 1/32 step, (smallest microstep)
 // max position is +- 52 meters
 #ifdef   MCU_H
 typedef signed short long pos_t; // 24 bits signed
@@ -57,26 +30,20 @@ typedef signed short long pos_t; // 24 bits signed
 typedef long pos_t; // 32 bits signed
 #endif
 
-#define FORWARD   1 // motor dir bit
-#define BACKWARDS 0
 
+//////////////////////  Immediate Commands  ///////////////////////
 
-/////////////////////////////////  Commands  ///////////////////////////
-
-// immediate command 32-bit words -- top 2 bits are zero
-// command codes enumerated here are in bottom nibble of first byte
-// commands 0-3 must be supported as one byte in SS enable
-// home cmd has axes to home in byte 4 - d1 is X and d0 is Y
-// set homing speeds have microstep index in byte 2 and speed param in 3-4
-// setMotorCurrent has param in bottom 5 bits
-// 4 bits
+// immediate 7-bit commands -- top 1 bit is zero
+// may be followed by param bytes
+// set homing speeds have microstep in byte 2 and speed (usecs/step) in 3-4
+// setMotorCurrent has param in byte 2
 typedef enum Cmd {
   nopCmd               =  0, // does nothing except get status
   statusCmd            =  1, // requests status rec returned
   clearErrorCmd        =  2, // on error, no activity until this command
   updateFlashCode      =  3, // set flash bytes as no-app flag and reboot
- 
-  // commands specific to one add-on start at 10 
+
+  // commands specific to one add-on start at 10
   idleCmd              = 10, // abort any commands, clear vec buffers
   lockCmd              = 11, // set reset pins on motors to low
   unlockCmd            = 12, // clear reset pins on motors to high
@@ -90,7 +57,7 @@ typedef enum Cmd {
 
 /////////////////////////////////  MCU => CPU  ///////////////////////////
 
-// only first returned (mcu to cpu) byte of 32-bit word is used
+// only first returned (mcu to cpu) byte of word is used
 // rest are zero      (mcu has no buffering in that direction)
 
 // mcu states
@@ -135,21 +102,21 @@ typedef enum Status {
 // must be sequential with status byte before and after
 // future api versions may extend record
 typedef struct StatusRec {
-  char len;            // number of SPI bytes in rec, NOT sizeof(StatusRec)
-  char type;           // type of record (always STATUS_REC for now)
-  char mfr;            // manufacturer code (1 == eridien)
-  char prod;           // product id (1 = XY base)
-  char vers;           // XY (code and hw) version
+  uint8_t len;            // number of SPI bytes in rec, NOT sizeof(StatusRec)
+  uint8_t type;           // type of record (always STATUS_REC for now)
+  uint8_t mfr;            // manufacturer code (1 == eridien)
+  uint8_t prod;           // product id (1 = XY base)
+  uint8_t vers;           // XY (code and hw) version
   uint32_t homeDistX;  // homing distance of last home operation
   uint32_t homeDistY;
 } StatusRec;
 
 #define STATUS_SPI_BYTE_COUNT \
-  (((sizeof(StatusRec) * 4) / 3) + (char)((sizeof(StatusRec) % 3) != 0))
+  (((sizeof(StatusRec) * 4) / 3) + (uint8_t)((sizeof(StatusRec) % 3) != 0))
 
 typedef union StatusRecU {
   StatusRec rec;
-  char      bytes[sizeof(StatusRec)];
+  uint8_t      bytes[sizeof(StatusRec)];
 } StatusRecU;
 
 // top 2 bits are 0b11 (typeError)
@@ -158,7 +125,7 @@ typedef union StatusRecU {
 typedef enum Error {
   // these must be supported by all add-ons
   errorMcuFlashing =    2,
-  errorReset       =    4,
+  errorReset       =    4,  // always in this state after mcu reset
 
   // errors specific to add-on start at 10
   errorFault             = 10, // driver chip fault
