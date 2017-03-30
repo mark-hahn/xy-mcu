@@ -215,14 +215,14 @@ void eventLoop() {
       CCP1Int = FALSE;
       // X step pin was raised by int routine
       if(mcu_state == statusHoming)      chkHomingX();
-      else if(mcu_state == statusMoving) chkMoving(X);
+      else if(mcu_state == statusMoving) chkMovingX();
     } 
 #ifdef XY
     if(CCP2Int) {
       CCP2Int = FALSE;
       // Y step pin was raised by int routine
       if(mcu_state == statusHoming)      chkHomingY();
-      else if(mcu_state == statusMoving) chkMoving(Y);
+      else if(mcu_state == statusMoving) chkMovingY();
     }
 #endif    
   }

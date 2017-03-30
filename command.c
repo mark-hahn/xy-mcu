@@ -22,18 +22,11 @@ void handleSpiWord() {
   
   else {
 #ifdef XY
-    if ((topSpiByte & 0xe0) == 0x80) {       // velocity
-      if(topSpiByte & 0x10) putVectorY(); else putVectorX();
-    }
-    else if ((topSpiByte & 0xfe) == 0xfe) {  // acceleration
-      if(topSpiByte & 0x01) putVectorY(); else putVectorX();
-    }
-    else { // curve
-      if(axisFromSpiWord(&spiWord)) putVectorY(); else putVectorX();
-    }
+    if(axisFromSpiWord(&spiWord)) putVectorY(); 
+    else                          putVectorX();
 #endif
 #ifdef Z2
-  putVectorX();
+    putVectorX();
 #endif
   }
 }

@@ -273,13 +273,11 @@ void startMoving() {
   setState(statusMoving); 
   
   if(vec = getVectorX()) {
+    parseVector(vec, &moveStateX);
     // first vector is always a velocity vector
-    if(moveStateX.pulseCount == 0)
-      // this is just a delay with pps in usecs
-      
-      setNextTimeX((((uint16_t) moveStateX.dir)          << 15) |
-                   (((uint16_t) moveStateX.ustep & 0x07) << 12) |
-                                moveStateX.pps, FALSE);
+    if(moveStateX.delayUsecs != 0)
+      // this is just a delay
+      setNextTimeX(moveStateX.delayUsecs, FALSE);
     else {
       set_dir(  X, moveStateX.dir);
       set_ustep(X, moveStateX.ustep);
@@ -289,12 +287,11 @@ void startMoving() {
   
 #ifdef XY
   if(vec = getVectorY()) {
+    parseVector(vec, &moveStateY);
     // first vector is always a velocity vector
-    if(moveStateY.pulseCount == 0)
-      // this is just a delay with pps in usecs
-      setNextTimeY((((uint16_t) moveStateY.dir)          << 15) |
-                   (((uint16_t) moveStateY.ustep & 0x07) << 12) |
-                                moveStateY.pps, FALSE);
+    if(moveStateY.delayUsecs != 0)
+      // this is just a delay
+      setNextTimeX(moveStateX.delayUsecs, FALSE);    
     else {
       set_dir(  Y, moveStateY.dir);
       set_ustep(Y, moveStateY.ustep);
@@ -304,61 +301,78 @@ void startMoving() {
 #endif
 }
 
-void chkMoving(char axis) {
+void chkMovingX() {
   uint32_t *vec;
   int8_t accel = 0;
   bool_t haveMove = FALSE;
-  
-#ifdef XY
-  MoveState *moveState = (axis? &moveStateY : &moveStateX);
-  
-  if(!axis && !LIMIT_SW_X || axis && !LIMIT_SW_Y)  { 
-    // unexpected closed limit switch
-      handleError(axis, errorLimit); 
-      return;
-  }
-#endif
-#ifdef Z2
-  MoveState *moveState = &moveStateX;
   
   if(!LIMIT_SW_X)  { 
     // unexpected closed limit switch
       handleError(X, errorLimit); 
       return;
   }
-#endif
-  
-  if(moveState->accellsIdx) {
-    accel = moveState->accells[--moveState->accellsIdx];
+  if(moveStateX.delayUsecs) 
+    setNextTimeX(moveStateX.delayUsecs, NO_PULSE);
+   
+  else if(moveStateX.accellsIdx) {
+    accel = moveStateX.accells[--moveStateX.accellsIdx];
     haveMove = TRUE;
   }
-  else if(moveState->pulseCount) {
-    accel = moveState->acceleration;
-    moveState->pulseCount--;
+  else if(moveStateX.pulseCount) {
+    accel = moveStateX.acceleration;
+    moveStateX.pulseCount--;
     haveMove = TRUE;
   }
-  if(accel) moveState->pps += accel;
-#ifdef XY
-  if(!axis && haveMove) setNextPpsX(moveState->pps, START_PULSE);
-  if( axis && haveMove) setNextPpsY(moveState->pps, START_PULSE);
-#endif
-#ifdef Z2
-  if(haveMove) setNextPpsX(moveState->pps, START_PULSE);
-#endif
+  if(accel) moveStateX.pps += accel;
+  if(haveMove) setNextPpsX(moveStateX.pps, START_PULSE);
   
-  if(moveState->accellsIdx == 0 && moveState->pulseCount == 0) {
-
-#ifdef XY
-    if(!axis && (vec = getVectorX())) {
+  if(moveStateX.accellsIdx == 0 && moveStateX.pulseCount == 0) {
+    if(vec = getVectorX()) {
+      // if marker, it is returned from parseVector
       if(parseVector(vec, &moveStateX)) {
         // only marker is EOF for now
         stopTimerX();
+#ifdef XY
         moveStateX.done = TRUE;
         // done with all moving?
         if(moveStateY.done) setState(statusMoved); 
+#endif
+#ifdef Z2
+        setState(statusMoved); 
+#endif
       }
     }
-    else if(axis && (vec = getVectorY())) {
+  }
+}
+
+#ifdef XY
+void chkMovingY() {
+  uint32_t *vec;
+  int8_t accel = 0;
+  bool_t haveMove = FALSE;
+  
+  if(!LIMIT_SW_Y)  { 
+    // unexpected closed limit switch
+      handleError(Y, errorLimit); 
+      return;
+  }
+  if(moveStateY.delayUsecs) 
+    setNextTimeY(moveStateY.delayUsecs, NO_PULSE);
+  
+  else if(moveStateY.accellsIdx) {
+    accel = moveStateY.accells[--moveStateY.accellsIdx];
+    haveMove = TRUE;
+  }
+  else if(moveStateY.pulseCount) {
+    accel = moveStateY.acceleration;
+    moveStateY.pulseCount--;
+    haveMove = TRUE;
+  }
+  if(accel) moveStateY.pps += accel;
+  if(haveMove) setNextPpsY(moveStateY.pps, START_PULSE);
+  
+  if(moveStateY.accellsIdx == 0 && moveStateY.pulseCount == 0) {
+    if(vec = getVectorY()) {
       if(parseVector(vec, &moveStateY)) {
         // only marker is EOF for now
         stopTimerY();
@@ -367,15 +381,6 @@ void chkMoving(char axis) {
         if(moveStateX.done) setState(statusMoved); 
       }
     }
-#endif
-#ifdef Z2
-    if(vec = getVectorX()) {
-      if(parseVector(vec, &moveStateX)) {
-        // only marker is EOF for now
-        stopTimerX();
-        setState(statusMoved); 
-      }
-    }
-#endif
   }
 }
+#endif

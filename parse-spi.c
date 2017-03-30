@@ -32,7 +32,7 @@ uint8_t numLeading1s(uint32_t *word) {
 // returns axis from spi vector (X:0, Y:1)
 char axisFromSpiWord(uint32_t *word) {
   switch (numLeading1s(word)) {
-    case  1: return ((((char *) word)[1]) & 0x10) != 0;
+    case  1:
     case  7: return ((((char *) word)[1]) & 0x10) != 0;
     case  3: return ((((char *) word)[3]) & 0x08) != 0;
     case  6: return ((((char *) word)[3]) & 0x01) != 0;
