@@ -43,6 +43,7 @@ typedef struct MoveState {
   uint16_t pulseCount;
   int8_t   accells[10];
   uint8_t  accellsIdx;
+  uint16_t delayUsecs;
   bool_t   done;
 } MoveState;
 

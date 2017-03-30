@@ -268,7 +268,6 @@ void chkHomingY() {
 ///////////////////////////////// moving ///////////////////////
 
 void startMoving() {
-  uint8_t marker;
   uint32_t *vec;
   // this also stops timer and clears motor reset pins
   setState(statusMoving); 
@@ -278,9 +277,9 @@ void startMoving() {
     if(moveStateX.pulseCount == 0)
       // this is just a delay with pps in usecs
       
-      setNextTimeX((((uint16_t) moveStateX->dir)          << 15) |
-                   (((uint16_t) moveStateX->ustep & 0x07) << 12) |
-                                moveStateX->pps, FALSE);
+      setNextTimeX((((uint16_t) moveStateX.dir)          << 15) |
+                   (((uint16_t) moveStateX.ustep & 0x07) << 12) |
+                                moveStateX.pps, FALSE);
     else {
       set_dir(  X, moveStateX.dir);
       set_ustep(X, moveStateX.ustep);
@@ -293,9 +292,9 @@ void startMoving() {
     // first vector is always a velocity vector
     if(moveStateY.pulseCount == 0)
       // this is just a delay with pps in usecs
-      setNextTimeY((((uint16_t) moveStateY->dir)          << 15) |
-                   (((uint16_t) moveStateY->ustep & 0x07) << 12) |
-                                moveStateY->pps, FALSE);
+      setNextTimeY((((uint16_t) moveStateY.dir)          << 15) |
+                   (((uint16_t) moveStateY.ustep & 0x07) << 12) |
+                                moveStateY.pps, FALSE);
     else {
       set_dir(  Y, moveStateY.dir);
       set_ustep(Y, moveStateY.ustep);
@@ -306,7 +305,6 @@ void startMoving() {
 }
 
 void chkMoving(char axis) {
-  uint8_t marker;
   uint32_t *vec;
   int8_t accel = 0;
   bool_t haveMove = FALSE;
