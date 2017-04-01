@@ -138,6 +138,7 @@ typedef enum Error {
   errorSpiBytesOverrun   = 52,
   errorSpiOvflw          = 54,
   errorSpiWcol           = 56,
+  errorSpuriousInt       = 58,
 
   errorNoResponse  = 0x3f // miso pull-up returns 0xff when no mcu
 } Error;

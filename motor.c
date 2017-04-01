@@ -102,11 +102,11 @@ void initMotor() {
   motorCurrent(defMotorCurrent);
   
   // interrupt on either fault pin lowering
-  X_FAULT_IOC_IF = 0;
-  X_FAULT_IOC = 1;
+//  X_FAULT_IOC_IF = 0;                      -- ONLY FOR XY Rev B --  TODO
+//  X_FAULT_IOC = 1;
 #ifdef XY
-  Y_FAULT_IOC_IF = 0;
-  Y_FAULT_IOC = 1;
+//  Y_FAULT_IOC_IF = 0;
+//  Y_FAULT_IOC = 1;
 #endif
   spiInt = 0;
 }
@@ -142,11 +142,12 @@ void startHoming() {
   homingDistX = 0;
   homingStateX = headingHome;
 #ifdef XY
-  if((spiBytes[0] & 0b10) == 0) homingStateX = homed;
-  if((spiBytes[0] & 0b11) == 0) {
-    setState(statusLocked);
-    return;
-  }
+// individual axis homing not supported
+//  if((spiBytes[0] & 0b10) == 0) homingStateX = homed;
+//  if((spiBytes[0] & 0b11) == 0) {
+//    setState(statusLocked);
+//    return;
+//  }
 #endif
   setState(statusHoming);
   targetDistForHomeX = 0;

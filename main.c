@@ -46,8 +46,9 @@
 #include "pwm-vref.h"
 #endif
 
-#define INT_ERROR_FAULT_X (0x00 | errorFault);
-#define INT_ERROR_FAULT_Y (0x80 | errorFault);
+#define INT_ERROR_FAULT_X      (0x00 | errorFault);
+#define INT_ERROR_FAULT_Y      (0x80 | errorFault);
+#define INT_ERROR_SPURIOUS_INT (0x80 | errorSpuriousInt);
 
 // interrupt error checked by eventloop, d7 is axis
 volatile char   intError = 0;  
@@ -57,28 +58,25 @@ volatile bool_t CCP1Int = FALSE;
 #ifdef XY
 volatile bool_t CCP2Int = FALSE;
 #endif
- 
+
 // global interrupt routine
 void interrupt isr(void) {
   if(SSP1IF) {
   // spi byte arrived
     SSP1IF = 0;
-    if(++spiBytesInIdx > 4) 
-      intError = errorSpiByteSync;
-    else
-      spiBytesIn[4-spiBytesInIdx] = SSP1BUF;
-   // does not flag eventloop, IOC does below after all bytes arrived    
+    if(++spiBytesInIdx > 4) intError = errorSpiByteSync;
+    else spiBytesIn[4-spiBytesInIdx] = SSP1BUF;
+    return;
   }
   if(SPI_SS_IOC_IF) {
   // spi word arrived (SS went high)
     SPI_SS_IOC_IF = 0;
-    
     if(spiInt) intError = errorSpiBytesOverrun;
-    
     else {
       spiBytesInIdx = 0;   
       spiInt = TRUE; // flag eventloop
     }
+    return;
   }
   if(CCP1IE && CCP1IF) { 
     // X timer compare int
@@ -87,8 +85,14 @@ void interrupt isr(void) {
     CCPR1H   = timeX.timeBytes[1];  // set next compare time
     CCPR1L   = timeX.timeBytes[0];
     CCP1Int  = TRUE; // flag eventloop
+    return;
   }
-  if(X_FAULT_IOC_IF) intError = INT_ERROR_FAULT_X;
+  if(X_FAULT_IOC_IF) {             
+    X_FAULT_IOC_IF = 0;
+    intError = INT_ERROR_FAULT_X;
+    return;
+  }
+
 #ifdef XY
   if(CCP2IE && CCP2IF) { 
     // Y timer compare int
@@ -97,10 +101,17 @@ void interrupt isr(void) {
     CCPR2H   = timeY.timeBytes[1];
     CCPR2L   = timeY.timeBytes[0];
     CCP2Int  = TRUE;
+    return;
   }
-  if(Y_FAULT_IOC_IF) intError = INT_ERROR_FAULT_Y;
+  if(Y_FAULT_IOC_IF) {        
+    Y_FAULT_IOC_IF = 0;
+    intError = INT_ERROR_FAULT_Y;
+     return;
+   }
 #endif
-  }
+  dbgPulseH(17);
+  intError = INT_ERROR_SPURIOUS_INT;
+}
 
 void main(void) {
   SWDTEN = 1;  // start watchdog, must bark before 2 seconds

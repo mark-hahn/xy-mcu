@@ -42,14 +42,17 @@ void setState(char newState) {
   if(newState == statusUnlocked ||
      newState == statusFlashing) 
     set_resets(MOTORS_RESET);
-  else set_resets(MOTORS_NOT_RESET);
+  else 
+    set_resets(MOTORS_NOT_RESET);
   mcu_state = newState;
 }
 
 // axis is zero when not specific to axis
 void handleError(char axis, Error code) {
   // wait for SPI idle to repair byte sync and abort word
-  while (!SPI_SS); 
+//  while (!SPI_SS); 
+  
+//  dbg(1);
 
   // clean up comm state
   spiBytesInIdx = 0;
@@ -61,6 +64,9 @@ void handleError(char axis, Error code) {
     errorAxis = axis;
     errorCode = code;
   }
+  
+//    dbg(0);
+
 }
 
 // d5: error flag (if error, then no high-waters sent)
@@ -145,7 +151,6 @@ void eventLoop() {
 #ifdef XY
       CCP2Int = FALSE;
 #endif
-      
     }
     
     if(SSP1CON1bits.WCOL) { // spi write collision
@@ -173,6 +178,7 @@ void eventLoop() {
       bark(); // spi must arrive within every two secs
 
       dbg(1);
+      
 
       // a little-endian 32-bit word (spiBytesIn) arrived (SS went high)
       // copy word to buffered interrupt version (global))
@@ -183,8 +189,7 @@ void eventLoop() {
       // little-endian array version of spiWord (global))
       spiBytes   = ((char *) &spiWord);
       
-      if(spiBytes[3] == homeCmd)
-        dbgPulseL(3);
+      if(spiBytes[3] == homeCmd) dbgPulseL(2);  // DEBUG
       
     // return state, error, or statusRec data in SPI output buf
       // status rec is always surrounded by state bytes
@@ -199,6 +204,7 @@ void eventLoop() {
         sendStateByte();
 
       dbg(0);
+      
       if(!SPI_SS) dbgPulseH(20);
 
        if(spiWord != 0) handleSpiWord();
