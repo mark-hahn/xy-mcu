@@ -278,7 +278,19 @@ void startMoving() {
   setState(statusMoving); 
   
   if(vec = getVectorX()) {
-    parseVector(vec, &moveStateX);
+    if(parseVector(vec, &moveStateX)) {
+      // only marker is EOF for now
+      stopTimerX();
+#ifdef XY
+      moveStateX.done = TRUE;
+      // done with all moving?
+      if(moveStateY.done) setState(statusMoved); 
+#endif
+#ifdef Z2
+      setState(statusMoved); 
+#endif
+      return;
+    }
     // first vector is always a velocity vector
     if(moveStateX.delayUsecs != 0)
       // this is just a delay
@@ -292,7 +304,14 @@ void startMoving() {
   
 #ifdef XY
   if(vec = getVectorY()) {
-    parseVector(vec, &moveStateY);
+    if(parseVector(vec, &moveStateY)) {
+      // only marker is EOF for now
+      stopTimerY();
+      moveStateY.done = TRUE;
+      // done with all moving?
+      if(moveStateX.done) setState(statusMoved); 
+      return;
+    }
     // first vector is always a velocity vector
     if(moveStateY.delayUsecs != 0)
       // this is just a delay
