@@ -9,20 +9,20 @@
 uint8_t numLeading1s(uint32_t *word) {
   char byt, mask = 0x80;
   if((byt = ((char *) word)[3]) != 0xff) {
-    for(char count = 0; ; count++, mask >> 1) 
+    for(char count = 0; ; count++, mask >>= 1) 
       if((byt & mask) == 0) return count;
   } 
   else if((byt = ((char *) word)[2]) != 0xff) {
-    for(char count = 8; ; count++, mask >> 1) 
+    for(char count = 8; ; count++, mask >>= 1) 
       if((byt & mask) == 0) return count;
   } 
   else if((byt = ((char *) word)[1]) != 0xff) {
-    for(char count = 16; ; count++, mask >> 1) 
+    for(char count = 16; ; count++, mask >>= 1) 
       if((byt & mask) == 0) return count;
   } 
   else {
     byt = ((char *) word)[0];
-    for(char count = 24; count < 32; count++, mask >> 1) 
+    for(char count = 24; count < 32; count++, mask >>= 1) 
       if((byt & mask) == 0) return count;
     return 32;
   }
@@ -52,11 +52,11 @@ char axisFromSpiWord(uint32_t *word) {
 // returns marker code, or zero if not marker
 uint8_t  parseVector(uint32_t *vector, MoveState *moveState){
   
-  dbg(1);
+  dbgPulseH(2);
   
   uint16_t vecInts[2];
-  vecInts[0] = *((uint16_t *) &((uint8_t *) vector)[2]);
-  vecInts[1] = *((uint16_t *) &((uint8_t *) vector)[0]);
+  vecInts[0] = *((uint16_t *) &((uint8_t *) vector)[0]);
+  vecInts[1] = *((uint16_t *) &((uint8_t *) vector)[2]);
   
   moveState->delayUsecs = 0;
   
@@ -152,8 +152,7 @@ uint8_t  parseVector(uint32_t *vector, MoveState *moveState){
   }
   moveState->done = FALSE;
 
-  dbg(0);
-  
+  dbgPulseH(3);
   
   return 0;
 }

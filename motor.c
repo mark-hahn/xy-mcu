@@ -157,8 +157,9 @@ void startHoming() {
   if(homingStateX == headingHome)
     setNextTimeX(debounceAndSettlingTime, START_PULSE);
 #ifdef XY
-  return;   //  DEBUG testing X homing only
-  
+  homingStateY = homed;     //  DEBUG testing X homing only
+  return; 
+
   homingDistY = 0;
 //  if((spiBytes[0] & 0b01) == 0) homingStateY = homed;
 //  else 

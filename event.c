@@ -178,7 +178,6 @@ void eventLoop() {
       bark(); // spi must arrive within every two secs
 
       dbg(1);
-      
 
       // a little-endian 32-bit word (spiBytesIn) arrived (SS went high)
       // copy word to buffered interrupt version (global))
@@ -188,8 +187,6 @@ void eventLoop() {
       spiInts[1] = *((uint16_t *) &spiBytesIn[0]);
       // little-endian array version of spiWord (global))
       spiBytes   = ((char *) &spiWord);
-      
-      if(spiBytes[3] == homeCmd) dbgPulseL(2);  // DEBUG
       
     // return state, error, or statusRec data in SPI output buf
       // status rec is always surrounded by state bytes
