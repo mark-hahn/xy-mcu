@@ -157,9 +157,12 @@ void startHoming() {
   if(homingStateX == headingHome)
     setNextTimeX(debounceAndSettlingTime, START_PULSE);
 #ifdef XY
+  return;   //  DEBUG testing X homing only
+  
   homingDistY = 0;
-  if((spiBytes[0] & 0b01) == 0) homingStateY = homed;
-  else homingStateY = headingHome;
+//  if((spiBytes[0] & 0b01) == 0) homingStateY = homed;
+//  else 
+  homingStateY = headingHome;
   targetDistForHomeY = 0;
   set_ustep(Y, defHomeUIdx);
   set_dir(Y, BACKWARDS);

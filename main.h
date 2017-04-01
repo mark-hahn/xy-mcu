@@ -38,11 +38,11 @@ extern volatile char   intError;
 #define dbgPin  RB7
 #endif
 
-#define initDbg()   dbgTris = 0
-#define dbg(x)      dbgPin = x
-#define dbgToggle() dbgPin = !dbgPin
-#define dbgPulseH(n) for(int nin=0; nin<n; nin++) {dbgPin = 1; dbgPin = 0;}
-#define dbgPulseL(n) for(int nin=0; nin<n; nin++) {dbgPin = 0; dbgPin = 1;}
+#define initDbg()    // dbgTris = 0
+#define dbg(x)       // dbgPin = x
+#define dbgToggle()  // dbgPin = !dbgPin
+#define dbgPulseH(n) // for(int nin=0; nin<n; nin++) {dbgPin = 1; dbgPin = 0;}
+#define dbgPulseL(n) // for(int nin=0; nin<n; nin++) {dbgPin = 0; dbgPin = 1;}
 
 #endif	/* MAIN_H */
 
