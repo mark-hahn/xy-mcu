@@ -109,6 +109,10 @@ void sendStatusRecByte() {
   }
   else {
     // pack every 3 8-bit statusRec bytes into 4 6-bit spi bytes 
+    
+    if (statusRecIdx == 5) 
+      dbgPulseL(4);
+        
     switch(statusRecOutIdx % 4) {
       case 0: 
         outbuf = (typeData | (statusRecOut.bytes[statusRecIdx] >> 2));
@@ -125,9 +129,6 @@ void sendStatusRecByte() {
         statusRecIdx++;
         outbuf = typeData | left4 | 
                   ((statusRecOut.bytes[statusRecIdx]   & 0xc0) >> 6);
-        if (statusRecOutIdx == 10 && outbuf == 0x88) {
-          char volatile x = 1;
-        }
         break;
       }
       case 3:
@@ -177,7 +178,7 @@ void eventLoop() {
     if(spiInt) {
       bark(); // spi must arrive within every two secs
 
-      dbg(1);
+//      dbg(1);
 
       // a little-endian 32-bit word (spiBytesIn) arrived (SS went high)
       // copy word to buffered interrupt version (global))
@@ -200,7 +201,7 @@ void eventLoop() {
       else 
         sendStateByte();
 
-      dbg(0);
+//      dbg(0);
       
       if(!SPI_SS) dbgPulseH(20);
 

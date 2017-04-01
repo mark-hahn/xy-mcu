@@ -141,7 +141,7 @@ void main(void) {
   TRISC = 0b11000100; // all out except ss, fault, and lim
 #endif
   
-  initDbg(); dbgPulseH(3);
+  initDbg(); /// dbgPulseH(3);
 
   initInvtable();
   initVectors();

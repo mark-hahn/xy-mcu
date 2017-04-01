@@ -22,15 +22,15 @@ typedef enum AxisHomingState {
 } AxisHomingState;
 
 AxisHomingState homingStateX;
-uint16_t        targetDistForHomeX;
-uint16_t        homingDistX;
-MoveState       moveStateX;
+int32_t   targetDistForHomeX;
+int32_t   homingDistX;
+MoveState moveStateX;
 
 #ifdef XY
 AxisHomingState homingStateY;
-uint16_t        targetDistForHomeY;
-uint16_t        homingDistY;
-MoveState       moveStateY;
+int32_t   targetDistForHomeY;
+int32_t   homingDistY;
+MoveState moveStateY;
 #endif
 
 ////////////  fixed constants  ///////////////
@@ -154,8 +154,8 @@ void startHoming() {
   set_ustep(X, defHomeUIdx);
   set_dir(X, BACKWARDS);
   resetTimers();
-  if(homingStateX == headingHome)
-    setNextTimeX(debounceAndSettlingTime, START_PULSE);
+//  if(homingStateX == headingHome)
+  setNextTimeX(debounceAndSettlingTime, START_PULSE);
 #ifdef XY
   homingStateY = homed;     //  DEBUG testing X homing only
   return; 
@@ -177,6 +177,7 @@ void chkHomingX() {
   if(homingStateX == headingHome) {
     // add distance for pulse that just finished
     homingDistX += distPerPulse(defHomeUIdx);
+    
     if(LIMIT_SW_X)
       // have not gotten to limit switch yet, keep heading home
       setNextTimeX(defHomeUsecPerPulse, START_PULSE);
@@ -193,7 +194,7 @@ void chkHomingX() {
   else if(homingStateX == backingUpToHome) {
     // subtract distance for pulse that just finished
     homingDistX -= distPerPulse(defHomeBkupUIdx);
-    
+
     if(!LIMIT_SW_X) {
       // have not gotten back to limit switch yet, keep heading back
       setNextTimeX(defHomeBkupUsecPerPulse, START_PULSE);

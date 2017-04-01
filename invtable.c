@@ -15,6 +15,7 @@ void initInvtable() {
 }
 
 uint16_t pps2usecs(uint16_t pps) {
+//  return (unsigned short long)(1000000) / pps;
 
   uint16_t addr = (pps < 0x800 ? invTableAddr1 : invTableAddr2) + pps;
   NVMCON1bits.NVMREGS = 0;

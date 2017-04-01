@@ -20,7 +20,7 @@
 
 // should these be in motorSettings?  TODO
 #define debounceAndSettlingTime 50000 // debounce and time to reverse, 50 ms
-#define homeDistFromLimitSwX      160 // home distance from limit switch (1 mm)
+#define homeDistFromLimitSwX      800 // home distance from limit switch (5 mm)
 #define homeDistFromLimitSwY      160 // (1 mm)
 
 #define MOTORS_RESET                0 // motor unlocked, no current
@@ -53,12 +53,12 @@ extern MotorSettings motorSettings;
 void startHoming();
 void startMoving();
 
-extern uint16_t homingDistX; // how long each axis traveled to get home
+extern int32_t homingDistX; // how long each axis traveled to get home
 void chkHomingX();
 void chkMovingX();
 
 #ifdef XY
-extern uint16_t homingDistY;
+extern int32_t homingDistY;
 void chkHomingY();
 void chkMovingY();
 #endif
@@ -104,3 +104,8 @@ void motorCurrent(char val);
 // 31 -> 1.275   s.b.  1.273
 
 
+// MAX PPS
+// ustep 0:   1200  240 mm/sec
+// ustep 1:   2400  240 mm/sec
+// ustep 2-5: 4000 (limited by MCU counter delay)
+//

@@ -52,7 +52,7 @@ char axisFromSpiWord(uint32_t *word) {
 // returns marker code, or zero if not marker
 uint8_t  parseVector(uint32_t *vector, MoveState *moveState){
   
-  dbgPulseH(2);
+//  dbgPulseH(2);
   
   uint16_t vecInts[2];
   vecInts[0] = *((uint16_t *) &((uint8_t *) vector)[0]);
@@ -152,7 +152,7 @@ uint8_t  parseVector(uint32_t *vector, MoveState *moveState){
   }
   moveState->done = FALSE;
 
-  dbgPulseH(3);
+//  dbgPulseH(3);
   
   return 0;
 }
