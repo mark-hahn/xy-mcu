@@ -79,7 +79,7 @@ uint8_t  parseVector(uint32_t *vector, MoveState *moveState){
   } 
 
   // acceleration
-  else if (((uint8_t *) vector)[3] == 0xff && ((uint8_t *) vector)[2] == 0xe0) {       
+  else if (((uint8_t *) vector)[3] == 0xfe) {       
     moveState->accellsIdx = 0;
     moveState->ustep = (((uint8_t *) vector)[1] >> 5);
     moveState->acceleration = (int8_t)(vecInts[1] & 0x00ff);
