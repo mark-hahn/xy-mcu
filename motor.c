@@ -343,7 +343,11 @@ doOneVecX:
       ((((int16_t) 5 * accel) * (short long) (moveStateX.usecsPerPulse >> 1)) 
                                                   >> (14 - moveStateX.ustep));
   }
-  if(haveMove) setNextPpsX(moveStateX.pps, START_PULSE);
+  if(haveMove) {
+    set_ustep(X, moveStateX.ustep);
+    set_dir(X, moveStateX.dir);
+    setNextPpsX(moveStateX.pps, START_PULSE);
+  }
 }
 
 #ifdef XY
@@ -397,6 +401,10 @@ doOneVecY:
       ((((int16_t) 5 * accel) * (short long) (moveStateY.usecsPerPulse >> 1)) 
                                                   >> (14 - moveStateY.ustep));
   }
-  if(haveMove) setNextPpsX(moveStateY.pps, START_PULSE);
+  if(haveMove) {
+    set_ustep(Y, moveStateY.ustep);
+    set_dir(Y, moveStateY.dir);
+    setNextPpsY(moveStateY.pps, START_PULSE);
+  }
 }
 #endif
