@@ -41,7 +41,8 @@ typedef enum Cmd {
   nopCmd               =  0, // does nothing except get status
   statusCmd            =  1, // requests status rec returned
   clearErrorCmd        =  2, // on error, no activity until this command
-  updateFlashCode      =  3, // set flash bytes as no-app flag and reboot
+  settingsCmd          =  3, // byte 2 is setting idx, 3 & 4 are int16 value
+  updateFlashCode      =  4, // set flash bytes as no-app flag and reboot
 
   // commands specific to one add-on start at 10
   idleCmd              = 10, // abort any commands, clear vec buffers
@@ -49,12 +50,65 @@ typedef enum Cmd {
   unlockCmd            = 12, // clear reset pins on motors to high
   homeCmd              = 13, // goes home and saves homing distance
   moveCmd              = 14, // enough vectors need to be loaded to do this
-  setHomingSpeed       = 15, // set homeUIdx & homeUsecPerPulse settings
-  setHomingBackupSpeed = 16, // set homeBkupUIdx & homeBkupUsecPerPulse settings
-  setMotorCurrent      = 17, // set motorCurrent (0 to 31) immediately
-  setDirectionLevels   = 18, // set direction for each motor
   clearDistance        = 19  // clear distance counters
 } Cmd;
+
+
+/////////////////////////////////  SETTINGS  ///////////////////////////
+
+// all of these are int16_t
+typedef enum Settings {
+  motorCurrent,    // meaning varies between MCUs
+  directionLevels, // x dir: d1, y dir: d0
+  debounceTime,    // all times are 1/160 seconds
+  homingUstep,
+  homingPps,
+  homeBkupUstep,
+  homeBkupPps,
+  homeAccel,      // mm/sec/sec -- ranges from +-1 (30) to +-127 (4000)
+  homeJerk,
+  homeOfsX,
+  homeOfsY,
+  NUM_SETTINGS
+} Settings;
+
+
+/////////////////////////////////  VECTORS  ///////////////////////////
+//
+//iiiiiii:        7-bit immediate cmd
+//a:              axis, X (0) or Y (1)
+//d:              direction (0: backwards, 1:forwards)
+//uuu:            microstep, 0 (1x) to 5 (32x)
+//xxxxxxxx:        8-bit signed acceleration in pulses/sec/sec
+//vvvvvvvvvvvv:   12-bit velocity in pulses/sec
+//cccccccccccc:   12-bit pulse count
+//E-M: curve acceleration field, signed
+//zzzz: vector list markers
+//  15: eof, end of moving
+//
+//
+//Number before : is number of leading 1's
+// 
+// 0:  0iii iiii  -- 7-bit immediate cmd - more bytes may follow
+// 1:  100d vvvv vvvv vvvv uuua cccc cccc cccc  -- velocity vector  (1 unused bit)
+//     if pulse count is zero then uuudvvvvvvvvvvvv is 16-bit usecs delay (not pps)
+// 
+// 7:  1111 1110 xxxx xxxx uuua cccc cccc cccc  -- acceleration vector
+//
+//Curve vectors, each field is one pulse of signed acceleration ...
+//
+// 3:  1110 aEEE  FFFG GGHH  HIII JJJK  KKLL LMMM --  9 3-bit
+// 6:  1111 110a  FFFG GGHH  HIII JJJK  KKLL LMMM --  8 3-bit
+// 2:  110a EEEE  FFFF GGGG  HHHH IIII  JJJJ KKKK --  7 4-bit
+// 5:  1111 100a  EEEE FFFF  GGGG HHHH  IIII JJJJ --  6 4-bit (1 unused bit)
+// 4:  1111 00aF  FFFF GGGG  GHHH HHII  IIIJ JJJJ --  5 5-bit (1 unused bit)
+//10:  1111 1111  110a FFFF  FGGG GGHH  HHHI IIII --  4 5-bit
+// 9:  1111 1111  10aF FFFF  FFGG GGGG  GHHH HHHH --  3 7-bit
+//14:  1111 1111  1111 110a  GGGG GGGG  HHHH HHHH --  2 8-bit
+//
+//26:  1111 1111 1111 1111 1111 1111 110a zzzz  -- 4-bit vector marker
+
+
 
 /////////////////////////////////  MCU => CPU  ///////////////////////////
 

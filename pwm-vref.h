@@ -3,7 +3,7 @@
 #define	PWM_VREF_H
 
 void initPwmVref();
-void setPwmVref(char vref);
+void setPwmVref(int16_t vref);
 
 #endif
 

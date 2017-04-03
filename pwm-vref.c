@@ -29,9 +29,9 @@ void initPwmVref() {
 
 // V = vref / 255;  A = 2 * V;
 // measured 20:0.1v, 25:0.12v, 128:0.55v, 255:1.07
-void setPwmVref(char vref) {
-  PWM3DCL =  vref << 6;
-  PWM3DCH = (vref & 0xfc) >> 2;
+void setPwmVref(int16_t vref) {
+  PWM3DCL = (uint8_t) vref << 6;
+  PWM3DCH = (uint8_t)(vref & 0xfc) >> 2;
 }
 
 #endif

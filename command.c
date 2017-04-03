@@ -32,6 +32,7 @@ void handleSpiWord() {
 }
 
 void immediateCmd() {
+  int16_t val;
   // word is big-endian, mcu isn't
   char cmd = spiBytes[3];
   switch (spiBytes[3]) {
@@ -67,7 +68,9 @@ void immediateCmd() {
       
     case clearDistance:
       distanceX = 0;
+#ifdef XY
       distanceY = 0;
+#endif
       return;
               
     case clearErrorCmd:
@@ -76,20 +79,10 @@ void immediateCmd() {
       initVectors();
       return;
       
-    case setHomingSpeed:
-      homingSpeed();
-      return;
-    
-    case setHomingBackupSpeed:
-      homingBackupSpeed();
-      return;
-      
-    case setMotorCurrent: 
-      motorCurrent(spiBytes[0]);
-      return;
-    
-    case setDirectionLevels:
-      directionLevels(spiBytes[0]);
+    case settingsCmd:
+      val = *((int16_t *) &spiInts[0]);
+      settings[spiBytes[2]] = val;
+      if (spiBytes[2] == motorCurrent) setMotorCurrent(val);
       return;
     
     case updateFlashCode:

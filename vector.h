@@ -5,8 +5,8 @@
 #include "main.h"
 #include "mcu-cpu.h"
 
-#define VEC_BUF_SIZE     100 // number of 32-bit vector cmds buffered per axis
-#define VEC_BUF_HI_WATER  95 // flow control limit
+#define VEC_BUF_SIZE     90 // number of 32-bit vector cmds buffered per axis
+#define VEC_BUF_HI_WATER 85 // flow control limit
 
 void initVectors();
 
