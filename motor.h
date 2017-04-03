@@ -5,7 +5,7 @@
 #include "main.h"
 
 #define defHomeUsecPerPulse      1000 // 1000 => 50 mm/sec  (.05 / .001)
-#define defHomeUIdx                 2 // 0.05 mm/pulse
+#define defHomeUIdx                 4 // 0.05 mm/pulse
 #define defHomeBkupUsecPerPulse  1000 // 1000 => 6.25 mm/sec (0.00625 / 0.001)
 #define defHomeBkupUIdx             5 // 5 => 0.00625 mm/pulse
 
@@ -39,6 +39,7 @@ typedef struct MoveState {
   uint8_t  dir;
   uint8_t  ustep;
   uint16_t pps;
+  uint16_t usecsPerPulse;
   int8_t   acceleration;
   uint16_t pulseCount;
   int8_t   accells[10];
@@ -104,8 +105,18 @@ void motorCurrent(char val);
 // 31 -> 1.275   s.b.  1.273
 
 
-// MAX PPS
-// ustep 0:   1200  240 mm/sec
-// ustep 1:   2400  240 mm/sec
+// MAX SPEED  X-AXIS ONLY
+// ustep 0:   1200                                    240 mm/sec (no accel)
+//            3000 with accell of 50 pps/sec
+//            3800 with accell of 25 pps/sec 
+//            4000 with accell of 20 pps/sec          800 mm/s !!!
+// ustep 1:   2400                                    240 mm/sec  (no accel)
+//            2700 with accell of 10 pps/sec
+//            4000 with accell of 25 pps/sec          400 mm/s
 // ustep 2-5: 4000 (limited by MCU counter delay)
-//
+
+// MAX SPEED  BOTH AXES
+// ustep 1, accell 10: 1300  --  130 mm/s
+// ustep 1, accell 20: 2000
+// ustep 1, accell 30: 1000
+

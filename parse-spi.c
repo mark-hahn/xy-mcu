@@ -59,7 +59,7 @@ uint8_t  parseVector(uint32_t *vector, MoveState *moveState){
   vecInts[1] = *((uint16_t *) &((uint8_t *) vector)[2]);
   
   moveState->delayUsecs = 0;
-  
+
   // marker
   if(vecInts[1] == 0xffff && (vecInts[0] & 0xffe0) == 0xffc0)    
     return (vecInts[0] & 0x000f);
@@ -146,11 +146,10 @@ uint8_t  parseVector(uint32_t *vector, MoveState *moveState){
       }
     }
     else {
-      moveState->accells[0] = ((uint8_t *) vector)[1];
-      moveState->accells[1] = ((uint8_t *) vector)[0];
+      moveState->accells[0] = ((int8_t *) vector)[1];
+      moveState->accells[1] = ((int8_t *) vector)[0];
     }
   }
-  moveState->done = FALSE;
 
 //  dbgPulseH(3);
   

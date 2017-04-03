@@ -6,12 +6,14 @@
 #include "motor.h"
 #include "vector.h"
 #include "event.h"
-#ifdef Z2
-#include "pwm-vref.h"
-#endif
 #include "mcu-cpu.h"
 #include "timer.h"
 #include "parse-spi.h"
+#include "invtable.h"
+
+#ifdef Z2
+#include "pwm-vref.h"
+#endif
 
 MotorSettings motorSettings;
 
@@ -154,12 +156,9 @@ void startHoming() {
   set_ustep(X, defHomeUIdx);
   set_dir(X, BACKWARDS);
   resetTimers();
-//  if(homingStateX == headingHome)
-  setNextTimeX(debounceAndSettlingTime, START_PULSE);
+  if(homingStateX == headingHome)
+    setNextTimeX(debounceAndSettlingTime, START_PULSE);
 #ifdef XY
-  homingStateY = homed;     //  DEBUG testing X homing only
-  return; 
-
   homingDistY = 0;
 //  if((spiBytes[0] & 0b01) == 0) homingStateY = homed;
 //  else 
@@ -290,16 +289,20 @@ void startMoving() {
 #ifdef Z2
       setState(statusMoved); 
 #endif
-      return;
     }
-    // first vector is always a velocity vector
-    if(moveStateX.delayUsecs != 0)
-      // this is just a delay
-      setNextTimeX(moveStateX.delayUsecs, FALSE);
     else {
-      set_dir(  X, moveStateX.dir);
-      set_ustep(X, moveStateX.ustep);
-      setNextPpsX(moveStateX.pps, TRUE);
+      // first vector is always a velocity vector
+      if(moveStateX.delayUsecs != 0){
+        // this is just a delay
+        setNextTimeX(moveStateX.delayUsecs, FALSE);
+        moveStateX.delayUsecs = 0;   
+      }
+      else {
+        set_dir(  X, moveStateX.dir);
+        set_ustep(X, moveStateX.ustep);
+        setNextPpsX( moveStateX.pps, TRUE);
+        moveStateX.pulseCount--;
+      }
     }
   }
   
@@ -311,16 +314,20 @@ void startMoving() {
       moveStateY.done = TRUE;
       // done with all moving?
       if(moveStateX.done) setState(statusMoved); 
-      return;
     }
-    // first vector is always a velocity vector
-    if(moveStateY.delayUsecs != 0)
-      // this is just a delay
-      setNextTimeX(moveStateX.delayUsecs, FALSE);    
     else {
-      set_dir(  Y, moveStateY.dir);
-      set_ustep(Y, moveStateY.ustep);
-      setNextPpsY(moveStateY.pps, TRUE);
+      // first vector is always a velocity vector
+      if(moveStateY.delayUsecs != 0){
+        // this is just a delay
+        setNextTimeY(moveStateY.delayUsecs, FALSE);
+        moveStateY.delayUsecs = 0;   
+      }
+      else {
+        set_dir(  Y, moveStateY.dir);
+        set_ustep(Y, moveStateY.ustep);
+        setNextPpsY( moveStateY.pps, TRUE);
+        moveStateY.pulseCount--;
+      }
     }
   }
 #endif
@@ -330,15 +337,19 @@ void chkMovingX() {
   uint32_t *vec;
   int8_t accel = 0;
   bool_t haveMove = FALSE;
-  
+
   if(!LIMIT_SW_X)  { 
     // unexpected closed limit switch
-      handleError(X, errorLimit); 
-      return;
+    handleError(X, errorLimit); 
+    return;
   }
-  if(moveStateX.delayUsecs) 
+  
+doOneVecX:
+  if(moveStateX.delayUsecs)  {
     setNextTimeX(moveStateX.delayUsecs, NO_PULSE);
-   
+    moveStateX.delayUsecs = 0;
+    return;
+  }
   else if(moveStateX.accellsIdx) {
     accel = moveStateX.accells[--moveStateX.accellsIdx];
     haveMove = TRUE;
@@ -348,10 +359,7 @@ void chkMovingX() {
     moveStateX.pulseCount--;
     haveMove = TRUE;
   }
-  if(accel) moveStateX.pps += accel;
-  if(haveMove) setNextPpsX(moveStateX.pps, START_PULSE);
-  
-  if(moveStateX.accellsIdx == 0 && moveStateX.pulseCount == 0) {
+  else {
     if(vec = getVectorX()) {
       // if marker, it is returned from parseVector
       if(parseVector(vec, &moveStateX)) {
@@ -366,8 +374,19 @@ void chkMovingX() {
         setState(statusMoved); 
 #endif
       }
+      else
+        goto doOneVecX;
     }
+    return;
   }
+  if(accel) {
+    if(!moveStateX.usecsPerPulse)
+        moveStateX.usecsPerPulse = pps2usecs(moveStateX.pps);
+    moveStateX.pps += (int16_t)
+      ((((int16_t) 5 * accel) * (short long) (moveStateX.usecsPerPulse >> 1)) 
+                                                  >> (14 - moveStateX.ustep));
+  }
+  if(haveMove) setNextPpsX(moveStateX.pps, START_PULSE);
 }
 
 #ifdef XY
@@ -375,15 +394,19 @@ void chkMovingY() {
   uint32_t *vec;
   int8_t accel = 0;
   bool_t haveMove = FALSE;
-  
+
   if(!LIMIT_SW_Y)  { 
     // unexpected closed limit switch
-      handleError(Y, errorLimit); 
-      return;
+    handleError(Y, errorLimit); 
+    return;
   }
-  if(moveStateY.delayUsecs) 
-    setNextTimeY(moveStateY.delayUsecs, NO_PULSE);
   
+doOneVecY:
+  if(moveStateY.delayUsecs)  {
+    setNextTimeY(moveStateY.delayUsecs, NO_PULSE);
+    moveStateY.delayUsecs = 0;
+    return;
+  }
   else if(moveStateY.accellsIdx) {
     accel = moveStateY.accells[--moveStateY.accellsIdx];
     haveMove = TRUE;
@@ -393,19 +416,28 @@ void chkMovingY() {
     moveStateY.pulseCount--;
     haveMove = TRUE;
   }
-  if(accel) moveStateY.pps += accel;
-  if(haveMove) setNextPpsY(moveStateY.pps, START_PULSE);
-  
-  if(moveStateY.accellsIdx == 0 && moveStateY.pulseCount == 0) {
+  else {
     if(vec = getVectorY()) {
+      // if marker, it is returned from parseVector
       if(parseVector(vec, &moveStateY)) {
         // only marker is EOF for now
         stopTimerY();
         moveStateY.done = TRUE;
         // done with all moving?
-        if(moveStateX.done) setState(statusMoved); 
+        if(moveStateY.done) setState(statusMoved); 
       }
+      else
+        goto doOneVecY;
     }
+    return;
   }
+  if(accel) {
+    if(!moveStateY.usecsPerPulse)
+        moveStateY.usecsPerPulse = pps2usecs(moveStateY.pps);
+    moveStateY.pps += (int16_t)
+      ((((int16_t) 5 * accel) * (short long) (moveStateY.usecsPerPulse >> 1)) 
+                                                  >> (14 - moveStateY.ustep));
+  }
+  if(haveMove) setNextPpsX(moveStateY.pps, START_PULSE);
 }
 #endif

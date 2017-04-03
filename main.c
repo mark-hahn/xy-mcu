@@ -66,7 +66,6 @@ void interrupt isr(void) {
     SSP1IF = 0;
     if(++spiBytesInIdx > 4) intError = errorSpiByteSync;
     else spiBytesIn[4-spiBytesInIdx] = SSP1BUF;
-    return;
   }
   if(SPI_SS_IOC_IF) {
   // spi word arrived (SS went high)
@@ -76,7 +75,6 @@ void interrupt isr(void) {
       spiBytesInIdx = 0;   
       spiInt = TRUE; // flag eventloop
     }
-    return;
   }
   if(CCP1IE && CCP1IF) { 
     // X timer compare int
@@ -90,7 +88,6 @@ void interrupt isr(void) {
   if(X_FAULT_IOC_IF) {             
     X_FAULT_IOC_IF = 0;
     intError = INT_ERROR_FAULT_X;
-    return;
   }
 
 #ifdef XY
@@ -106,11 +103,8 @@ void interrupt isr(void) {
   if(Y_FAULT_IOC_IF) {        
     Y_FAULT_IOC_IF = 0;
     intError = INT_ERROR_FAULT_Y;
-     return;
-   }
+  }
 #endif
-  dbgPulseH(17);
-  intError = INT_ERROR_SPURIOUS_INT;
 }
 
 void main(void) {

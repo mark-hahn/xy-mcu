@@ -12,20 +12,23 @@ typedef union time_ut {
   char        timeBytes[2]; // remember, little-endian
 } time_ut;
 
+#define stopTimerX() CCP1IE = 0
+#ifdef XY
+#define stopTimerY() CCP2IE = 0
+#endif
+
 // CCP times are set between timer interrupts for quick use in int
 void initTimer();
 void resetTimers();
 
 extern volatile time_ut timeX;
-void stopTimerX();
 void setNextTimeX(uint16_t delta, bool_t startPulse);
-void setNextPpsX(uint16_t pps, bool_t startPulse);
+uint16_t setNextPpsX(uint16_t pps, bool_t startPulse);
 
 #ifdef XY
 extern volatile time_ut timeY;
-void stopTimerY();
 void setNextTimeY(uint16_t delta, bool_t startPulse);
-void setNextPpsY(uint16_t pps, bool_t startPulse);
+uint16_t setNextPpsY(uint16_t pps, bool_t startPulse);
 #endif
 
 #endif	/* TIMER_H */
