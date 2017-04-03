@@ -273,63 +273,18 @@ void chkHomingY() {
 ///////////////////////////////// moving ///////////////////////
 
 void startMoving() {
-  uint32_t *vec;
-  // this also stops timer and clears motor reset pins
   setState(statusMoving); 
   
-  if(vec = getVectorX()) {
-    if(parseVector(vec, &moveStateX)) {
-      // only marker is EOF for now
-      stopTimerX();
+  for(uint8_t i = 0; i < sizeof(MoveState); i++) {
+    ((uint8_t *) moveStateX)[i] = 0;
 #ifdef XY
-      moveStateX.done = TRUE;
-      // done with all moving?
-      if(moveStateY.done) setState(statusMoved); 
+    ((uint8_t *) moveStateY)[i] = 0;
 #endif
-#ifdef Z2
-      setState(statusMoved); 
-#endif
-    }
-    else {
-      // first vector is always a velocity vector
-      if(moveStateX.delayUsecs != 0){
-        // this is just a delay
-        setNextTimeX(moveStateX.delayUsecs, FALSE);
-        moveStateX.delayUsecs = 0;   
-      }
-      else {
-        set_dir(  X, moveStateX.dir);
-        set_ustep(X, moveStateX.ustep);
-        setNextPpsX( moveStateX.pps, TRUE);
-        moveStateX.pulseCount--;
-      }
-    }
   }
+  chkMovingX();
   
 #ifdef XY
-  if(vec = getVectorY()) {
-    if(parseVector(vec, &moveStateY)) {
-      // only marker is EOF for now
-      stopTimerY();
-      moveStateY.done = TRUE;
-      // done with all moving?
-      if(moveStateX.done) setState(statusMoved); 
-    }
-    else {
-      // first vector is always a velocity vector
-      if(moveStateY.delayUsecs != 0){
-        // this is just a delay
-        setNextTimeY(moveStateY.delayUsecs, FALSE);
-        moveStateY.delayUsecs = 0;   
-      }
-      else {
-        set_dir(  Y, moveStateY.dir);
-        set_ustep(Y, moveStateY.ustep);
-        setNextPpsY( moveStateY.pps, TRUE);
-        moveStateY.pulseCount--;
-      }
-    }
-  }
+  chkMovingY();
 #endif
 }
 
@@ -373,10 +328,12 @@ doOneVecX:
 #ifdef Z2
         setState(statusMoved); 
 #endif
+        return;
       }
       else
         goto doOneVecX;
     }
+    handleError(X, errorVecBufUnderflow);
     return;
   }
   if(accel) {
@@ -424,11 +381,13 @@ doOneVecY:
         stopTimerY();
         moveStateY.done = TRUE;
         // done with all moving?
-        if(moveStateY.done) setState(statusMoved); 
+        if(moveStateX.done) setState(statusMoved); 
+        return;
       }
       else
         goto doOneVecY;
     }
+    handleError(Y, errorVecBufUnderflow);
     return;
   }
   if(accel) {
