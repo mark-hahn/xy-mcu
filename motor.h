@@ -4,52 +4,71 @@
 
 #include "main.h"
 
-#define defHomeUsecPerPulse      1000 // 1000 => 50 mm/sec  (.05 / .001)
-#define defHomeUIdx                 4 // 0.05 mm/pulse
-#define defHomeBkupUsecPerPulse  1000 // 1000 => 6.25 mm/sec (0.00625 / 0.001)
-#define defHomeBkupUIdx             5 // 5 => 0.00625 mm/pulse
+// in motorsettings
+#define defHomingPps      1000 // 1000 => 50 mm/sec  (.05 / .001)
+#define defHomingUstep    4    // 0.05 mm/pulse
+#define defHomeBkupPps    1000 // 1000 => 6.25 mm/sec (0.00625 / 0.001)
+#define defHomeBkupUstep  5    // 5 => 0.00625 mm/pulse
+#define defHomeAccel      32   // 1000 mm/sec/sec
+#define defHomeJerk       50   // speed considered zero
+#define defDebounceTime  50000   // debounce and time to reverse, 50 ms
 
 #ifdef XY
-#define defMotorCurrent            20 // 20 -> 1.5 amp, 26 -> 2 amp
-#define defDirectionLevels      0b11 // x dir: d1, y dir: d0
-#endif
-#ifdef Z2
-#define defMotorCurrent           84 // 0.4V, 800 ma
-#define defDirectionLevels      0b00 // x dir: d1, y dir: d0
+#define defMotorCurrent      20 // 20 -> 1.5 amp, 26 -> 2 amp
+#define defDirectionLevels 0b11 // x dir: d1, y dir: d0
+#define defHomeDistanceX    800   // (5 mm)
+#define defHomeDistanceY    160  // (1 mm)
 #endif
 
-// should these be in motorSettings?  TODO
-#define debounceAndSettlingTime 50000 // debounce and time to reverse, 50 ms
-#define homeDistFromLimitSwX      800 // home distance from limit switch (5 mm)
-#define homeDistFromLimitSwY      160 // (1 mm)
+#ifdef Z2
+#define defMotorCurrent      84 // 0.4V, 800 ma
+#define defDirectionLevels 0b00 // x dir: d1
+#define defHomeDistanceX    800 // (5 mm)
+#endif
 
 #define MOTORS_RESET                0 // motor unlocked, no current
 #define MOTORS_NOT_RESET            1 // motor locked with current
 
 typedef struct MotorSettings {
-  char homeUIdx;
-  uint16_t homeUsecPerPulse;
-  char homeBkupUIdx;
-  uint16_t homeBkupUsecPerPulse;
-  char directionLevels;  // d1 is X, d0 is Y, 1 is forward
+  uint8_t  current;
+  uint8_t  directionLevels;  // d1 is X, d0 is Y, 1 is forward
+  uint16_t debounceTime;     
+  
+  uint8_t  homingUstep;
+  uint16_t homingPps;
+  uint8_t  homeBkupUstep;
+  uint16_t homeBkupPps;
+  int8_t   homeAccel;
+  uint8_t  homeJerk;
+  uint8_t  homeDistanceX;
+  uint8_t  homeDistanceY;
 } MotorSettings;
 
+typedef enum HomingState {
+  notHoming = 0,
+  headingHome,
+  deceleratingPastSw,
+  backingUpToSw,
+  backingUpToHome
+} HomingState;
 
 typedef struct MoveState {
-  uint8_t  dir;
-  uint8_t  ustep;
-  uint16_t pps;
-  uint16_t usecsPerPulse;
-  int8_t   acceleration;
-  uint16_t pulseCount;
-  int8_t   accells[10];
-  uint8_t  accellsIdx;
-  uint16_t delayUsecs;
-  bool_t   done;
+  uint8_t     dir;
+  uint8_t     ustep;
+  uint16_t    pps;
+  uint16_t    usecsPerPulse;
+  int8_t      acceleration;
+  uint16_t    pulseCount;
+  int8_t      accells[10];
+  uint8_t     accellsIdx;
+  uint16_t    delayUsecs;
+  HomingState homingState;
+  bool_t      done;
 } MoveState;
 
-
 extern MotorSettings motorSettings;
+extern int32_t distanceX;
+extern int32_t distanceY;
 
 void startHoming();
 void startMoving();

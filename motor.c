@@ -16,23 +16,14 @@
 #endif
 
 MotorSettings motorSettings;
-
-typedef enum AxisHomingState {
-  headingHome,
-  backingUpToHome,
-  homed
-} AxisHomingState;
-
-AxisHomingState homingStateX;
-int32_t   targetDistForHomeX;
-int32_t   homingDistX;
 MoveState moveStateX;
+int32_t distanceX;
+int32_t targetDistForHomeX;
 
 #ifdef XY
-AxisHomingState homingStateY;
-int32_t   targetDistForHomeY;
-int32_t   homingDistY;
 MoveState moveStateY;
+int32_t distanceY;
+int32_t targetDistForHomeY;
 #endif
 
 ////////////  fixed constants  ///////////////
@@ -94,15 +85,23 @@ void initMotor() {
 #ifdef Z2
   initPwmVref();
 #endif
-  // set default settings
-  motorSettings.homeUIdx             = defHomeUIdx;
-  motorSettings.homeUsecPerPulse     = defHomeUsecPerPulse;
-  motorSettings.homeBkupUIdx         = defHomeBkupUIdx;
-  motorSettings.homeBkupUsecPerPulse = defHomeBkupUsecPerPulse;
-  motorSettings.directionLevels      = defDirectionLevels;
+  
+  motorSettings.directionLevels = defDirectionLevels;
+  motorSettings.debounceTime    = defDebounceTime;
+ 
+  motorSettings.homingUstep     = defHomingUstep;
+  motorSettings.homingPps       = defHomingPps;
+  motorSettings.homeBkupUstep   = defHomeBkupUstep;
+  motorSettings.homeBkupPps     = defHomeBkupPps
+  motorSettings.homeAccel       = defHomeAccel;
+  motorSettings.homeJerk        = defHomeJerk;
+  motorSettings.homeDistanceX   = defHomeDistanceX;
+#ifdef XY
+  motorSettings.homeDistanceY   = defHomeDistanceY;
+#endif
   
   motorCurrent(defMotorCurrent);
-  
+
   // interrupt on either fault pin lowering
 //  X_FAULT_IOC_IF = 0;                      -- ONLY FOR XY Rev B --  TODO
 //  X_FAULT_IOC = 1;
@@ -113,16 +112,15 @@ void initMotor() {
   spiInt = 0;
 }
 
+// === need new motorsettings commands ===  TODO
 void homingSpeed() {
-  motorSettings.homeUIdx         = spiBytes[2];
-  motorSettings.homeUsecPerPulse = spiInts[1];
+  motorSettings.homingUstep         = spiBytes[2];
+  motorSettings.homingPps = spiInts[1];
 }
-
 void homingBackupSpeed() {
-  motorSettings.homeBkupUIdx         = spiBytes[2];
-  motorSettings.homeBkupUsecPerPulse = spiInts[1];
+  motorSettings.homeBkupUstep         = spiBytes[2];
+  motorSettings.homeBkupPps = spiInts[1];
 }
-
 void directionLevels(char val) {
   // d1 is X and d0 is Y
   motorSettings.directionLevels = val;
@@ -140,135 +138,34 @@ void motorCurrent(char val) {
 ///////////////////////////////// homing ///////////////////////
 
 void startHoming() {
-  // also stops timers and clears motor reset pins
-  homingDistX = 0;
-  homingStateX = headingHome;
-#ifdef XY
-// individual axis homing not supported
-//  if((spiBytes[0] & 0b10) == 0) homingStateX = homed;
-//  if((spiBytes[0] & 0b11) == 0) {
-//    setState(statusLocked);
-//    return;
-//  }
-#endif
   setState(statusHoming);
-  targetDistForHomeX = 0;
-  set_ustep(X, defHomeUIdx);
-  set_dir(X, BACKWARDS);
   resetTimers();
-  if(homingStateX == headingHome)
-    setNextTimeX(debounceAndSettlingTime, START_PULSE);
+  
+  for(uint8_t i = 0; i < sizeof(MoveState); i++) {
+    ((uint8_t *) moveStateX)[i] = 0;
 #ifdef XY
-  homingDistY = 0;
-//  if((spiBytes[0] & 0b01) == 0) homingStateY = homed;
-//  else 
-  homingStateY = headingHome;
-  targetDistForHomeY = 0;
-  set_ustep(Y, defHomeUIdx);
-  set_dir(Y, BACKWARDS);
-  if( homingStateY == headingHome)
-    setNextTimeY(debounceAndSettlingTime, START_PULSE);
+    ((uint8_t *) moveStateY)[i] = 0;
 #endif
-}
-
-void chkHomingX() {
-  // compare match and X pulse just happened
-  if(homingStateX == headingHome) {
-    // add distance for pulse that just finished
-    homingDistX += distPerPulse(defHomeUIdx);
-    
-    if(LIMIT_SW_X)
-      // have not gotten to limit switch yet, keep heading home
-      setNextTimeX(defHomeUsecPerPulse, START_PULSE);
-    else {
-      // set backup dir and step size
-      set_ustep(X, defHomeBkupUIdx);
-      set_dir(X, FORWARD);
-      // wait a long time for reversing and for switch bouncing to stop
-      setNextTimeX(debounceAndSettlingTime, START_PULSE);
-      // we reached the switch, turn around
-      homingStateX = backingUpToHome;
-    }
-  }  
-  else if(homingStateX == backingUpToHome) {
-    // subtract distance for pulse that just finished
-    homingDistX -= distPerPulse(defHomeBkupUIdx);
-
-    if(!LIMIT_SW_X) {
-      // have not gotten back to limit switch yet, keep heading back
-      setNextTimeX(defHomeBkupUsecPerPulse, START_PULSE);
-    }
-    else if(targetDistForHomeX == 0) {
-     // have gotten back to limit switch, set further distance to home
-      targetDistForHomeX = homingDistX - homeDistFromLimitSwX;
-      setNextTimeX(defHomeBkupUsecPerPulse, START_PULSE);
-    }
-    else if (homingDistX > targetDistForHomeX) {
-      setNextTimeX(defHomeBkupUsecPerPulse, START_PULSE);
-    }
-    else {
-      // we are done homing X
-      homingStateX = homed;
-#ifdef XY
-      // if Y is done then all of homing is done
-      if(homingStateY == homed){
-        setState(statusLocked);
-      }
-#endif
-#ifdef Z2
-      setState(statusLocked);
-#endif
-    }
   }
-}
+
+  moveStateX.homingState  = headingHome;
+  moveStateX.ustep        = motorSettings.homingUstep;
+  moveStateX.dir          = BACKWARDS;
+  moveStateX.pulseCount   = 0xffff;
+  moveStateX.pps          = motorSettings.homeJerk;
+  moveStateX.acceleration = motorSettings.homeAccel;
+  chkMovingX();
+
 #ifdef XY
-// duplicate chkHoming code for speed, indexing into X and X variables takes time
-void chkHomingY() {
-  // compare match and Y pulse just happened
-  if(homingStateY == headingHome) {
-    // add distance for pulse that just finished
-    homingDistY += distPerPulse(defHomeUIdx);
-    
-    if(LIMIT_SW_Y)
-      // have not gotten to limit switch yet, keep heading home
-      setNextTimeY(defHomeUsecPerPulse, START_PULSE);
-    else {
-      // set backup dir and step size
-      set_ustep(Y, defHomeBkupUIdx);
-      set_dir(Y, FORWARD);
-      // wait a long time for reversing and for switch bouncing to stop
-      setNextTimeY(debounceAndSettlingTime, START_PULSE);
-      // we reached the switch, turn around
-      homingStateY = backingUpToHome;
-    }
-  } 
-  else if(homingStateY == backingUpToHome) {
-    // subtract distance for pulse that just finished
-    homingDistY -= distPerPulse(defHomeBkupUIdx);
-    
-    if(!LIMIT_SW_Y) {
-      // have not gotten back to limit switch yet, keep heading back
-      setNextTimeY(defHomeBkupUsecPerPulse, START_PULSE);
-    }
-    else if(targetDistForHomeY == 0) {
-     // have gotten back to limit switch, set further distance to home
-      targetDistForHomeY = homingDistY - homeDistFromLimitSwY;
-      setNextTimeY(defHomeBkupUsecPerPulse, START_PULSE);
-    }
-    else if (homingDistY > targetDistForHomeY) {
-      setNextTimeY(defHomeBkupUsecPerPulse, START_PULSE);
-    }
-    else {
-      // we are done homing Y
-      homingStateY = homed;
-      // if X is done then all of homing is done
-      if(homingStateX == homed){
-        setState(statusLocked); 
-      }
-    }
-  }
-}
+  moveStateY.homingState  = headingHome;
+  moveStateY.ustep        = motorSettings.homingUstep;
+  moveStateY.dir          = BACKWARDS;
+  moveStateY.pulseCount   = 0xffff;
+  moveStateY.pps          = motorSettings.homeJerk;
+  moveStateY.acceleration = motorSettings.homeAccel;
+  chkMovingY();
 #endif
+}
 
 ///////////////////////////////// moving ///////////////////////
 
@@ -288,15 +185,51 @@ void startMoving() {
 #endif
 }
 
-void chkMovingX() {
+void chkMovingX(bool_t fromInterrupt) {
   uint32_t *vec;
   int8_t accel = 0;
   bool_t haveMove = FALSE;
-
-  if(!LIMIT_SW_X)  { 
-    // unexpected closed limit switch
-    handleError(X, errorLimit); 
-    return;
+  bool_t homingDone = FALSE;
+  
+  if(fromInterrupt) {
+    distanceX += dist   TODO
+  }
+  
+  switch(moveStateX.homingState) {
+    case notHoming: 
+      if(!LIMIT_SW_X) {
+        // unexpected closed limit switch
+        handleError(X, errorLimit); 
+        return;
+      }      
+      break;
+    case headingHome:
+      if(!LIMIT_SW_X) {
+        moveStateX.homingState  = deceleratingPastSw;
+        moveStateX.acceleration = -motorSettings.homeAccel;
+      }
+      break;
+    case deceleratingPastSw:
+      if(moveStateX.pps <= motorSettings.homeJerk) {
+        moveStateX.homingState  = backingUpToSw;
+        moveStateX.dir          = FORWARD;
+        moveStateX.ustep        = motorSettings.homeBkupUstep;;
+        moveStateX.pps          = motorSettings.homeBkupPps
+        moveStateX.acceleration = 0;
+      }   
+      break;
+    case backingUpToSw:
+      if(LIMIT_SW_X) {
+        moveStateX.homingState = backingUpToHome;
+        targetDistForHomeX = distanceX + motorSettings.homeDistanceX;
+      }
+      break;
+    case backingUpToHome:
+      if(distanceX >= targetDistForHomeX) {
+        homingDone = TRUE;
+        moveStateX.homingState = notHoming;
+        moveStateX.pulseCount = 0;
+      }
   }
   
 doOneVecX:
@@ -315,9 +248,9 @@ doOneVecX:
     haveMove = TRUE;
   }
   else {
-    if(vec = getVectorX()) {
+    if(homingDone || (vec = getVectorX())) {
       // if marker, it is returned from parseVector
-      if(parseVector(vec, &moveStateX)) {
+      if(homingDone || parseVector(vec, &moveStateX)) {
         // only marker is EOF for now
         stopTimerX();
 #ifdef XY
@@ -336,7 +269,9 @@ doOneVecX:
     handleError(X, errorVecBufUnderflow);
     return;
   }
-  if(accel) {
+  if(accel && !(moveStateX.homingState && 
+                moveStateX.pps >= (moveStateX.homingState == headingHome ? 
+                                            defHomingPps : defHomeBkupPps))) {
     if(!moveStateX.usecsPerPulse)
         moveStateX.usecsPerPulse = pps2usecs(moveStateX.pps);
     moveStateX.pps += (int16_t)

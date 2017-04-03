@@ -64,6 +64,11 @@ void immediateCmd() {
       else            setState(statusUnlocked);
       initVectors();
       return;
+      
+    case clearDistance:
+      distanceX = 0;
+      distanceY = 0;
+      return;
               
     case clearErrorCmd:
       errorCode = 0;

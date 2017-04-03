@@ -115,8 +115,8 @@ void main(void) {
   statusRec.rec.mfr       = MFR;  
   statusRec.rec.prod      = PROD; 
   statusRec.rec.vers      = VERS; 
-  statusRec.rec.homeDistX = 0;
-  statusRec.rec.homeDistY = 0;
+  statusRec.rec.distanceX = 0;
+  statusRec.rec.distanceY = 0;
   
   ANSELA = 0; // no analog inputs
   ANSELB = 0; // these &^%$&^ regs cause a lot of trouble

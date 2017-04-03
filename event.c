@@ -95,9 +95,9 @@ void sendStatusRecByte() {
   if (statusRecOutIdx == STATUS_REC_START) {
     // state byte before rec
     sendStateByte();
-    statusRec.rec.homeDistX = homingDistX;
+    statusRec.rec.distanceX = distanceX;
 #ifdef XY
-    statusRec.rec.homeDistY = homingDistY;
+    statusRec.rec.distanceY = distanceY;
 #endif
     memcpy(&statusRecOut, &statusRec, sizeof(StatusRec)); //snapshot rec
     statusRecIdx = statusRecOutIdx = 0;

@@ -52,7 +52,8 @@ typedef enum Cmd {
   setHomingSpeed       = 15, // set homeUIdx & homeUsecPerPulse settings
   setHomingBackupSpeed = 16, // set homeBkupUIdx & homeBkupUsecPerPulse settings
   setMotorCurrent      = 17, // set motorCurrent (0 to 31) immediately
-  setDirectionLevels   = 18  // set direction for each motor
+  setDirectionLevels   = 18, // set direction for each motor
+  clearDistance        = 19  // clear distance counters
 } Cmd;
 
 /////////////////////////////////  MCU => CPU  ///////////////////////////
@@ -109,8 +110,8 @@ typedef struct StatusRec {
   uint8_t prod;           // product id (1 = XY base)
   uint8_t vers;           // XY (code and hw) version
   uint8_t padding[3];
-  int32_t homeDistX;      // homing distance of last home operation
-  int32_t homeDistY;
+  int32_t distanceX;      // homing distance of last home operation
+  int32_t distanceY;
 } StatusRec;
 
 #define STATUS_SPI_BYTE_COUNT \
