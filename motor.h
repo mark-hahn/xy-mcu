@@ -19,8 +19,7 @@ typedef enum HomingState {
 
 typedef enum MovingState {
   notMoving = 0,
-  movingFirstHalf,
-  movingSecondHalf,
+  moving,
   movingDone
 } MovingState;
 
@@ -29,15 +28,13 @@ typedef struct MoveState {
   uint8_t     ustep;
   uint16_t    currentPps;
   uint16_t    targetPps;
+  bool_t      move;
   uint16_t    pulseCount;
-  uint16_t    targetPulseCount;
   uint8_t     acceleration;
   bool_t      accelSign;
-  uint16_t    accelPulses;
   uint16_t    delayUsecs;
   int8_t      accells[10];
   uint8_t     accellsIdx;
-  bool_t      autoReturn;
   uint16_t    usecsPerPulse;
   bool_t      pulsed;
   HomingState homingState;

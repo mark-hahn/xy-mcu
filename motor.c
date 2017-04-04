@@ -178,7 +178,7 @@ void startMoving() {
 
 void chkMovingX() {
   uint32_t *vec;
-  int8_t accel = 0;
+  uint8_t accel = 0;
   bool_t haveMove = FALSE;
   bool_t homingDone = FALSE;
   
@@ -234,24 +234,10 @@ doOneVecX:
   else if(moveStateX.accellsIdx) {
     accel = moveStateX.accells[--moveStateX.accellsIdx];
     haveMove = TRUE;
+    /////////////// TODO
   }
   else if(moveStateX.pulseCount) {
-    if(moveStateX.movingState == movingFirstHalf &&
-       moveStateX.pulseCount <= moveStateX.targetPulseCount/2) {
-      moveStateX.movingState == movingSecondHalf;
-      if(moveStateX.autoReturn) {
-        moveStateX.accelSign = !moveStateX.accelSign;
-        moveStateX.accelPulses = 
-          moveStateX.targetPulseCount - moveStateX.pulseCount;
-      }
-    }
-    if(!moveStateX.accelSign && 
-        moveStateX.currentPps < moveStateX.targetPps   // accelerate
-      ||
-        moveStateX.accelSign &&
-        moveStateX.currentPps > moveStateX.targetPps) // deccelerate
-      accel = moveStateX.acceleration;
-    moveStateX.pulseCount--;
+    accel = moveStateX.acceleration;
     haveMove = TRUE;
   }
   else {
@@ -272,8 +258,8 @@ doOneVecX:
         return;
       }
       else {
-        if(moveStateX.movingState == notMoving) {
-          moveStateX.movingState == movingFirstHalf;
+        if(moveStateX.move && moveStateX.movingState == notMoving) {
+          moveStateX.movingState == moving;
           moveStateX.accelSign = (moveStateX.targetPps < moveStateX.currentPps);
         }
         goto doOneVecX;
@@ -284,36 +270,41 @@ doOneVecX:
   }
   if(accel) {
     if(!moveStateX.usecsPerPulse)
-        moveStateX.usecsPerPulse = pps2usecs(moveStateX.pps);
-    
-    int16_t    a = (int16_t) 5 * accel;
-    short long b = (short long) (moveStateX.usecsPerPulse >> 1);
-    short long c = a*b;
-    short long d = c >> (14 - moveStateX.ustep);
-    short long e = (int16_t) d;
-    if(e < 0 && -e >= moveStateX.pps) 
-      moveStateX.pps = settings[homeJerk]-1;
-    else {
-      moveStateX.pps += e;
-      if(moveStateX.pps > settings[homingPps])
-        moveStateX.pps = settings[homingPps];
+        moveStateX.usecsPerPulse = pps2usecs(moveStateX.currentPps);
+
+    uint16_t a = (uint16_t) 4 * accel;                    // 10 bits
+    unsigned short long b = 
+        (unsigned short long) moveStateX.usecsPerPulse;   // 14 bits
+    unsigned short long c = a*b;                          // 24 bits
+    unsigned short long d = c >> (15 - moveStateX.ustep); // -10 bits
+    uint16_t ppsChange = (uint16_t) d;                    // 14 bits
+    if(moveStateX.accelSign) {
+      if(ppsChange > moveStateX.currentPps ||
+          (moveStateX.currentPps - ppsChange) <= moveStateX.targetPps)
+        moveStateX.currentPps = moveStateX.targetPps;
+      else
+        moveStateX.currentPps -= ppsChange;
     }
-//    moveStateX.pps += (int16_t)
-//      ((((int16_t) 5 * accel) * (short long) (moveStateX.usecsPerPulse >> 1)) 
-//                                                  >> (14 - moveStateX.ustep));
+    else {
+      if((moveStateX.currentPps + ppsChange) >= moveStateX.targetPps)
+        moveStateX.currentPps = moveStateX.targetPps;
+      else
+        moveStateX.currentPps += ppsChange;
+    }
   }
   if(haveMove) {
     set_ustep(X, moveStateX.ustep);
     set_dir(X, moveStateX.dir);
     moveStateX.pulsed = TRUE;
-    setNextPpsX(moveStateX.pps, START_PULSE);
+    moveStateX.pulseCount--;
+    setNextPpsX(moveStateX.currentPps, START_PULSE);
   }
 }
 #ifdef XY
 
 void chkMovingY() {
   uint32_t *vec;
-  int8_t accel = 0;
+  uint8_t accel = 0;
   bool_t haveMove = FALSE;
   bool_t homingDone = FALSE;
   
@@ -338,11 +329,11 @@ void chkMovingY() {
       }
       break;
     case deceleratingPastSw:
-      if(moveStateY.pps <= settings[homeJerk]) {
+      if(moveStateY.currentPps <= settings[homeJerk]) {
         moveStateY.homingState  = backingUpToSw;
         moveStateY.dir          = FORWARD;
         moveStateY.ustep        = settings[homeBkupUstep];
-        moveStateY.pps          = settings[homeBkupPps];
+        moveStateY.currentPps   = settings[homeBkupPps];
         moveStateY.acceleration = 0;
       }   
       break;
@@ -369,10 +360,10 @@ doOneVecY:
   else if(moveStateY.accellsIdx) {
     accel = moveStateY.accells[--moveStateY.accellsIdx];
     haveMove = TRUE;
+    /////////////// TODO
   }
   else if(moveStateY.pulseCount) {
     accel = moveStateY.acceleration;
-    moveStateY.pulseCount--;
     haveMove = TRUE;
   }
   else {
@@ -381,42 +372,53 @@ doOneVecY:
       if(homingDone || parseVector(vec, &moveStateY)) {
         // only marker is EOF for now
         stopTimerY();
-        moveStateY.done = TRUE;
+        moveStateY.movingState = movingDone;
         // done with all moving?
-        if(moveStateX.done) 
+        if(moveStateX.movingState == movingDone) 
           setState(statusMoved); 
         return;
       }
-      else
+      else {
+        if(moveStateY.move && moveStateY.movingState == notMoving) {
+          moveStateY.movingState == moving;
+          moveStateY.accelSign = (moveStateY.targetPps < moveStateY.currentPps);
+        }
         goto doOneVecY;
+      }
     }
     handleError(Y, errorVecBufUnderflow);
     return;
   }
   if(accel) {
     if(!moveStateY.usecsPerPulse)
-        moveStateY.usecsPerPulse = pps2usecs(moveStateY.pps);
-    
-    int16_t    a = (int16_t) 5 * accel;
-    short long b = (short long) (moveStateY.usecsPerPulse >> 1);
-    short long c = a*b;
-    short long d = c >> (14 - moveStateY.ustep);
-    short long e = (int16_t) d;
-    if(e < 0 && -e >= moveStateY.pps) moveStateY.pps = 1;
-    else {
-      moveStateY.pps += e;
-      if(moveStateY.pps > settings[homingPps])
-        moveStateY.pps = settings[homingPps];
+        moveStateY.usecsPerPulse = pps2usecs(moveStateY.currentPps);
+
+    uint16_t a = (uint16_t) 4 * accel;                    // 10 bits
+    unsigned short long b = 
+        (unsigned short long) moveStateY.usecsPerPulse;   // 14 bits
+    unsigned short long c = a*b;                          // 24 bits
+    unsigned short long d = c >> (15 - moveStateY.ustep); // -10 bits
+    uint16_t ppsChange = (uint16_t) d;                    // 14 bits
+    if(moveStateY.accelSign) {
+      if(ppsChange > moveStateY.currentPps ||
+          (moveStateY.currentPps - ppsChange) <= moveStateY.targetPps)
+        moveStateY.currentPps = moveStateY.targetPps;
+      else
+        moveStateY.currentPps -= ppsChange;
     }
-//    moveStateY.pps += (int16_t)
-//      ((((int16_t) 5 * accel) * (short long) (moveStateY.usecsPerPulse >> 1)) 
-//                                                  >> (14 - moveStateY.ustep));
+    else {
+      if((moveStateY.currentPps + ppsChange) >= moveStateY.targetPps)
+        moveStateY.currentPps = moveStateY.targetPps;
+      else
+        moveStateY.currentPps += ppsChange;
+    }
   }
   if(haveMove) {
     set_ustep(Y, moveStateY.ustep);
     set_dir(Y, moveStateY.dir);
     moveStateY.pulsed = TRUE;
-    setNextPpsY(moveStateY.pps, START_PULSE);
+    moveStateY.pulseCount--;
+    setNextPpsY(moveStateY.currentPps, START_PULSE);
   }
 }
 #endif

@@ -57,23 +57,24 @@ uint8_t  parseVector(uint32_t *vector, MoveState *moveState){
   vecInts[0] = *((uint16_t *) &((uint8_t *) vector)[0]);
   vecInts[1] = *((uint16_t *) &((uint8_t *) vector)[2]);
   uint8_t topByte = ((uint8_t *) vector)[3];
+
   // settings/move
+  moveState->move = FALSE;
   if((topByte & 0x80) == 0) {    
     moveState->acceleration = 0;
     moveState->accellsIdx   = 0;
-    if((topByte & 0x40) != 0) { // settings
+    if((topByte & 0x40) != 0) {                 // settings
       moveState->acceleration = (vecInts[0] & 0x00ff);
       moveState->currentPps   = (vecInts[1] & 0x0fff);
     }
     else {                                      // move
-      moveState->autoReturn = ((topByte & 0x20) != 0);
-      moveState->pulseCount = moveState->targetPulseCount = 
-                                (vecInts[0] & 0x0fff);
+      moveState->pulseCount = (vecInts[0] & 0x0fff);
       if(moveState->pulseCount == 0) {
         moveState->delayUsecs = (vecInts[0] & 0xe000) | (vecInts[1] & 0x1fff);
         return 0;
       }
       moveState->targetPps = (vecInts[1] & 0x0fff);
+      moveState->move = TRUE;
     }
     moveState->ustep = (((uint8_t *) vector)[1] >> 5);
     moveState->dir   = ((topByte & 0x10) != 0);

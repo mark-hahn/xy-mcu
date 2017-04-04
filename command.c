@@ -33,10 +33,7 @@ void handleSpiWord() {
 
 void immediateCmd() {
   int16_t val;
-  // word is big-endian, mcu isn't
-  char cmd = spiBytes[3];
-  switch (spiBytes[3]) {
-    
+  switch (spiBytes[3] & 0x1f) {
     case moveCmd: 
       startMoving();
       return;
