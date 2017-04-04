@@ -189,8 +189,6 @@ void eventLoop() {
       // little-endian array version of spiWord (global))
       spiBytes   = ((char *) &spiWord);
       
-    // return state, error, or statusRec data in SPI output buf
-      // status rec is always surrounded by state bytes
       if (statusRecOutIdx != STATUS_REC_IDLE)
         sendStatusRecByte();
    

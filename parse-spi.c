@@ -59,7 +59,6 @@ uint8_t  parseVector(uint32_t *vector, MoveState *moveState){
   uint8_t topByte = ((uint8_t *) vector)[3];
 
   // settings/move
-  moveState->move = FALSE;
   if((topByte & 0x80) == 0) {    
     moveState->acceleration = 0;
     moveState->accellsIdx   = 0;
@@ -74,7 +73,7 @@ uint8_t  parseVector(uint32_t *vector, MoveState *moveState){
         return 0;
       }
       moveState->targetPps = (vecInts[1] & 0x0fff);
-      moveState->move = TRUE;
+      moveState->accelSign = (moveState->targetPps < moveState->currentPps);
     }
     moveState->ustep = (((uint8_t *) vector)[1] >> 5);
     moveState->dir   = ((topByte & 0x10) != 0);

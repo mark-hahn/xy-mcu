@@ -17,18 +17,11 @@ typedef enum HomingState {
   backingUpToHome
 } HomingState;
 
-typedef enum MovingState {
-  notMoving = 0,
-  moving,
-  movingDone
-} MovingState;
-
 typedef struct MoveState {
   uint8_t     dir;
   uint8_t     ustep;
   uint16_t    currentPps;
   uint16_t    targetPps;
-  bool_t      move;
   uint16_t    pulseCount;
   uint8_t     acceleration;
   bool_t      accelSign;
@@ -38,7 +31,7 @@ typedef struct MoveState {
   uint16_t    usecsPerPulse;
   bool_t      pulsed;
   HomingState homingState;
-  MovingState movingState;
+  bool_t      done;
 } MoveState;
 
 extern int32_t distanceX;

@@ -247,23 +247,17 @@ doOneVecX:
         // only marker is EOF for now
         stopTimerX();
 #ifdef XY
-        moveStateX.movingState = movingDone;
+        moveStateX.done = TRUE;
         // done with all moving?
-        if(moveStateY.movingState == movingDone) 
-          setState(statusMoved); 
+        if(moveStateY.done) setState(statusMoved); 
 #endif
 #ifdef Z2
         setState(statusMoved); 
 #endif
         return;
       }
-      else {
-        if(moveStateX.move && moveStateX.movingState == notMoving) {
-          moveStateX.movingState == moving;
-          moveStateX.accelSign = (moveStateX.targetPps < moveStateX.currentPps);
-        }
+      else 
         goto doOneVecX;
-      }
     }
     handleError(X, errorVecBufUnderflow);
     return;
@@ -372,19 +366,13 @@ doOneVecY:
       if(homingDone || parseVector(vec, &moveStateY)) {
         // only marker is EOF for now
         stopTimerY();
-        moveStateY.movingState = movingDone;
+        moveStateY.done = TRUE;
         // done with all moving?
-        if(moveStateX.movingState == movingDone) 
-          setState(statusMoved); 
+        if(moveStateX.done) setState(statusMoved); 
         return;
       }
-      else {
-        if(moveStateY.move && moveStateY.movingState == notMoving) {
-          moveStateY.movingState == moving;
-          moveStateY.accelSign = (moveStateY.targetPps < moveStateY.currentPps);
-        }
+      else
         goto doOneVecY;
-      }
     }
     handleError(Y, errorVecBufUnderflow);
     return;

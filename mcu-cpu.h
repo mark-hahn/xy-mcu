@@ -35,8 +35,6 @@ typedef long pos_t; // 32 bits signed
 
 // immediate 5-bit command -- top is 0b100
 // may be followed by param bytes
-// set homing speeds have microstep in byte 2 and speed (usecs/step) in 3-4
-// setMotorCurrent has param in byte 2
 typedef enum Cmd {
   nopCmd               =  0, // does nothing except get status
   statusCmd            =  1, // requests status rec returned
