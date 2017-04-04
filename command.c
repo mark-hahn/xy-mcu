@@ -15,10 +15,10 @@ void immediateCmd();
 void handleSpiWord() {
   Cmd topSpiByte = spiBytes[3];
   if(errorCode) {
-    if (topSpiByte == clearErrorCmd) immediateCmd();
+    if ((topSpiByte & 0x1f) == clearErrorCmd) immediateCmd();
     // else all other vectors/commands are ignored
   } 
-  else if ((topSpiByte & 0x80) == 0) immediateCmd();
+  else if ((topSpiByte & 0xe0) == 0b100) immediateCmd();
   
   else {
 #ifdef XY

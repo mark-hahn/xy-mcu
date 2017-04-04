@@ -81,7 +81,7 @@ void set_resets(bool_t resetHigh) {
 
 void initMotor() {
   settings[debounceTime]    = 30000; // debounce and time to reverse, 50 ms
-  settings[homingUstep]     = 4;     // 0.05 mm/pulse
+  settings[homingUstep]     = 3;     // 0.05 mm/pulse
   settings[homingPps]       = 1000;  // 1000 => 50 mm/sec  (.05 / .001)
   settings[homeBkupUstep]   = 5;     // 5 => 0.00625 mm/pulse
   settings[homeBkupPps]     = 1000;  // 1000 => 6.25 mm/sec (0.00625 / 0.001)
@@ -124,6 +124,8 @@ void initMotor() {
   spiInt = 0;
 }
 
+uint16_t maxPps;
+
 ///////////////////////////////// homing ///////////////////////
 
 void startHoming() {
@@ -136,12 +138,12 @@ void startHoming() {
     ((uint8_t *) &moveStateY)[i] = 0;
 #endif
   }
-
+  
   moveStateX.homingState  = headingHome;
   moveStateX.ustep        = settings[homingUstep];
   moveStateX.dir          = BACKWARDS;
   moveStateX.pulseCount   = 0xffff;
-  moveStateX.pps          = settings[homeJerk];
+  moveStateX.currentPps   = settings[homeJerk];
   moveStateX.acceleration = settings[homeAccel];
   chkMovingX();
 
@@ -150,7 +152,7 @@ void startHoming() {
   moveStateY.ustep        = settings[homingUstep];
   moveStateY.dir          = BACKWARDS;
   moveStateY.pulseCount   = 0xffff;
-  moveStateY.pps          = settings[homeJerk];
+  moveStateY.currentPps   = settings[homeJerk];
   moveStateY.acceleration = settings[homeAccel];
   chkMovingY();
 #endif
@@ -201,11 +203,11 @@ void chkMovingX() {
       }
       break;
     case deceleratingPastSw:
-      if(moveStateX.pps <= settings[homeJerk]) {
+      if(moveStateX.currentPps <= settings[homeJerk]) {
         moveStateX.homingState  = backingUpToSw;
         moveStateX.dir          = FORWARD;
         moveStateX.ustep        = settings[homeBkupUstep];
-        moveStateX.pps          = settings[homeBkupPps];
+        moveStateX.currentPps   = settings[homeBkupPps];
         moveStateX.acceleration = 0;
       }   
       break;
@@ -234,7 +236,21 @@ doOneVecX:
     haveMove = TRUE;
   }
   else if(moveStateX.pulseCount) {
-    accel = moveStateX.acceleration;
+    if(moveStateX.movingState == movingFirstHalf &&
+       moveStateX.pulseCount <= moveStateX.targetPulseCount/2) {
+      moveStateX.movingState == movingSecondHalf;
+      if(moveStateX.autoReturn) {
+        moveStateX.accelSign = !moveStateX.accelSign;
+        moveStateX.accelPulses = 
+          moveStateX.targetPulseCount - moveStateX.pulseCount;
+      }
+    }
+    if(!moveStateX.accelSign && 
+        moveStateX.currentPps < moveStateX.targetPps   // accelerate
+      ||
+        moveStateX.accelSign &&
+        moveStateX.currentPps > moveStateX.targetPps) // deccelerate
+      accel = moveStateX.acceleration;
     moveStateX.pulseCount--;
     haveMove = TRUE;
   }
@@ -245,29 +261,46 @@ doOneVecX:
         // only marker is EOF for now
         stopTimerX();
 #ifdef XY
-        moveStateX.done = TRUE;
+        moveStateX.movingState = movingDone;
         // done with all moving?
-        if(moveStateY.done) setState(statusMoved); 
+        if(moveStateY.movingState == movingDone) 
+          setState(statusMoved); 
 #endif
 #ifdef Z2
         setState(statusMoved); 
 #endif
         return;
       }
-      else
+      else {
+        if(moveStateX.movingState == notMoving) {
+          moveStateX.movingState == movingFirstHalf;
+          moveStateX.accelSign = (moveStateX.targetPps < moveStateX.currentPps);
+        }
         goto doOneVecX;
+      }
     }
     handleError(X, errorVecBufUnderflow);
     return;
   }
-  if(accel && !(moveStateX.homingState && moveStateX.pps >= 
-                            (moveStateX.homingState == headingHome ? 
-                             settings[homingPps] : settings[homeBkupPps]))) {
+  if(accel) {
     if(!moveStateX.usecsPerPulse)
         moveStateX.usecsPerPulse = pps2usecs(moveStateX.pps);
-    moveStateX.pps += (int16_t)
-      ((((int16_t) 5 * accel) * (short long) (moveStateX.usecsPerPulse >> 1)) 
-                                                  >> (14 - moveStateX.ustep));
+    
+    int16_t    a = (int16_t) 5 * accel;
+    short long b = (short long) (moveStateX.usecsPerPulse >> 1);
+    short long c = a*b;
+    short long d = c >> (14 - moveStateX.ustep);
+    short long e = (int16_t) d;
+    if(e < 0 && -e >= moveStateX.pps) 
+      moveStateX.pps = settings[homeJerk]-1;
+    else {
+      moveStateX.pps += e;
+      if(moveStateX.pps > settings[homingPps])
+        moveStateX.pps = settings[homingPps];
+    }
+//    moveStateX.pps += (int16_t)
+//      ((((int16_t) 5 * accel) * (short long) (moveStateX.usecsPerPulse >> 1)) 
+//                                                  >> (14 - moveStateX.ustep));
   }
   if(haveMove) {
     set_ustep(X, moveStateX.ustep);
@@ -290,7 +323,6 @@ void chkMovingY() {
                   -distPerPulse(moveStateY.ustep) );
     moveStateY.pulsed = FALSE;
   }
-  
   switch(moveStateY.homingState) {
     case notHoming: 
       if(!LIMIT_SW_Y) {
@@ -351,8 +383,8 @@ doOneVecY:
         stopTimerY();
         moveStateY.done = TRUE;
         // done with all moving?
-        if(moveStateX.done) setState(statusMoved); 
-        setState(statusMoved); 
+        if(moveStateX.done) 
+          setState(statusMoved); 
         return;
       }
       else
@@ -361,14 +393,24 @@ doOneVecY:
     handleError(Y, errorVecBufUnderflow);
     return;
   }
-  if(accel && !(moveStateY.homingState && moveStateY.pps >= 
-                            (moveStateY.homingState == headingHome ? 
-                             settings[homingPps] : settings[homeBkupPps]))) {
+  if(accel) {
     if(!moveStateY.usecsPerPulse)
         moveStateY.usecsPerPulse = pps2usecs(moveStateY.pps);
-    moveStateY.pps += (int16_t)
-      ((((int16_t) 5 * accel) * (short long) (moveStateY.usecsPerPulse >> 1)) 
-                                                  >> (14 - moveStateY.ustep));
+    
+    int16_t    a = (int16_t) 5 * accel;
+    short long b = (short long) (moveStateY.usecsPerPulse >> 1);
+    short long c = a*b;
+    short long d = c >> (14 - moveStateY.ustep);
+    short long e = (int16_t) d;
+    if(e < 0 && -e >= moveStateY.pps) moveStateY.pps = 1;
+    else {
+      moveStateY.pps += e;
+      if(moveStateY.pps > settings[homingPps])
+        moveStateY.pps = settings[homingPps];
+    }
+//    moveStateY.pps += (int16_t)
+//      ((((int16_t) 5 * accel) * (short long) (moveStateY.usecsPerPulse >> 1)) 
+//                                                  >> (14 - moveStateY.ustep));
   }
   if(haveMove) {
     set_ustep(Y, moveStateY.ustep);

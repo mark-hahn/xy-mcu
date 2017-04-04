@@ -33,7 +33,7 @@ typedef long pos_t; // 32 bits signed
 
 //////////////////////  Immediate Commands  ///////////////////////
 
-// immediate 7-bit commands -- top 1 bit is zero
+// immediate 5-bit command -- top is 0b100
 // may be followed by param bytes
 // set homing speeds have microstep in byte 2 and speed (usecs/step) in 3-4
 // setMotorCurrent has param in byte 2
@@ -74,28 +74,28 @@ typedef enum Settings {
 
 
 /////////////////////////////////  VECTORS  ///////////////////////////
+// all unsigned but one, E-M
 //
-//iiiiiii:        7-bit immediate cmd
+//iiiii:          5-bit immediate cmd
 //a:              axis, X (0) or Y (1)
 //d:              direction (0: backwards, 1:forwards)
 //uuu:            microstep, 0 (1x) to 5 (32x)
-//xxxxxxxx:        8-bit signed acceleration in pulses/sec/sec
+//xxxxxxxx:        8-bit acceleration in pulses/sec/sec
 //vvvvvvvvvvvv:   12-bit velocity in pulses/sec
 //cccccccccccc:   12-bit pulse count
-//E-M: curve acceleration field, signed
+//E-M: curve pps change field, signed
 //zzzz: vector list markers
 //  15: eof, end of moving
-//
-//
+
 //Number before : is number of leading 1's
-// 
-// 0:  0iii iiii  -- 7-bit immediate cmd - more bytes may follow
-// 1:  100d vvvv vvvv vvvv uuua cccc cccc cccc  -- velocity vector  (1 unused bit)
-//     if pulse count is zero then uuudvvvvvvvvvvvv is 16-bit usecs delay (not pps)
-// 
-// 7:  1111 1110 xxxx xxxx uuua cccc cccc cccc  -- acceleration vector
-//
-//Curve vectors, each field is one pulse of signed acceleration ...
+
+
+// 1:  100i iiii  -- 5-bit immediate cmd - more bytes may follow
+// 0:  010d vvvv vvvv vvvv uuua 0000 xxxx xxxx  -- settings,   (5 unused bits)
+// 0:  00rd vvvv vvvv vvvv uuua cccc cccc cccc  -- move
+//  if pulse count is zero then uuudvvvvvvvvvvvv is 16-bit usecs delay (not pps)
+
+//Curve vectors, each field is one pulse of signed pps change ...
 //
 // 3:  1110 aEEE  FFFG GGHH  HIII JJJK  KKLL LMMM --  9 3-bit
 // 6:  1111 110a  FFFG GGHH  HIII JJJK  KKLL LMMM --  8 3-bit
