@@ -203,7 +203,7 @@ void eventLoop() {
       
       if(!SPI_SS) dbgPulseH(20);
 
-       if(spiWord != 0) handleSpiWord();
+      if(spiBytes[3] != 0) handleSpiWord();
       
       // spiInt must be cleared before next 32-bit word arrives (SS high)
       spiInt = FALSE;

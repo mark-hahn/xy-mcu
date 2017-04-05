@@ -10,16 +10,15 @@
 #include "event.h"
 #include "parse-spi.h"
 
-void immediateCmd();
+void immediateCmd(Cmd cmd);
 
 void handleSpiWord() {
-  Cmd topSpiByte = spiBytes[3];
-  if(errorCode) {
-    if ((topSpiByte & 0x1f) == clearErrorCmd) immediateCmd();
-    // else all other vectors/commands are ignored
-  } 
-  else if ((topSpiByte & 0xe0) == 0b100) immediateCmd();
-  
+  if ((spiBytes[3] & 0xe0) == 0x80) {
+    Cmd cmd = (spiBytes[3] & 0x1f);
+    if(errorCode && cmd != clearErrorCmd) 
+      return;
+    immediateCmd(cmd);
+  }
   else {
 #ifdef XY
     if(axisFromSpiWord(&spiWord)) putVectorY(); 
@@ -31,9 +30,9 @@ void handleSpiWord() {
   }
 }
 
-void immediateCmd() {
+void immediateCmd(Cmd cmd) {
   int16_t val;
-  switch (spiBytes[3] & 0x1f) {
+  switch (cmd) {
     case moveCmd: 
       startMoving();
       return;

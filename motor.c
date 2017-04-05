@@ -80,13 +80,13 @@ void set_resets(bool_t resetHigh) {
 }
 
 void initMotor() {
-  settings[debounceTime]    = 30000; // debounce and time to reverse, 50 ms
+  settings[debounceTime]    = 30000; // debounce and time to reverse, 30 ms
   settings[homingUstep]     = 3;     // 0.05 mm/pulse
-  settings[homingPps]       = 1000;  // 1000 => 50 mm/sec  (.05 / .001)
+  settings[homingPps]       = 2000;  // 1000 => 50 mm/sec  (.05 / .001)
   settings[homeBkupUstep]   = 5;     // 5 => 0.00625 mm/pulse
   settings[homeBkupPps]     = 1000;  // 1000 => 6.25 mm/sec (0.00625 / 0.001)
-  settings[homeAccel]       = 32;    // 1000 mm/sec/sec
-  settings[homeJerk]        = 50;    // speed considered zero
+  settings[homeAccel]       = 8;    // 1000 mm/sec/sec
+  settings[homeJerk]        = 10;    // speed considered zero
   settings[homeOfsX]        = 800;   // (5 mm)
   settings[directionLevels] = 0b11;  // x dir: d1, y dir: d0
   #ifdef XY
@@ -143,8 +143,10 @@ void startHoming() {
   moveStateX.ustep        = settings[homingUstep];
   moveStateX.dir          = BACKWARDS;
   moveStateX.pulseCount   = 0xffff;
-  moveStateX.currentPps   = settings[homeJerk];
+  moveStateX.currentPps   = 0;
+  moveStateX.targetPps    = settings[homingPps];
   moveStateX.acceleration = settings[homeAccel];
+  moveStateX.accelSign    = 0;
   chkMovingX();
 
 #ifdef XY
@@ -152,8 +154,10 @@ void startHoming() {
   moveStateY.ustep        = settings[homingUstep];
   moveStateY.dir          = BACKWARDS;
   moveStateY.pulseCount   = 0xffff;
-  moveStateY.currentPps   = settings[homeJerk];
+  moveStateX.currentPps   = 0;
+  moveStateY.targetPps    = settings[homingPps];
   moveStateY.acceleration = settings[homeAccel];
+  moveStateY.accelSign    = 0;
   chkMovingY();
 #endif
 }
@@ -199,7 +203,8 @@ void chkMovingX() {
     case headingHome:
       if(!LIMIT_SW_X) {
         moveStateX.homingState  = deceleratingPastSw;
-        moveStateX.acceleration = -settings[homeAccel];
+        moveStateX.accelSign    = 1;
+        moveStateX.targetPps    = settings[homeJerk];
       }
       break;
     case deceleratingPastSw:
@@ -207,7 +212,8 @@ void chkMovingX() {
         moveStateX.homingState  = backingUpToSw;
         moveStateX.dir          = FORWARD;
         moveStateX.ustep        = settings[homeBkupUstep];
-        moveStateX.currentPps   = settings[homeBkupPps];
+        moveStateX.currentPps = 
+        moveStateX.targetPps    = settings[homeBkupPps];
         moveStateX.acceleration = 0;
       }   
       break;
@@ -319,7 +325,8 @@ void chkMovingY() {
     case headingHome:
       if(!LIMIT_SW_Y) {
         moveStateY.homingState  = deceleratingPastSw;
-        moveStateY.acceleration = -settings[homeAccel];
+        moveStateY.accelSign    = 1;
+        moveStateY.targetPps    = settings[homeJerk];
       }
       break;
     case deceleratingPastSw:
@@ -327,7 +334,8 @@ void chkMovingY() {
         moveStateY.homingState  = backingUpToSw;
         moveStateY.dir          = FORWARD;
         moveStateY.ustep        = settings[homeBkupUstep];
-        moveStateY.currentPps   = settings[homeBkupPps];
+        moveStateY.currentPps = 
+        moveStateY.targetPps    = settings[homeBkupPps];
         moveStateY.acceleration = 0;
       }   
       break;
@@ -371,7 +379,7 @@ doOneVecY:
         if(moveStateX.done) setState(statusMoved); 
         return;
       }
-      else
+      else 
         goto doOneVecY;
     }
     handleError(Y, errorVecBufUnderflow);

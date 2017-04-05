@@ -90,8 +90,9 @@ typedef enum Settings {
 
 // 1:  100i iiii  -- 5-bit immediate cmd - more bytes may follow
 // 0:  010d vvvv vvvv vvvv uuua 0000 xxxx xxxx  -- settings,   (5 unused bits)
-// 0:  000d vvvv vvvv vvvv uuua cccc cccc cccc  -- move,       (1 unused bit)
+// 0:  001d vvvv vvvv vvvv uuua cccc cccc cccc  -- move,       (1 unused bit)
 //  if pulse count is zero then uuudvvvvvvvvvvvv is 16-bit usecs delay (not pps)
+//  move vec d29 is 1 to ensure zero bytes aren't interpreted as commands
 
 //Curve vectors, each field is one pulse of signed pps change ...
 //
