@@ -163,7 +163,7 @@ typedef struct StatusRec {
   uint8_t prod;           // product id (1 = XY base)
   uint8_t vers;           // XY (code and hw) version
   uint8_t padding[3];
-  int32_t distanceX;      // homing distance of last home operation
+  int32_t distanceX;      // position since clearDistance
   int32_t distanceY;
 } StatusRec;
 

@@ -60,7 +60,6 @@ uint8_t  parseVector(uint32_t *vector, MoveState *moveState){
 
   // settings/move
   if((topByte & 0x80) == 0) {    
-    moveState->acceleration = 0;
     moveState->accellsIdx   = 0;
     if((topByte & 0x40) != 0) {                 // settings
       moveState->acceleration = (vecInts[0] & 0x00ff);

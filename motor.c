@@ -87,12 +87,12 @@ void initMotor() {
   settings[homeBkupPps]     = 1000;  // 1000 => 6.25 mm/sec (0.00625 / 0.001)
   settings[homeAccel]       = 8;    // 1000 mm/sec/sec
   settings[homeJerk]        = 10;    // speed considered zero
-  settings[homeOfsX]        = 800;   // (5 mm)
+  settings[homeOfsX]        = 5000;   // (5 mm)
   settings[directionLevels] = 0b11;  // x dir: d1, y dir: d0
   #ifdef XY
-  settings[motorCurrent]    = 20;    // 20 -> 1.5 amp, 26 -> 2 amp
-  settings[homeOfsY]        = 160;   // (1 mm)
-  #endif
+  settings[motorCurrent]    = 20;    // 16: 1A, 20: 1.5A, 26: 2A
+  settings[homeOfsY]        = 5000;   // (5 mm)
+  #endif 
   #ifdef Z2
   settings[motorCurrent]    = 84;    // 0.4V, 800 ma
   settings[directionLevels] = 0b00;  // x dir: d1
@@ -143,10 +143,8 @@ void startHoming() {
   moveStateX.ustep        = settings[homingUstep];
   moveStateX.dir          = BACKWARDS;
   moveStateX.pulseCount   = 0xffff;
-  moveStateX.currentPps   = 0;
   moveStateX.targetPps    = settings[homingPps];
   moveStateX.acceleration = settings[homeAccel];
-  moveStateX.accelSign    = 0;
   chkMovingX();
 
 #ifdef XY
@@ -154,10 +152,8 @@ void startHoming() {
   moveStateY.ustep        = settings[homingUstep];
   moveStateY.dir          = BACKWARDS;
   moveStateY.pulseCount   = 0xffff;
-  moveStateX.currentPps   = 0;
   moveStateY.targetPps    = settings[homingPps];
   moveStateY.acceleration = settings[homeAccel];
-  moveStateY.accelSign    = 0;
   chkMovingY();
 #endif
 }
