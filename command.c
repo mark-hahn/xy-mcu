@@ -13,7 +13,7 @@
 void immediateCmd(Cmd cmd);
 
 void handleSpiWord() {
-  if ((spiBytes[3] & 0xe0) == 0x80) {
+  if ((spiBytes[3] & 0xc0) == 0x80) {
     Cmd cmd = (spiBytes[3] & 0x1f);
     if(errorCode && cmd != clearErrorCmd) 
       return;
@@ -31,7 +31,9 @@ void handleSpiWord() {
 }
 
 void immediateCmd(Cmd cmd) {
+  uint8_t ofs;
   int16_t val;
+  
   switch (cmd) {
     case moveCmd: 
       startMoving();
@@ -76,8 +78,9 @@ void immediateCmd(Cmd cmd) {
       return;
       
     case settingsCmd:
-      val = *((int16_t *) &spiInts[0]);
-      settings[spiBytes[2]] = val;
+      ofs = spiBytes[2];
+      val = *((int16_t *) &spiInts[1]);
+      settings[ofs] = val;
       if (spiBytes[2] == motorCurrent) setMotorCurrent(val);
       return;
     

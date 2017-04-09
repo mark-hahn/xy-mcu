@@ -80,24 +80,35 @@ void set_resets(bool_t resetHigh) {
 }
 
 void initMotor() {
-  settings[debounceTime]    = 30000; // debounce and time to reverse, 30 ms
+#ifdef XY
   settings[homingUstep]     = 3;     // 0.05 mm/pulse
   settings[homingPps]       = 2000;  // 1000 => 50 mm/sec  (.05 / .001)
   settings[homeBkupUstep]   = 5;     // 5 => 0.00625 mm/pulse
   settings[homeBkupPps]     = 1000;  // 1000 => 6.25 mm/sec (0.00625 / 0.001)
   settings[homeAccel]       = 8;    // 1000 mm/sec/sec
   settings[homeJerk]        = 10;    // speed considered zero
-  settings[homeOfsX]        = 5000;   // (5 mm)
-  settings[directionLevels] = 0b11;  // x dir: d1, y dir: d0
-  #ifdef XY
   settings[motorCurrent]    = 20;    // 16: 1A, 20: 1.5A, 26: 2A
-  settings[homeOfsY]        = 5000;   // (5 mm)
-  #endif 
-  #ifdef Z2
-  settings[motorCurrent]    = 84;    // 0.4V, 800 ma
+  settings[homeOfsX]        = 5000;  // (5 mm)
+  settings[homeOfsY]        = 5000;  // (5 mm)
+  settings[directionLevels] = 0b11;  // x dir: d1, y dir: d0
+  settings[disableLimitX]   = FALSE;
+  settings[defaultAccell]   = 8;
+  settings[moveJerk]        = 10;    // speed considered zero
+#endif 
+#ifdef Z2
+  settings[homingUstep]     = 3;     // 0.05 mm/pulse
+  settings[homingPps]       = 1000;  // 1000 => 50 mm/sec  (.05 / .001)
+  settings[homeBkupUstep]   = 4;     // 5 => 0.00625 mm/pulse
+  settings[homeBkupPps]     = 1000;  // 1000 => 6.25 mm/sec (0.00625 / 0.001)
+  settings[homeJerk]        = 10;    // speed considered zero
+  settings[motorCurrent]    = 105;   // 90 -> 0.35V, 0.7A, 128 -> 0.5V, 1A
   settings[directionLevels] = 0b00;  // x dir: d1
-  settings[homeOfsY]        = 800;   // (5 mm)
-  #endif
+  settings[homeOfsX]        = 1600;   //  20 mm
+  settings[homeAccel]       = 8;     // 1000 mm/sec/sec
+  settings[disableLimitX]   = TRUE;
+  settings[defaultAccell]   = 8;
+  settings[moveJerk]        = 10;    // speed considered zero
+#endif
 
   // init dac
 #ifdef XY
@@ -131,22 +142,16 @@ uint16_t maxPps;
 void startHoming() {
   setState(statusHoming);
   resetTimers();
-  
-  for(uint8_t i = 0; i < sizeof(MoveState); i++) {
-    ((uint8_t *) &moveStateX)[i] = 0;
-#ifdef XY
-    ((uint8_t *) &moveStateY)[i] = 0;
-#endif
-  }
-  
+
   moveStateX.homingState  = headingHome;
   moveStateX.ustep        = settings[homingUstep];
   moveStateX.dir          = BACKWARDS;
   moveStateX.pulseCount   = 0xffff;
   moveStateX.targetPps    = settings[homingPps];
   moveStateX.acceleration = settings[homeAccel];
+  moveStateX.delayUsecs = 0;
+  moveStateX.accellsIdx = 0;
   chkMovingX();
-
 #ifdef XY
   moveStateY.homingState  = headingHome;
   moveStateY.ustep        = settings[homingUstep];
@@ -154,6 +159,8 @@ void startHoming() {
   moveStateY.pulseCount   = 0xffff;
   moveStateY.targetPps    = settings[homingPps];
   moveStateY.acceleration = settings[homeAccel];
+  moveStateX.delayUsecs = 0;
+  moveStateX.accellsIdx = 0;
   chkMovingY();
 #endif
 }
@@ -162,16 +169,19 @@ void startHoming() {
 
 void startMoving() {
   setState(statusMoving); 
+  moveStateX.delayUsecs = 0;
   
-  for(uint8_t i = 0; i < sizeof(MoveState); i++) {
-    ((uint8_t *) &moveStateX)[i] = 0;
-#ifdef XY
-    ((uint8_t *) &moveStateY)[i] = 0;
-#endif
-  }
+  moveStateX.accellsIdx = 0;
+  moveStateX.pulseCount = 0;
+  moveStateX.currentPps   = settings[moveJerk];
+  moveStateX.acceleration = settings[defaultAccell];
   chkMovingX();
-  
 #ifdef XY
+  moveStateY.delayUsecs = 0;
+  moveStateY.accellsIdx = 0;
+  moveStateY.pulseCount = 0;
+  moveStateY.currentPps   = settings[moveJerk];
+  moveStateY.acceleration = settings[defaultAccell];
   chkMovingY();
 #endif
 }
@@ -190,7 +200,7 @@ void chkMovingX() {
   }
   switch(moveStateX.homingState) {
     case notHoming: 
-      if(!LIMIT_SW_X) {
+      if(!settings[disableLimitX] && !LIMIT_SW_X) {
         // unexpected closed limit switch
         handleError(X, errorLimit); 
         return;
@@ -287,6 +297,9 @@ doOneVecX:
       else
         moveStateX.currentPps += ppsChange;
     }
+  }
+  if(haveMove && moveStateX.currentPps < 10){
+    while(1);
   }
   if(haveMove) {
     set_ustep(X, moveStateX.ustep);

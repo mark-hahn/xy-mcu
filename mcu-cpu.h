@@ -58,12 +58,14 @@ typedef enum Cmd {
 typedef enum Settings {
   motorCurrent,    // meaning varies between MCUs
   directionLevels, // x dir: d1, y dir: d0
-  debounceTime,    // all times are 1/160 seconds
+  disableLimitX,
+  defaultAccell,
+  moveJerk,
   homingUstep,
   homingPps,
   homeBkupUstep,
   homeBkupPps,
-  homeAccel,      // mm/sec/sec -- ranges from +-1 (30) to +-127 (4000)
+  homeAccel,
   homeJerk,
   homeOfsX,
   homeOfsY,
