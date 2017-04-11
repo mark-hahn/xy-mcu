@@ -72,28 +72,27 @@ typedef enum Settings {
   NUM_SETTINGS
 } Settings;
 
-
+// 5*64 mm/sec -> 2^15 vel field,  
 /////////////////////////////////  VECTORS  ///////////////////////////
 // all unsigned but one, E-M
 //
-//iiiii:          5-bit immediate cmd
-//a:              axis, X (0) or Y (1)
-//d:              direction (0: backwards, 1:forwards)
-//uuu:            microstep, 0 (1x) to 5 (32x)
-//xxxxxxxx:        8-bit acceleration in pulses/sec/sec
-//vvvvvvvvvvvv:   12-bit velocity in pulses/sec
-//cccccccccccc:   12-bit pulse count
+//iiiii:           5-bit immediate cmd
+//a:               axis, X (0) or Y (1)
+//d:               direction (0: backwards, 1:forwards)
+//uuu:             microstep, 0 (1x) to 5 (32x)
+//vvvvvvvvvvvvvvv: 9.6 fixed-point velocity in pulses/sec
+//cccccccccc:      10-bit pulse count
+//xxxxxxxxxx:      10-bit acceleration (333 -> 1000 mm/sec/sec)
 //E-M: curve pps change field, signed
 //zzzz: vector list markers
 //  15: eof, end of moving
 
 //Number before : is number of leading 1's
 
-
-// 1:  100i iiii  -- 5-bit immediate cmd - more bytes may follow
-// 0:  010d vvvv vvvv vvvv uuua 0000 xxxx xxxx  -- settings,   (5 unused bits)
-// 0:  001d vvvv vvvv vvvv uuua cccc cccc cccc  -- move,       (1 unused bit)
-//  if pulse count is zero then uuudvvvvvvvvvvvv is 16-bit usecs delay (not pps)
+// 1:  10ii iiii  -- 6-bit immediate cmd - more bytes may follow
+// 0:  0vvv vvvv vvvv vvvv 0uuu adxx xxxx xxxx  -- setup,
+// 0:  0vvv vvvv vvvv vvvv 1uuu adcc cccc cccc  -- move, 
+//  if pulse count is zero then vvv vvvv vvvv vvvv is 14-bit usecs delay (not pps)
 //  move vec d29 is 1 to ensure zero bytes aren't interpreted as commands
 
 //Curve vectors, each field is one pulse of signed pps change ...

@@ -398,12 +398,17 @@ doOneVecY:
     if(!moveStateY.usecsPerPulse)
         moveStateY.usecsPerPulse = pps2usecs(moveStateY.currentPps);
 
-    uint16_t a = (uint16_t) 4 * accel;                    // 10 bits
+    // a is acceleration in mm/sec/sec / 4  (full step, 1000 mm/sec/sec => 333)
+    uint16_t a = (uint16_t) accel;                        // 10 bits 
+    // b is usecs of last pulse
     unsigned short long b = 
-        (unsigned short long) moveStateY.usecsPerPulse;   // 14 bits
-    unsigned short long c = a*b;                          // 24 bits
-    unsigned short long d = c >> (15 - moveStateY.ustep); // -10 bits
-    uint16_t ppsChange = (uint16_t) d;                    // 14 bits
+        (unsigned short long) moveStateY.usecsPerPulse;   //  14 bits
+    // c is pps change per (sec/4096)
+    unsigned short long c = a*b;                          //  24 bits
+    // d is pps change / 4096 / ustep factor
+    unsigned short long d = c >> (16 - moveStateY.ustep); // -16..-11 bits
+    uint16_t ppsChange = (uint16_t) d;                    //   8...13 bits
+    if(ppsChange == 0) ppsChange = 1;
     if(moveStateY.accelSign) {
       if(ppsChange > moveStateY.currentPps ||
           (moveStateY.currentPps - ppsChange) <= moveStateY.targetPps)
@@ -418,6 +423,11 @@ doOneVecY:
         moveStateY.currentPps += ppsChange;
     }
   }
+/*
+ * accel -> 1000 mm/sec
+ * start at: 10 mm/sec,  50 pps, .02 secs/pulse, chg: 1000 * .02 -> 20mm/sec
+ * mm/sec: 10, 30, 36, 41, 45, 49, 53, 56, 59, 62, 65, 15 more?  27 total?
+ */
   if(haveMove) {
     set_ustep(Y, moveStateY.ustep);
     set_dir(Y, moveStateY.dir);
