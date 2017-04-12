@@ -80,7 +80,8 @@ typedef enum Settings {
 //a:               axis, X (0) or Y (1)
 //d:               direction (0: backwards, 1:forwards)
 //uuu:             microstep, 0 (1x) to 5 (32x)
-//vvvvvvvvvvvvvvv: 9.6 fixed-point velocity in pulses/sec
+//eee:             3-bit pps exponent
+//vvvvvvvvvvvv:    12-bit pps mantissa
 //cccccccccc:      10-bit pulse count
 //xxxxxxxxxx:      10-bit acceleration (333 -> 1000 mm/sec/sec)
 //E-M: curve pps change field, signed
@@ -90,10 +91,15 @@ typedef enum Settings {
 //Number before : is number of leading 1's
 
 // 1:  10ii iiii  -- 6-bit immediate cmd - more bytes may follow
-// 0:  0vvv vvvv vvvv vvvv 0uuu adxx xxxx xxxx  -- setup,
-// 0:  0vvv vvvv vvvv vvvv 1uuu adcc cccc cccc  -- move, 
-//  if pulse count is zero then vvv vvvv vvvv vvvv is 14-bit usecs delay (not pps)
-//  move vec d29 is 1 to ensure zero bytes aren't interpreted as commands
+
+// 0:  0eee vvvv vvvv vvvv 1uuu adxx xxxx xxxx  -- setup
+// 0:  0eee vvvv vvvv vvvv 0uuu adcc cccc cccc  -- move
+// if c... is zero then eeev... is 15-bit usecs -- delay
+
+// pps 15-bit fp format: eee vvvv vvvv vvvv
+// pps == (0x1000 + man) * 2 ^ (exp - 6)  (i.e. shift adj man right 6)
+// 0b0000 0000 0000 0000, smallest pps =>    64, (exp of 0 means -6)
+// 0b0111 1111 1111 1111, largest pps  => 16382, (exp of 7 means +1)
 
 //Curve vectors, each field is one pulse of signed pps change ...
 //
