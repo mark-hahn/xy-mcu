@@ -32,7 +32,7 @@ uint8_t numLeading1s(uint32_t *word) {
 // returns axis from spi vector (X:0, Y:1)
 char axisFromSpiWord(uint32_t *word) {
   switch (numLeading1s(word)) {
-    case  0: return ((((char *) word)[1]) & 0x10) != 0;
+    case  0: return ((((char *) word)[1]) & 0x08) != 0;
     case  3: return ((((char *) word)[3]) & 0x08) != 0;
     case  6: return ((((char *) word)[3]) & 0x01) != 0;
     case  2: return ((((char *) word)[3]) & 0x10) != 0;
@@ -47,6 +47,7 @@ char axisFromSpiWord(uint32_t *word) {
 }
 #endif
 
+
 // parse settings, move, delay, curve, or marker vector
 // returns marker code, or zero if not marker
 uint8_t  parseVector(uint32_t *vector, MoveState *moveState){
@@ -60,16 +61,23 @@ uint8_t  parseVector(uint32_t *vector, MoveState *moveState){
 
   // settings/move
   if((topByte & 0x80) == 0) {    
+<<<<<<< HEAD
     moveState->accellsIdx   = 0;
     if((topByte & 0x40) != 0) {                 // settings
       moveState->acceleration = (vecInts[0] & 0x00ff);
       uint16_t left_0fff = (vecInts[1] & 0x0fff);
       if(left_0fff) moveState->currentPps = left_0fff;
+=======
+    moveState->accellsIdx = 0;
+    if((vecInts[0] & 0x8000) != 0) {            // settings
+      moveState->acceleration = (vecInts[0] & 0x03ff);
+      moveState->currentPps   = (vecInts[1] & 0x7fff);
+>>>>>>> feddca447d28e9ef97c08b497ab67ebea8de5edf
     }
     else {                                      // move
-      moveState->pulseCount = (vecInts[0] & 0x0fff);
+      moveState->pulseCount = (vecInts[0] & 0x03ff);
       if(moveState->pulseCount == 0) {
-        moveState->delayUsecs = (vecInts[0] & 0xe000) | (vecInts[1] & 0x1fff);
+        moveState->delayUsecs = (vecInts[1] & 0x7fff);
         return 0;
       }
       moveState->targetPps = (vecInts[1] & 0x0fff);

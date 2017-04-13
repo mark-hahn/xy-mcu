@@ -14,15 +14,15 @@ void immediateCmd(Cmd cmd);
 
 void handleSpiWord() {
   if ((spiBytes[3] & 0xc0) == 0x80) {
-    Cmd cmd = (spiBytes[3] & 0x1f);
+    Cmd cmd = (spiBytes[3] & 0x3f);
     if(errorCode && cmd != clearErrorCmd) 
       return;
     immediateCmd(cmd);
   }
   else {
 #ifdef XY
-    if(axisFromSpiWord(&spiWord)) putVectorY(); 
-    else                          putVectorX();
+    if(spiBytes[1] & 0x08) putVectorY(); 
+    else                   putVectorX();
 #endif
 #ifdef Z2
     putVectorX();
