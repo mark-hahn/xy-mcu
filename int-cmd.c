@@ -12,7 +12,7 @@ typedef struct CmdState {
   uint8_t pulseCount;
   bool_t  repeatPulseCount;
 
-  bool_t  getTimeNoPulse;
+  bool_t  setTimeNoPulse;
   bool_t  gettingUsecBytes;
   bool_t  haveByte1;
   bool_t  haveUsecBytes;
@@ -90,7 +90,7 @@ getTimeBufByteX:
     return;
   }
   
-  if(stateX.getTimeNoPulse) {
+  if(stateX.setTimeNoPulse) {
     if(!stateX.haveByte1) {
       stateX.byte1 = timeBufByte;
       stateX.haveByte1 = TRUE;
@@ -98,13 +98,12 @@ getTimeBufByteX:
     }
     CCPR1L = stateX.byte1;
     CCPR1H = timeBufByte;
-    stateX.getTimeNoPulse = FALSE;
+    stateX.setTimeNoPulse = FALSE;
     return;
   }  
 
   stateX.haveByte1 = FALSE;
   
-// I hope this isn't too slow
   switch(timeBufByte & 0xe0) {
     case 0xc0:
       // 110A DUUU settings
@@ -118,7 +117,7 @@ getTimeBufByteX:
       stateX.pulseCount = (timeBufByte & 0x3f);
       if(!stateX.pulseCount) 
         // 1000 0000 delay: 2 byte time pair follows
-        stateX.getTimeNoPulse = TRUE;
+        stateX.setTimeNoPulse = TRUE;
       goto getTimeBufByteX;
 
     case 0x00:
