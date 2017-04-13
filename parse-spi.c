@@ -61,18 +61,11 @@ uint8_t  parseVector(uint32_t *vector, MoveState *moveState){
 
   // settings/move
   if((topByte & 0x80) == 0) {    
-<<<<<<< HEAD
     moveState->accellsIdx   = 0;
     if((topByte & 0x40) != 0) {                 // settings
       moveState->acceleration = (vecInts[0] & 0x00ff);
       uint16_t left_0fff = (vecInts[1] & 0x0fff);
       if(left_0fff) moveState->currentPps = left_0fff;
-=======
-    moveState->accellsIdx = 0;
-    if((vecInts[0] & 0x8000) != 0) {            // settings
-      moveState->acceleration = (vecInts[0] & 0x03ff);
-      moveState->currentPps   = (vecInts[1] & 0x7fff);
->>>>>>> feddca447d28e9ef97c08b497ab67ebea8de5edf
     }
     else {                                      // move
       moveState->pulseCount = (vecInts[0] & 0x03ff);
