@@ -18,16 +18,18 @@ void interrupt isr(void) {
   if(SSP1IF) {
     SSP1IF = 0;
     uint8_t spiByte = SSP1BUF;
-
-    if(SSP1CON1bits.WCOL) {
-      SSP1CON1bits.WCOL = 0;
-      handleError(0, errorSpiWcol);
-      return;
-    }
-    if(SSP1CON1bits.SSPOV) {
-      SSP1CON1bits.SSPOV = 0;
-      handleError(0, errorSpiOvflw);
-      return;
+    
+    if(SSP1CON1 & 0xc0) {
+      if(SSP1CON1bits.WCOL) {
+        SSP1CON1bits.WCOL = 0;
+        handleError(0, errorSpiWcol);
+        return;
+      }
+      if(SSP1CON1bits.SSPOV) {
+        SSP1CON1bits.SSPOV = 0;
+        handleError(0, errorSpiOvflw);
+        return;
+      }
     }
 #ifdef XY
     if((spiByte & 0xe0) == 0xc0)  // settings (including axis) cmd
@@ -69,7 +71,7 @@ void interrupt isr(void) {
       retBufRd = ((retBufRd + 1) & 0x0f);
     }
     else
-      SSP1BUF = bufSpaceByte();
+      SSP1BUF = defStateByte();
   }
 
   //////////  X TIMER COMPARE CCP1 INTERRUPT  //////////
