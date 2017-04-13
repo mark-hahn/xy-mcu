@@ -188,7 +188,9 @@ typedef enum Error {
 
   // errors specific to add-on start at 10
   errorFault             = 10, // driver chip fault
-  errorLimit             = 12, // hit error limit switch during move backwards
+          errorFaultX,
+            errorFaultY,
+errorLimit             = 12, // hit error limit switch during move backwards
   errorVecBufOverflow    = 14,
   errorVecBufUnderflow   = 16,
 

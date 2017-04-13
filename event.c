@@ -47,28 +47,6 @@ void setState(char newState) {
   mcu_state = newState;
 }
 
-// axis is zero when not specific to axis
-void handleError(char axis, Error code) {
-  // wait for SPI idle to repair byte sync and abort word
-//  while (!SPI_SS); 
-  
-//  dbg(1);
-
-  // clean up comm state
-  spiBytesInIdx = 0;
-  statusRecOutIdx = STATUS_REC_IDLE;
-  
- // errors don't override old ones
-  if(errorCode == 0 || code == errorReset) {
-    setState(statusUnlocked);
-    errorAxis = axis;
-    errorCode = code;
-  }
-  
-//    dbg(0);
-
-}
-
 // d5: error flag (if error, then no high-waters sent)
 // d4-d3: vector buf high-water flags for X and Y
 // d2-d0: status code (mcu_state)
